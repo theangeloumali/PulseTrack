@@ -3,7 +3,7 @@ import { User as SupabaseUser, Session } from '@supabase/supabase-js';
 import { supabase } from '@/lib/db';
 import { getUserById, createUser, createCompany } from '@/lib/db/service';
 import type { User, NewUser, NewCompany } from '@/lib/db/schema';
-import { persist } from 'zustand/middleware';
+import { clearAuthState, isRefreshTokenError } from '@/lib/auth-utils';
 
 export interface CreateUserData {
 	firstName: string;
@@ -32,9 +32,7 @@ export interface AuthState {
 	initialize: () => Promise<void>;
 }
 
-export const useAuthStore = create<AuthState>()(
-	persist(
-		(set, get) => ({
+export const useAuthStore = create<AuthState>()((set, get) => ({
 			user: null,
 			supabaseUser: null,
 			session: null,
@@ -287,8 +285,18 @@ console.log('Starting email verification with params:', { token, email, tokenHas
 						error: error?.message 
 					});
 
+					// If there's an error getting the session (e.g., invalid refresh token), 
+					// clear everything and let the user sign in again
 					if (error) {
-						console.error('❌ Auth Store: Error getting session:', error);
+						console.error('❌ Auth Store: Error getting session, clearing auth state:', error);
+						
+						// Check if it's a refresh token error and clear corrupted state
+						if (isRefreshTokenError(error)) {
+							console.log('🧹 Auth Store: Refresh token error detected, clearing corrupted state');
+							clearAuthState();
+						}
+						
+						await supabase.auth.signOut(); // Clear any invalid tokens
 						set({ isLoading: false, session: null, supabaseUser: null, user: null });
 						return;
 					}
@@ -315,11 +323,13 @@ console.log('Starting email verification with params:', { token, email, tokenHas
 							} else {
 								console.log('❌ Auth Store: No database user found for:', session.user.id);
 								// Clear the invalid session since we don't have a complete user profile
+								await supabase.auth.signOut();
 								set({ session: null, supabaseUser: null, user: null, isLoading: false });
 							}
 						} catch (dbError) {
 							console.error('❌ Auth Store: Error fetching user from database:', dbError);
 							// Clear the invalid session since we couldn't get the user profile
+							await supabase.auth.signOut();
 							set({ session: null, supabaseUser: null, user: null, isLoading: false });
 						}
 					} else {
@@ -332,6 +342,15 @@ console.log('Starting email verification with params:', { token, email, tokenHas
 						data: { subscription },
 					} = supabase.auth.onAuthStateChange(async (event, session) => {
 						console.log('🔄 Auth Store: Auth state changed:', event, session?.user?.id);
+
+						// Handle specific auth events
+						if (event === 'TOKEN_REFRESHED') {
+							console.log('🔄 Auth Store: Token refreshed successfully');
+						} else if (event === 'SIGNED_OUT') {
+							console.log('🔄 Auth Store: User signed out');
+							set({ session: null, supabaseUser: null, user: null, isLoading: false });
+							return;
+						}
 
 						if (session?.user) {
 							console.log('🔄 Auth Store: Setting session from auth change...');
@@ -351,6 +370,16 @@ console.log('Starting email verification with params:', { token, email, tokenHas
 								}
 							} catch (error) {
 								console.error('❌ Auth Store: Error fetching user on auth change:', error);
+								
+								// If it's a refresh token error, clear state
+								if (isRefreshTokenError(error)) {
+									console.log('🧹 Auth Store: Refresh token error in auth change, clearing state');
+									clearAuthState();
+									await supabase.auth.signOut();
+									set({ session: null, supabaseUser: null, user: null, isLoading: false });
+									return;
+								}
+								
 								set({ user: null, isLoading: false });
 							}
 						} else {
@@ -362,40 +391,10 @@ console.log('Starting email verification with params:', { token, email, tokenHas
 					console.log('✅ Auth Store: Initialization complete');
 				} catch (error) {
 					console.error('❌ Auth Store: Error in initialize:', error);
+					// Clear any potentially corrupted state
+					await supabase.auth.signOut();
 					set({ session: null, supabaseUser: null, user: null, isLoading: false });
 				}
 			},
-		}),
-		{
-			name: 'currentUser',
-			storage: {
-				getItem: (key) => {
-					if (typeof window === 'undefined') return null;
-					try {
-						const item = localStorage.getItem(key);
-						const parsed = item ? JSON.parse(item) : null;
-						console.log('🔄 Zustand: Retrieved from localStorage:', { key, hasData: !!parsed });
-						return parsed;
-					} catch (error) {
-						console.error('🔄 Zustand: Error reading from localStorage:', error);
-						return null;
-					}
-				},
-				setItem: (key, value) => {
-					if (typeof window === 'undefined') return;
-					try {
-						console.log('🔄 Zustand: Saving to localStorage:', { key, hasUser: !!value?.state?.user });
-						localStorage.setItem(key, JSON.stringify(value));
-					} catch (error) {
-						console.error('🔄 Zustand: Error saving to localStorage:', error);
-					}
-				},
-				removeItem: (key) => {
-					if (typeof window === 'undefined') return;
-					console.log('🔄 Zustand: Removing from localStorage:', key);
-					localStorage.removeItem(key);
-				},
-			},
-		}
-	)
-);
+		})
+	);

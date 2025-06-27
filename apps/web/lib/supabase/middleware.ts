@@ -12,10 +12,6 @@ export async function updateSession(request: NextRequest) {
 				return request.cookies.getAll();
 			},
 			setAll(cookiesToSet) {
-				cookiesToSet.forEach(({ name, value, options }) => request.cookies.set(name, value));
-				supabaseResponse = NextResponse.next({
-					request,
-				});
 				cookiesToSet.forEach(({ name, value, options }) => supabaseResponse.cookies.set(name, value, options));
 			},
 		},
@@ -25,25 +21,26 @@ export async function updateSession(request: NextRequest) {
 	// supabase.auth.getUser(). A simple mistake could make it very hard to debug
 	// issues with users being randomly logged out.
 
-	const {
-		data: { user },
-	} = await supabase.auth.getUser();
+	try {
+		const {
+			data: { user },
+		} = await supabase.auth.getUser();
 
-	console.log('Middleware - Path:', request.nextUrl.pathname, 'User:', user?.id || 'No user');
+		console.log('Middleware - Path:', request.nextUrl.pathname, 'User:', user?.id || 'No user');
 
-	if (
-		!user &&
-		!request.nextUrl.pathname.startsWith('/login') &&
-		!request.nextUrl.pathname.startsWith('/signup') &&
-		!request.nextUrl.pathname.startsWith('/verify-email') &&
-		!request.nextUrl.pathname.startsWith('/auth') &&
-		!request.nextUrl.pathname.startsWith('/auth-debug')
-	) {
-		console.log('Middleware - Redirecting to login, no user found');
-		// no user, redirect to login page
-		const url = request.nextUrl.clone();
-		url.pathname = '/login';
-		return NextResponse.redirect(url);
+		if (!user && !request.nextUrl.pathname.startsWith('/login') && !request.nextUrl.pathname.startsWith('/signup') && !request.nextUrl.pathname.startsWith('/verify-email') && !request.nextUrl.pathname.startsWith('/auth-diagnostic')) {
+			console.log('Middleware - Redirecting to login, no user found');
+			// no user, redirect to login page
+			const url = request.nextUrl.clone();
+			url.pathname = '/login';
+			return NextResponse.redirect(url);
+		}
+	} catch (error) {
+		console.error('Middleware - Unexpected error:', error);
+		// If there's an unexpected error, redirect to login
+		const loginUrl = request.nextUrl.clone();
+		loginUrl.pathname = '/login';
+		return NextResponse.redirect(loginUrl);
 	}
 
 	// IMPORTANT: You *must* return the supabaseResponse object as it is. If you're

@@ -78,7 +78,7 @@ export default function TestDataPage() {
         description: 'This is a test ticket to verify the ticket system is working',
         priority: 'medium' as const,
         status: 'new' as const,
-        project_id: projects[0].id,
+        project_id: projects?.[0]?.id,
         assignee_id: user.id,
         reporter_id: user.id,
         estimated_hours: null,
@@ -103,11 +103,11 @@ export default function TestDataPage() {
 
     setIsLoading(true);
     try {
-      const projectId = projects[0].id;
+      const projectId = projects?.[0]?.id;
       const result = await getTicketsByProject(projectId);
       addResult('Fetch Project Tickets', true, {
         projectId,
-        projectName: projects[0].name,
+        projectName: projects?.[0]?.name,
         ticketCount: result.length,
         tickets: result
       });

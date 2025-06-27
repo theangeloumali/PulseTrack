@@ -9,6 +9,9 @@ import { Badge } from '@workspace/ui/components/badge';
 import { useAuthStore } from '@/lib/stores/auth';
 import { useTicketStore } from '@/lib/stores/ticket';
 import { getTicketById } from '@/lib/db/service';
+import { TimeTracker } from '@/components/time-tracker';
+import { TimeEntriesList } from '@/components/time-entries-list';
+import { TicketAssignment } from '@/components/ticket-assignment';
 import { Ticket } from '@/lib/db/schema';
 import { 
 	ArrowLeft, 
@@ -26,14 +29,16 @@ import {
 export const dynamic = 'force-dynamic';
 
 interface Props {
-	params: {
+	params: Promise<{
 		id: string; // project ID
 		ticketId: string; // ticket ID
-	};
+	}>;
 }
 
 export default function TicketDetailPage({ params }: Props) {
-	const [ticket, setTicket] = useState<Ticket | null>(null);
+	const [projectId, setProjectId] = useState<string>('');
+	const [ticketId, setTicketId] = useState<string>('');
+	const [ticket, setTicket] = useState<any>(null); // Use any for now since service returns extended data
 	const [isLoading, setIsLoading] = useState(true);
 	const [error, setError] = useState('');
 	
@@ -41,17 +46,46 @@ export default function TicketDetailPage({ params }: Props) {
 	const { setSelectedTicketId } = useTicketStore();
 	const router = useRouter();
 
+	// Resolve params on mount
 	useEffect(() => {
-		loadTicket();
-	}, [params.ticketId]);
+		const resolveParams = async () => {
+			const resolvedParams = await params;
+			setProjectId(resolvedParams.id);
+			setTicketId(resolvedParams.ticketId);
+		};
+		resolveParams();
+	}, [params]);
+
+	useEffect(() => {
+		if (ticketId && user) {
+			loadTicket();
+		}
+	}, [ticketId, user]);
 
 	const loadTicket = async () => {
 		try {
 			setIsLoading(true);
-			const ticketData = await getTicketById(params.ticketId);
+			const ticketData = await getTicketById(ticketId);
+			
+			if (!ticketData) {
+				setError('Ticket not found');
+				return;
+			}
+			console.log('Ticket Data:', JSON.stringify(ticketData));
+			
+			// Cast the ticketData.projects to any to avoid TypeScript errors
+			const projectData = ticketData.projects as any;
+			const projectCompanyId = projectData?.company_id || 
+				(Array.isArray(projectData) ? projectData[0]?.company_id : null);
 			
 			// Security check: ensure ticket's project belongs to user's company (PRD requirement)
-			if (ticketData.projects?.company_id !== user?.company_id) {
+			console.log('Security Check:', {
+				ticketCompanyId: projectCompanyId, 
+				userCompanyId: user?.company_id,
+				projects: projectData
+			});
+			
+			if (!projectCompanyId || projectCompanyId !== user?.company_id) {
 				setError('Ticket not found or access denied');
 				return;
 			}
@@ -129,7 +163,7 @@ export default function TicketDetailPage({ params }: Props) {
 							<CardDescription>{error || 'Ticket not found'}</CardDescription>
 						</CardHeader>
 						<CardContent>
-							<Link href={`/projects/${params.id}`}>
+							<Link href={`/projects/${projectId}`}>
 								<Button className="w-full">Back to Project</Button>
 							</Link>
 						</CardContent>
@@ -146,7 +180,7 @@ export default function TicketDetailPage({ params }: Props) {
 				<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 					<div className="flex items-center justify-between py-6">
 						<div className="flex items-center space-x-4">
-							<Link href={`/projects/${params.id}/tickets`}>
+							<Link href={`/projects/${projectId}/tickets`}>
 								<Button variant="ghost" size="sm">
 									<ArrowLeft className="h-4 w-4 mr-2" />
 									Back to Tickets
@@ -173,16 +207,13 @@ export default function TicketDetailPage({ params }: Props) {
 							</div>
 						</div>
 						<div className="flex items-center space-x-2">
-							<Link href={`/projects/${params.id}/tickets/${ticket.id}/edit`}>
+							<TimeTracker ticket={ticket} compact />
+							<Link href={`/projects/${projectId}/tickets/${ticket.id}/edit`}>
 								<Button variant="outline" size="sm">
 									<Edit className="h-4 w-4 mr-2" />
 									Edit
 								</Button>
 							</Link>
-							<Button size="sm">
-								<PlayCircle className="h-4 w-4 mr-2" />
-								Start Timer
-							</Button>
 						</div>
 					</div>
 				</div>
@@ -210,33 +241,10 @@ export default function TicketDetailPage({ params }: Props) {
 							</Card>
 
 							{/* Time Tracking */}
-							<Card>
-								<CardHeader>
-									<CardTitle>Time Tracking</CardTitle>
-								</CardHeader>
-								<CardContent>
-									<div className="space-y-4">
-										<div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-											<div>
-												<p className="font-medium">Current Timer</p>
-												<p className="text-sm text-gray-600">No active timer</p>
-											</div>
-											<Button size="sm">
-												<PlayCircle className="h-4 w-4 mr-2" />
-												Start Timer
-											</Button>
-										</div>
-										
-										<div className="border-t pt-4">
-											<h4 className="font-medium mb-3">Time Entries</h4>
-											<div className="text-center py-8 text-gray-500">
-												<Clock className="mx-auto h-8 w-8 mb-2 opacity-50" />
-												<p>No time entries yet</p>
-											</div>
-										</div>
-									</div>
-								</CardContent>
-							</Card>
+							<TimeTracker ticket={ticket} />
+							
+							{/* Time Entries List */}
+							<TimeEntriesList ticketId={ticket.id} />
 
 							{/* Comments */}
 							<Card>
@@ -254,6 +262,9 @@ export default function TicketDetailPage({ params }: Props) {
 
 						{/* Sidebar */}
 						<div className="space-y-6">
+							{/* Assignment */}
+							<TicketAssignment ticket={ticket} />
+							
 							{/* Ticket Details */}
 							<Card>
 								<CardHeader>
@@ -339,7 +350,7 @@ export default function TicketDetailPage({ params }: Props) {
 									<CardTitle>Actions</CardTitle>
 								</CardHeader>
 								<CardContent className="space-y-2">
-									<Link href={`/projects/${params.id}/tickets/${ticket.id}/edit`}>
+									<Link href={`/projects/${projectId}/tickets/${ticket.id}/edit`}>
 										<Button variant="outline" className="w-full justify-start">
 											<Edit className="h-4 w-4 mr-2" />
 											Edit Ticket

@@ -4,12 +4,14 @@ import {
   getTicketsByCompany,
   getTicketById,
   createTicket,
+  updateTicket,
   getRecentTicketsByProject,
   getTicketCountByProject,
-  // TODO: Add updateTicket, deleteTicket to service
+  // TODO: Add deleteTicket to service
 } from '@/lib/db/service';
 import { NewTicket, Ticket } from '@/lib/db/schema';
 import { useAuthStore } from '@/lib/stores/auth';
+import { useAuth } from './useAuth';
 
 // Query keys for tickets
 export const ticketKeys = {
@@ -68,6 +70,32 @@ export function useCreateTicketMutation() {
       queryClient.setQueryData(
         ticketKeys.list(newTicket.project_id),
         (old: Ticket[] = []) => [newTicket, ...old]
+      );
+    },
+  });
+}
+
+// Update ticket mutation
+export function useUpdateTicket() {
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: Partial<NewTicket> }) => 
+      updateTicket(id, data),
+    onSuccess: (updatedTicket: Ticket) => {
+      // Invalidate and refetch related queries
+      queryClient.invalidateQueries({ 
+        queryKey: ticketKeys.list(updatedTicket.project_id) 
+      });
+      queryClient.invalidateQueries({ 
+        queryKey: ticketKeys.detail(updatedTicket.id) 
+      });
+      
+      // Update the single ticket cache
+      queryClient.setQueryData(
+        ticketKeys.detail(updatedTicket.id),
+        updatedTicket
       );
     },
   });

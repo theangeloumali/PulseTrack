@@ -199,6 +199,18 @@ export async function createTicket(data: NewTicket) {
   return result
 }
 
+export async function updateTicket(id: string, data: Partial<NewTicket>) {
+  const { data: result, error } = await supabase
+    .from('tickets')
+    .update(data)
+    .eq('id', id)
+    .select(ticketWithProjectFields)
+    .single()
+  
+  if (error) throw error
+  return result
+}
+
 // Get ticket count by project
 export async function getTicketCountByProject(projectId: string) {
   const { count, error } = await supabase
@@ -263,27 +275,84 @@ export async function createTimeEntry(data: NewTimeEntry) {
   return result
 }
 
-// Comment operations
-export async function getCommentsByTicket(ticketId: string) {
-  const { data, error } = await supabase
-    .from('comments')
-    .select(commentWithUserFields)
-    .eq('ticket_id', ticketId)
-    .order('created_at', { ascending: true })
-  
-  if (error) throw error
-  return data || []
-}
-
-export async function createComment(data: NewComment) {
+export async function updateTimeEntry(id: string, data: Partial<NewTimeEntry>) {
   const { data: result, error } = await supabase
-    .from('comments')
-    .insert(data)
+    .from('time_entries')
+    .update(data)
+    .eq('id', id)
     .select()
     .single()
   
   if (error) throw error
   return result
+}
+
+export async function deleteTimeEntry(id: string) {
+  const { error } = await supabase
+    .from('time_entries')
+    .delete()
+    .eq('id', id)
+  
+  if (error) throw error
+}
+
+export async function getActiveTimeEntry(userId: string) {
+  const { data, error } = await supabase
+    .from('time_entries')
+    .select(timeEntryWithTicketFields)
+    .eq('user_id', userId)
+    .is('end_time', null)
+    .maybeSingle()
+  
+  if (error) throw error
+  return data
+}
+
+export async function getTotalTimeByTicket(ticketId: string): Promise<number> {
+  const { data, error } = await supabase
+    .from('time_entries')
+    .select('duration')
+    .eq('ticket_id', ticketId)
+    .not('duration', 'is', null)
+  
+  if (error) throw error
+  
+  const totalSeconds = (data || []).reduce((sum, entry) => sum + (entry.duration || 0), 0)
+  return totalSeconds
+}
+
+export async function getTotalTimeByUser(userId: string, dateFrom?: string, dateTo?: string): Promise<number> {
+  let query = supabase
+    .from('time_entries')
+    .select('duration')
+    .eq('user_id', userId)
+    .not('duration', 'is', null)
+  
+  if (dateFrom) {
+    query = query.gte('start_time', dateFrom)
+  }
+  
+  if (dateTo) {
+    query = query.lte('start_time', dateTo)
+  }
+  
+  const { data, error } = await query
+  
+  if (error) throw error
+  
+  const totalSeconds = (data || []).reduce((sum, entry) => sum + (entry.duration || 0), 0)
+  return totalSeconds
+}
+
+export async function getUsersInCompany(companyId: string) {
+  const { data, error } = await supabase
+    .from('users')
+    .select(userBasicFields)
+    .eq('company_id', companyId)
+    .order('first_name', { ascending: true })
+  
+  if (error) throw error
+  return data || []
 }
 
 // Get projects with ticket counts for a company
