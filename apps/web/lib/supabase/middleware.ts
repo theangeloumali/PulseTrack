@@ -27,9 +27,32 @@ export async function updateSession(request: NextRequest) {
 		} = await supabase.auth.getUser();
 
 		console.log('Middleware - Path:', request.nextUrl.pathname, 'User:', user?.id || 'No user');
+		console.log('Middleware - Full URL:', request.url);
+		console.log('Middleware - Query params:', request.nextUrl.searchParams.toString());
+		
+		// Check each path condition individually for debugging
+		const isLogin = request.nextUrl.pathname.startsWith('/login')
+		const isSignup = request.nextUrl.pathname.startsWith('/signup') 
+		const isVerifyEmail = request.nextUrl.pathname.startsWith('/verify-email')
+		const isAuthDiagnostic = request.nextUrl.pathname.startsWith('/auth-diagnostic')
+		const isAuthCallback = request.nextUrl.pathname.startsWith('/auth/callback')
+		const isAcceptInvitation = request.nextUrl.pathname.startsWith('/auth/accept-invitation')
+		const isAuthRoute = request.nextUrl.pathname.startsWith('/auth/')
+		
+		console.log('Middleware - Path checks:', {
+			isLogin, isSignup, isVerifyEmail, isAuthDiagnostic, isAuthCallback, isAcceptInvitation, isAuthRoute
+		})
+		
+		// For API routes, don't redirect to login - let them handle their own auth
+		const isApiRoute = request.nextUrl.pathname.startsWith('/api/')
+		
+		if (isApiRoute) {
+			console.log('Middleware - API route detected, skipping auth redirect')
+			return supabaseResponse
+		}
 
-		if (!user && !request.nextUrl.pathname.startsWith('/login') && !request.nextUrl.pathname.startsWith('/signup') && !request.nextUrl.pathname.startsWith('/verify-email') && !request.nextUrl.pathname.startsWith('/auth-diagnostic')) {
-			console.log('Middleware - Redirecting to login, no user found');
+		if (!user && !isLogin && !isSignup && !isVerifyEmail && !isAuthDiagnostic && !isAuthRoute) {
+			console.log('Middleware - Redirecting to login, no user found for path:', request.nextUrl.pathname);
 			// no user, redirect to login page
 			const url = request.nextUrl.clone();
 			url.pathname = '/login';
@@ -37,7 +60,22 @@ export async function updateSession(request: NextRequest) {
 		}
 	} catch (error) {
 		console.error('Middleware - Unexpected error:', error);
-		// If there's an unexpected error, redirect to login
+		
+		// For API routes, don't redirect to login even on error
+		const isApiRoute = request.nextUrl.pathname.startsWith('/api/')
+		if (isApiRoute) {
+			console.log('Middleware - API route error, returning response without redirect')
+			return supabaseResponse
+		}
+		
+		// For auth routes, allow them through even on error
+		const isAuthRoute = request.nextUrl.pathname.startsWith('/auth/')
+		if (isAuthRoute) {
+			console.log('Middleware - Auth route error, allowing through')
+			return supabaseResponse
+		}
+		
+		// If there's an unexpected error on other routes, redirect to login
 		const loginUrl = request.nextUrl.clone();
 		loginUrl.pathname = '/login';
 		return NextResponse.redirect(loginUrl);

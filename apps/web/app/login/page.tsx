@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@workspace/ui/components/button';
 import { Input } from '@workspace/ui/components/input';
@@ -20,6 +20,15 @@ export default function LoginPage() {
 
 	const { signIn } = useAuthStore();
 	const router = useRouter();
+	const searchParams = useSearchParams();
+	const urlError = searchParams.get('error');
+
+	useEffect(() => {
+		if (urlError) {
+			console.log('Login page - URL Error parameter:', urlError);
+			setError(`Redirect error: ${urlError}`);
+		}
+	}, [urlError]);
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();

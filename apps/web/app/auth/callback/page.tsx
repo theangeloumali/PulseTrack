@@ -3,7 +3,6 @@
 import { useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createBrowserClient } from '@supabase/ssr'
-import { updateUserStatus } from '@/lib/db/service'
 
 export default function AuthCallbackPage() {
   const router = useRouter()
@@ -18,35 +17,146 @@ export default function AuthCallbackPage() {
       )
 
       try {
-        // Handle the auth callback
-        const { data, error } = await supabase.auth.getSession()
+        console.log('Callback - Processing auth callback for type:', type)
+        console.log('Callback - Current URL:', window.location.href)
+        console.log('Callback - Search params:', window.location.search)
+        console.log('Callback - Hash:', window.location.hash)
         
-        if (error) {
-          console.error('Auth callback error:', error)
-          router.push('/login?error=callback_error')
-          return
-        }
-
-        if (data.session?.user) {
-          // If this is an invitation acceptance, activate the user
-          if (type === 'invite') {
+        // For invitation callbacks, handle Supabase's verification redirect
+        if (type === 'invite') {
+          // When Supabase redirects back from email verification, it includes
+          // either URL parameters or we need to exchange a code
+          const urlParams = new URLSearchParams(window.location.search)
+          const hashParams = new URLSearchParams(window.location.hash.substring(1))
+          
+          console.log('Callback - URL params:', Object.fromEntries(urlParams.entries()))
+          console.log('Callback - Hash params:', Object.fromEntries(hashParams.entries()))
+          
+          // Check for different types of auth data that Supabase might send
+          const code = urlParams.get('code')
+          const accessToken = urlParams.get('access_token') || hashParams.get('access_token')
+          const refreshToken = urlParams.get('refresh_token') || hashParams.get('refresh_token')
+          const error = urlParams.get('error') || hashParams.get('error')
+          
+          if (error) {
+            console.error('Callback - Auth error from Supabase:', error)
+            router.push('/login?error=' + encodeURIComponent(error))
+            return
+          }
+          
+          // Try code exchange first (PKCE flow)
+          if (code) {
+            console.log('Callback - Found auth code, exchanging for session')
             try {
-              await updateUserStatus(data.session.user.id, 'active')
-              router.push('/dashboard?welcome=true')
-            } catch (updateError) {
-              console.error('Failed to activate user:', updateError)
-              router.push('/dashboard')
+              const { data: sessionData, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code)
+              
+              if (exchangeError) {
+                console.error('Callback - Code exchange error:', exchangeError)
+                router.push('/login?error=code_exchange_failed')
+                return
+              }
+              
+              if (sessionData.session?.user) {
+                console.log('Callback - Session established via code exchange')
+                console.log('Callback - User:', sessionData.session.user.id)
+                console.log('Callback - Metadata:', sessionData.session.user.user_metadata)
+                
+                // Add a small delay to ensure session is fully synced before redirecting
+                setTimeout(() => {
+                  router.push('/auth/accept-invitation')
+                }, 100)
+                return
+              }
+            } catch (codeError) {
+              console.error('Callback - Code exchange failed:', codeError)
+            }
+          }
+          
+          // Try direct token method (older flow)
+          if (accessToken) {
+            console.log('Callback - Found access token, setting session')
+            try {
+              const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
+                access_token: accessToken,
+                refresh_token: refreshToken || ''
+              })
+              
+              if (sessionError) {
+                console.error('Callback - Error setting session:', sessionError)
+                router.push('/login?error=session_failed')
+                return
+              }
+              
+              if (sessionData.session?.user) {
+                console.log('Callback - Session set via tokens')
+                console.log('Callback - User:', sessionData.session.user.id)
+                
+                // Add a small delay to ensure session is fully synced before redirecting
+                setTimeout(() => {
+                  router.push('/auth/accept-invitation')
+                }, 100)
+                return
+              }
+            } catch (tokenError) {
+              console.error('Callback - Token session failed:', tokenError)
+            }
+          }
+          
+          // If no code or tokens, try to get existing session
+          console.log('Callback - No code/tokens found, checking existing session')
+          const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
+          
+          if (sessionError) {
+            console.error('Callback - Session check error:', sessionError)
+            router.push('/login?error=session_check_failed')
+            return
+          }
+          
+          if (sessionData.session?.user) {
+            console.log('Callback - Found existing session')
+            console.log('Callback - User:', sessionData.session.user.id)
+            
+            // Check if user needs to complete setup
+            const userMetadata = sessionData.session.user.user_metadata
+            const setupComplete = userMetadata?.setup_complete
+            
+            console.log('Callback - Setup complete:', setupComplete)
+            
+            if (!setupComplete) {
+              // Add a small delay to ensure session is fully synced before redirecting
+              setTimeout(() => {
+                router.push('/auth/accept-invitation')
+              }, 100)
+            } else {
+              setTimeout(() => {
+                router.push('/dashboard?welcome=true')
+              }, 100)
             }
           } else {
-            // Regular login callback
-            router.push('/dashboard')
+            console.log('Callback - No session found anywhere, redirecting to login')
+            router.push('/login?error=no_session_after_invite')
           }
         } else {
-          router.push('/login')
+          // Regular login callback
+          const { data, error } = await supabase.auth.getSession()
+          
+          if (error) {
+            console.error('Auth callback error:', error)
+            router.push('/login?error=callback_error')
+            return
+          }
+
+          if (data.session?.user) {
+            console.log('Callback - Regular login, redirecting to dashboard')
+            router.push('/dashboard')
+          } else {
+            console.log('Callback - No session, redirecting to login')
+            router.push('/login')
+          }
         }
       } catch (error) {
         console.error('Callback handling error:', error)
-        router.push('/login?error=callback_error')
+        router.push('/login?error=callback_exception')
       }
     }
 
@@ -58,7 +168,7 @@ export default function AuthCallbackPage() {
       <div className="text-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
         <p className="mt-4 text-gray-600">
-          {type === 'invite' ? 'Setting up your account...' : 'Signing you in...'}
+          {type === 'invite' ? 'Processing your invitation...' : 'Signing you in...'}
         </p>
       </div>
     </div>
