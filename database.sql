@@ -1,6 +1,3 @@
--- Enable Row Level Security
-ALTER DATABASE postgres SET "app.jwt_secret" TO 'your-jwt-secret-here';
-
 -- Create enums
 DO $$ BEGIN
     CREATE TYPE user_role AS ENUM ('admin', 'manager', 'user');
@@ -43,7 +40,7 @@ CREATE TABLE IF NOT EXISTS users (
     last_name TEXT,
     avatar_url TEXT,
     role user_role DEFAULT 'user',
-    company_id UUID REFERENCES companies(id) ON DELETE CASCADE NOT NULL,
+    company_id UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
     UNIQUE(email, company_id)
@@ -134,6 +131,11 @@ CREATE POLICY "Admins can update their company" ON companies FOR UPDATE USING (
     )
 );
 
+-- Allow authenticated users to create companies (for signup)
+CREATE POLICY "Authenticated users can create companies" ON companies FOR INSERT WITH CHECK (
+    auth.uid() IS NOT NULL
+);
+
 -- Create RLS policies for users
 CREATE POLICY "Users can view users in their company" ON users FOR SELECT USING (
     company_id IN (
@@ -147,6 +149,11 @@ CREATE POLICY "Admins can manage users in their company" ON users FOR ALL USING 
     company_id IN (
         SELECT company_id FROM users WHERE id = auth.uid() AND role IN ('admin', 'manager')
     )
+);
+
+-- Allow authenticated users to create their own user record (for signup)
+CREATE POLICY "Users can create their own record" ON users FOR INSERT WITH CHECK (
+    auth.uid() = id
 );
 
 -- Create RLS policies for projects
@@ -240,60 +247,5 @@ CREATE INDEX IF NOT EXISTS idx_time_entries_ticket_id ON time_entries(ticket_id)
 CREATE INDEX IF NOT EXISTS idx_time_entries_user_id ON time_entries(user_id);
 CREATE INDEX IF NOT EXISTS idx_comments_ticket_id ON comments(ticket_id);
 
--- Create function to handle user creation after auth signup
-CREATE OR REPLACE FUNCTION public.handle_new_user()
-RETURNS TRIGGER AS $$
-DECLARE
-    company_exists BOOLEAN;
-    new_company_id UUID;
-BEGIN
-    -- Extract metadata from auth.users
-    IF NEW.raw_user_meta_data ? 'companyName' THEN
-        -- Check if company already exists
-        SELECT EXISTS(
-            SELECT 1 FROM companies WHERE slug = NEW.raw_user_meta_data->>'companySlug'
-        ) INTO company_exists;
-        
-        IF NOT company_exists THEN
-            -- Create new company
-            INSERT INTO companies (name, slug)
-            VALUES (
-                NEW.raw_user_meta_data->>'companyName',
-                NEW.raw_user_meta_data->>'companySlug'
-            )
-            RETURNING id INTO new_company_id;
-        ELSE
-            -- Get existing company
-            SELECT id INTO new_company_id
-            FROM companies
-            WHERE slug = NEW.raw_user_meta_data->>'companySlug';
-        END IF;
-        
-        -- Create user record
-        INSERT INTO public.users (
-            id,
-            email,
-            first_name,
-            last_name,
-            role,
-            company_id
-        )
-        VALUES (
-            NEW.id,
-            NEW.email,
-            NEW.raw_user_meta_data->>'firstName',
-            NEW.raw_user_meta_data->>'lastName',
-            COALESCE(NEW.raw_user_meta_data->>'role', 'user')::user_role,
-            new_company_id
-        );
-    END IF;
-    
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
-
--- Create trigger for new user creation
-DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
-CREATE TRIGGER on_auth_user_created
-    AFTER INSERT ON auth.users
-    FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+-- Note: User creation is handled client-side through the ensureUserRecord function
+-- This approach is more reliable and easier to debug than database triggers

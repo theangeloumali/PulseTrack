@@ -4,7 +4,7 @@ import { useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useAuthStore } from '@/lib/stores/auth'
 import { useCompanyStore } from '@/lib/stores/company'
-import { ensureUserRecord } from '@/lib/auth-helpers'
+import { ensureUserRecord, createUserFromSignup } from '@/lib/db/auth-helpers'
 import type { User } from '@/lib/types/database'
 
 export function useAuth() {
@@ -110,14 +110,38 @@ export function useAuth() {
     companySlug?: string
     role?: 'admin' | 'manager' | 'user'
   }) => {
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: userData
+    try {
+      // First, create the auth user
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: userData
+        }
+      })
+
+      if (authError) {
+        return { data: authData, error: authError }
       }
-    })
-    return { data, error }
+
+      if (authData.user && userData.companyName) {
+        // Wait a moment for the auth user to be fully created
+        await new Promise(resolve => setTimeout(resolve, 100))
+        
+        // Create company and user records explicitly
+        await createUserFromSignup(authData.user, userData)
+      }
+
+      return { data: authData, error: null }
+    } catch (error) {
+      console.error('Signup error:', error)
+      return { 
+        data: null, 
+        error: { 
+          message: error instanceof Error ? error.message : 'An unexpected error occurred during signup' 
+        } 
+      }
+    }
   }
 
   const signOut = async () => {
