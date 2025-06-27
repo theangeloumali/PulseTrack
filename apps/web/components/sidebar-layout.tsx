@@ -17,7 +17,8 @@ import {
   Menu,
   X,
   Plus,
-  Search
+  Search,
+  Bug
 } from 'lucide-react';
 import { cn } from '@workspace/ui/lib/utils';
 
@@ -30,6 +31,7 @@ const navigation = [
   { name: 'Projects', href: '/projects', icon: FolderOpen },
   { name: 'Tickets', href: '/tickets', icon: Ticket },
   { name: 'Time Tracking', href: '/time-tracking', icon: Clock },
+  { name: 'Diagnostics', href: '/diagnostics', icon: Bug },
   { name: 'Settings', href: '/settings', icon: Settings },
 ];
 

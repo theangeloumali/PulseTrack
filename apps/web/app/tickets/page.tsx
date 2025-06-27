@@ -29,7 +29,7 @@ export default function TicketsPage() {
 	const [priorityFilter, setPriorityFilter] = useState('all');
 	
 	const { user } = useAuthStore();
-console.log('Tickets page - user:', user);
+
 	// Use React Query for tickets data
 	const {
 		data: tickets = [],
@@ -37,12 +37,6 @@ console.log('Tickets page - user:', user);
 		error: ticketsError,
 		isError: isTicketsError
 	} = useCompanyTicketsQuery(user?.company_id);
-
-	// Debug logging
-	console.log('Tickets page - user:', user);
-	console.log('Tickets page - tickets:', tickets);
-	console.log('Tickets page - tickets length:', tickets?.length);
-	console.log('Tickets page - ticketsLoading:', ticketsLoading);
 
 	// Filter tickets based on search and filters
 	const filteredTickets = (tickets || []).filter(ticket => {
@@ -225,7 +219,9 @@ console.log('Tickets page - user:', user);
 												</CardTitle>
 												<div className="flex items-center mt-1 text-sm text-gray-500">
 													<FolderOpen className="h-3 w-3 mr-1" />
-													<span className="truncate">{ticket.projects?.name || 'Unknown Project'}</span>
+													<span className="truncate">
+														{(ticket.projects as any)?.name || 'Unknown Project'}
+													</span>
 												</div>
 											</div>
 											<div className="flex items-center ml-2">
@@ -252,7 +248,7 @@ console.log('Tickets page - user:', user);
 										<div className="flex items-center justify-between text-xs text-gray-500">
 											<div className="flex items-center">
 												<User className="h-3 w-3 mr-1" />
-												<span>{ticket.assignee?.first_name || 'Unassigned'}</span>
+												<span>{(ticket.assignee as any)?.first_name || 'Unassigned'}</span>
 											</div>
 											<div className="flex items-center">
 												<Calendar className="h-3 w-3 mr-1" />
