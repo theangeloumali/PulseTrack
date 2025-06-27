@@ -1,0 +1,643 @@
+# Ticketing App with Time Tracking - Product Requirements Document (PRD)
+
+## 📋 Document Information
+- **Product Name**: Ticketing App with Time Tracking
+- **Version**: 1.0 (MVP)
+- **Date**: [Current Date]
+- **Author**: Engineering Team
+- **Status**: Draft
+
+## 🎯 Executive Summary
+
+### Product Vision
+A streamlined ticketing system with integrated time tracking capabilities that enables teams to efficiently manage projects, track issues, and monitor time spent on tasks. The MVP focuses on core functionality that delivers immediate value to users.
+
+### Target Users
+- **Primary**: Project managers and team leads
+- **Secondary**: Developers and team members
+- **Tertiary**: Stakeholders and clients
+
+### Success Criteria
+- Users can create and manage projects within 30 seconds
+- Ticket creation takes less than 1 minute
+- Time tracking is accurate and easy to use
+- Dashboard provides actionable insights
+- System handles 100+ concurrent users
+
+## 🛠️ Technical Stack
+- **Frontend**: Next.js 14+ (App Router)
+- **Backend**: Supabase (PostgreSQL + Auth + Real-time)
+- **State Management**: Zustand
+- **UI Framework**: shadcn/ui + Tailwind CSS
+- **Language**: TypeScript
+- **Deployment**: Vercel
+
+## 🏢 Multi-Tenancy Structure
+- The system is multi-tenant: each company's data is isolated.
+- Users, projects, and tickets are always scoped to a company.
+
+## 📊 MVP Scope
+
+### ✅ Included in MVP
+- User authentication and basic profile management
+- Project creation and management
+- Ticket creation, assignment, and status management
+- Basic time tracking (start/stop timer)
+- Simple dashboard with key metrics
+- Basic search and filtering
+- User role management (Admin, Manager, User)
+
+### ❌ Excluded from MVP (Future Releases)
+- Advanced reporting and analytics
+- File attachments
+- Custom workflows
+- Email notifications
+- API integrations
+- Mobile app
+- Advanced time reports
+- Real-time notifications
+
+## 🎯 Core Features Requirements
+
+## 0. Company Management
+
+### 0.1 Company Creation & Management
+**Requirement**: The system must support multiple companies, each with its own users and projects.
+
+**Functional Requirements**:
+- First user creates a company on signup
+- Admins can manage company info (name, settings)
+- Admins can invite/manage users in their company
+- Users can only belong to one company (MVP)
+- Company selection/join flow for users
+
+**Technical Requirements**:
+- Company data stored in companies table
+- Enforce company-level data isolation (RLS)
+- All queries scoped to company_id
+
+**Acceptance Criteria**:
+- [ ] User can create a company
+- [ ] Admin can update company info
+- [ ] Admin can invite/manage users
+- [ ] Users can only see their company's data
+
+## 1. User Authentication & Management
+
+### 1.1 User Registration & Login
+**Requirement**: Users must be able to register and login securely.
+
+**Functional Requirements**:
+- Users can register with email and password
+- Users can login with email and password
+- Users can reset their password via email
+- Users can logout from any page
+- Session persistence across browser sessions
+- User must join or create a company on signup
+
+**Technical Requirements**:
+- Use Supabase Auth for authentication
+- Implement proper password validation (min 8 chars, complexity)
+- Store user sessions securely
+- Handle authentication errors gracefully
+- Users table includes company_id foreign key
+- All user queries scoped to company_id
+
+**Acceptance Criteria**:
+- [ ] User can register with valid email and password
+- [ ] User can login with correct credentials
+- [ ] User receives password reset email
+- [ ] User session persists after browser refresh
+- [ ] User can logout successfully
+- [ ] User is always associated with a company
+- [ ] User cannot access data from other companies
+
+### 1.2 User Profile Management
+**Requirement**: Users can view and edit their profile information.
+
+**Functional Requirements**:
+- Users can view their profile information
+- Users can edit their name, email, and avatar
+- Users can change their password
+- Profile changes are saved immediately
+
+**Technical Requirements**:
+- Profile data stored in Supabase users table
+- Avatar upload to Supabase storage
+- Real-time profile updates
+
+**Acceptance Criteria**:
+- [ ] User can view their profile information
+- [ ] User can edit profile fields
+- [ ] Changes are saved and reflected immediately
+- [ ] Avatar upload works correctly
+
+### 1.3 User Roles & Permissions
+**Requirement**: System supports three user roles with different permissions.
+
+**Functional Requirements**:
+- **Admin**: Can manage all projects, users, and system settings
+- **Manager**: Can manage assigned projects and tickets
+- **User**: Can view assigned projects and create/manage assigned tickets
+
+**Technical Requirements**:
+- Role-based access control (RBAC)
+- Supabase Row Level Security (RLS) policies
+- Role validation on all API endpoints
+
+**Acceptance Criteria**:
+- [ ] Admin can access all features
+- [ ] Manager can manage assigned projects
+- [ ] User can only access assigned content
+- [ ] Role changes are reflected immediately
+
+## 2. Project Management
+
+### 2.1 Project Creation
+**Requirement**: Users can create new projects with essential information.
+
+**Functional Requirements**:
+- Users can create projects with name, description, and status
+- Projects are assigned to the creating user by default
+- Project creation is immediate and requires minimal input
+- Project must be created within a company
+
+**Technical Requirements**:
+- Project data stored in Supabase projects table
+- Real-time project creation
+- Optimistic updates for better UX
+- Projects table includes company_id foreign key
+- All project queries scoped to company_id
+
+**Data Model**:
+```sql
+projects {
+  id: uuid (primary key)
+  name: text (required)
+  description: text
+  status: enum ('active', 'archived', 'completed')
+  company_id: uuid (foreign key to companies)
+  created_by: uuid (foreign key to users)
+  created_at: timestamp
+  updated_at: timestamp
+}
+```
+
+**Acceptance Criteria**:
+- [ ] User can create project with required fields
+- [ ] Project appears in list immediately
+- [ ] Project is assigned to creating user
+- [ ] Validation prevents empty project names
+- [ ] Project is always associated with a company
+- [ ] Project cannot be moved between companies (MVP)
+
+### 2.2 Project Listing & Management
+**Requirement**: Users can view and manage their projects.
+
+**Functional Requirements**:
+- Users can view list of projects they have access to
+- Users can edit project details
+- Users can archive/complete projects
+- Projects are sorted by recent activity
+- Search and filter projects by name/status
+
+**Technical Requirements**:
+- Pagination for large project lists
+- Real-time updates when projects change
+- Efficient querying with proper indexing
+
+**Acceptance Criteria**:
+- [ ] User can view their projects
+- [ ] User can edit project details
+- [ ] User can change project status
+- [ ] Search and filtering work correctly
+- [ ] List updates in real-time
+
+## 3. Ticket Management
+
+### 3.1 Ticket Creation
+**Requirement**: Users can create tickets within projects.
+
+**Functional Requirements**:
+- Users can create tickets with title, description, and priority
+- Tickets are assigned to a specific project
+- Tickets can be assigned to team members
+- Ticket creation is quick and intuitive
+- Ticket must be created within a project
+
+**Technical Requirements**:
+- Ticket data stored in Supabase tickets table
+- Real-time ticket creation
+- Optimistic updates
+- Tickets table includes project_id foreign key
+- All ticket queries scoped to project_id (and thus company)
+
+**Data Model**:
+```sql
+tickets {
+  id: uuid (primary key)
+  title: text (required)
+  description: text
+  status: enum ('new', 'in_progress', 'review', 'done')
+  priority: enum ('low', 'medium', 'high', 'critical')
+  project_id: uuid (foreign key to projects)
+  assigned_to: uuid (foreign key to users)
+  created_by: uuid (foreign key to users)
+  created_at: timestamp
+  updated_at: timestamp
+}
+```
+
+**Acceptance Criteria**:
+- [ ] User can create ticket with required fields
+- [ ] Ticket is assigned to correct project
+- [ ] Ticket can be assigned to team member
+- [ ] Ticket appears in list immediately
+- [ ] Ticket is always associated with a project
+- [ ] Ticket cannot be moved between projects (MVP)
+
+### 3.2 Ticket Management & Workflow
+**Requirement**: Users can manage tickets through a defined workflow.
+
+**Functional Requirements**:
+- Tickets follow status workflow: New → In Progress → Review → Done
+- Users can update ticket status
+- Users can edit ticket details
+- Users can add comments to tickets
+- Ticket history is tracked
+
+**Technical Requirements**:
+- Status transitions are validated
+- Ticket history stored in separate table
+- Real-time status updates
+
+**Acceptance Criteria**:
+- [ ] User can change ticket status
+- [ ] Status changes follow workflow rules
+- [ ] User can edit ticket details
+- [ ] Comments are saved and displayed
+- [ ] Ticket history is maintained
+
+### 3.3 Ticket Listing & Search
+**Requirement**: Users can view and search tickets efficiently.
+
+**Functional Requirements**:
+- Users can view tickets by project
+- Users can filter tickets by status, priority, assignee
+- Users can search tickets by title/description
+- Tickets are sorted by priority and creation date
+- Pagination for large ticket lists
+
+**Technical Requirements**:
+- Efficient database queries with proper indexing
+- Real-time updates when tickets change
+- Search functionality with full-text search
+
+**Acceptance Criteria**:
+- [ ] User can view tickets by project
+- [ ] Filtering works correctly
+- [ ] Search returns relevant results
+- [ ] List updates in real-time
+- [ ] Pagination works for large lists
+
+## 4. Time Tracking
+
+### 4.1 Timer Functionality
+**Requirement**: Users can track time spent on tickets using a timer.
+
+**Functional Requirements**:
+- Users can start/stop timer for specific tickets
+- Timer shows elapsed time in real-time
+- Users can pause and resume timer
+- Timer data is saved automatically
+- Only one timer can be active per user
+
+**Technical Requirements**:
+- Timer state managed in Zustand store
+- Real-time timer updates
+- Automatic time entry creation
+- Browser storage for timer persistence
+
+**Data Model**:
+```sql
+time_entries {
+  id: uuid (primary key)
+  ticket_id: uuid (foreign key to tickets)
+  user_id: uuid (foreign key to users)
+  start_time: timestamp
+  end_time: timestamp
+  duration: interval
+  description: text
+  created_at: timestamp
+}
+```
+
+**Acceptance Criteria**:
+- [ ] User can start timer for ticket
+- [ ] Timer shows elapsed time accurately
+- [ ] User can stop timer
+- [ ] Time entry is saved automatically
+- [ ] Only one timer active per user
+
+### 4.2 Time Entry Management
+**Requirement**: Users can view and manage their time entries.
+
+**Functional Requirements**:
+- Users can view time entries by ticket
+- Users can edit time entry descriptions
+- Users can delete time entries
+- Time entries show duration and date
+- Time entries are sorted by date
+
+**Technical Requirements**:
+- Time entry CRUD operations
+- Duration calculations
+- Real-time updates
+
+**Acceptance Criteria**:
+- [ ] User can view time entries
+- [ ] User can edit time entry details
+- [ ] User can delete time entries
+- [ ] Duration calculations are accurate
+- [ ] List updates in real-time
+
+## 5. Dashboard
+
+### 5.1 Main Dashboard
+**Requirement**: Users can view key metrics and recent activity.
+
+**Functional Requirements**:
+- Dashboard shows user's projects and tickets
+- Dashboard displays recent activity
+- Dashboard shows time tracking summary
+- Dashboard is personalized per user
+- Dashboard loads quickly
+
+**Technical Requirements**:
+- Efficient data aggregation
+- Real-time dashboard updates
+- Responsive design for all screen sizes
+
+**Acceptance Criteria**:
+- [ ] Dashboard loads within 2 seconds
+- [ ] Shows user's projects and tickets
+- [ ] Displays recent activity
+- [ ] Shows time tracking summary
+- [ ] Updates in real-time
+
+### 5.2 Key Metrics
+**Requirement**: Dashboard displays actionable metrics.
+
+**Functional Requirements**:
+- Total projects count
+- Active tickets count
+- Time tracked today/this week
+- Recent ticket updates
+- Project progress indicators
+
+**Technical Requirements**:
+- Efficient metric calculations
+- Cached metric data
+- Real-time metric updates
+
+**Acceptance Criteria**:
+- [ ] Metrics are accurate
+- [ ] Metrics update in real-time
+- [ ] Metrics load quickly
+- [ ] Metrics are relevant to user
+
+## 6. Search & Navigation
+
+### 6.1 Global Search
+**Requirement**: Users can search across projects and tickets.
+
+**Functional Requirements**:
+- Users can search by project name or ticket title
+- Search results are relevant and fast
+- Search works across user's accessible content
+- Search history is maintained
+
+**Technical Requirements**:
+- Full-text search implementation
+- Search result ranking
+- Search query optimization
+
+**Acceptance Criteria**:
+- [ ] Search returns relevant results
+- [ ] Search is fast (< 500ms)
+- [ ] Search works across projects and tickets
+- [ ] Search history is maintained
+
+### 6.2 Navigation
+**Requirement**: Users can navigate between features easily.
+
+**Functional Requirements**:
+- Clear navigation between projects, tickets, and dashboard
+- Breadcrumb navigation
+- Quick access to recent items
+- Responsive navigation for mobile
+
+**Technical Requirements**:
+- Next.js App Router implementation
+- Responsive navigation design
+- Keyboard navigation support
+
+**Acceptance Criteria**:
+- [ ] Navigation is intuitive
+- [ ] Breadcrumbs work correctly
+- [ ] Quick access works
+- [ ] Mobile navigation is usable
+
+## 🎨 User Interface Requirements
+
+### 7.1 Design System
+**Requirement**: Consistent and accessible user interface.
+
+**Functional Requirements**:
+- Use shadcn/ui components consistently
+- Implement responsive design
+- Support light and dark themes
+- Ensure accessibility compliance (WCAG 2.1)
+
+**Technical Requirements**:
+- Tailwind CSS for styling
+- shadcn/ui component library
+- Theme switching functionality
+- Accessibility testing
+
+**Acceptance Criteria**:
+- [ ] UI is consistent across pages
+- [ ] Responsive design works on all devices
+- [ ] Theme switching works
+- [ ] Accessibility requirements met
+
+### 7.2 User Experience
+**Requirement**: Intuitive and efficient user experience.
+
+**Functional Requirements**:
+- Loading states for all async operations
+- Error handling with user-friendly messages
+- Success confirmations for actions
+- Keyboard shortcuts for common actions
+
+**Technical Requirements**:
+- Optimistic updates for better UX
+- Error boundaries for graceful failures
+- Toast notifications for feedback
+
+**Acceptance Criteria**:
+- [ ] Loading states are clear
+- [ ] Error messages are helpful
+- [ ] Success feedback is provided
+- [ ] Keyboard shortcuts work
+
+## 🔧 Technical Requirements
+
+### 8.1 Performance
+**Requirement**: Fast and responsive application.
+
+**Functional Requirements**:
+- Page load time < 2 seconds
+- API response time < 500ms
+- Real-time updates < 1 second
+- Smooth animations and transitions
+
+**Technical Requirements**:
+- Next.js optimization features
+- Supabase query optimization
+- Client-side caching
+- Image optimization
+
+**Acceptance Criteria**:
+- [ ] Pages load within 2 seconds
+- [ ] API responses are fast
+- [ ] Real-time updates are quick
+- [ ] Animations are smooth
+
+### 8.2 Security
+**Requirement**: Secure data handling and user privacy.
+
+**Functional Requirements**:
+- All data is encrypted in transit and at rest
+- User authentication is secure
+- Role-based access control is enforced
+- Data privacy is maintained
+
+**Technical Requirements**:
+- Supabase security features
+- Row Level Security (RLS) policies
+- Input validation and sanitization
+- HTTPS enforcement
+
+**Acceptance Criteria**:
+- [ ] Data is encrypted
+- [ ] Authentication is secure
+- [ ] Access control works
+- [ ] Privacy is maintained
+
+### 8.3 Reliability
+**Requirement**: Stable and reliable application.
+
+**Functional Requirements**:
+- 99% uptime
+- Graceful error handling
+- Data backup and recovery
+- Monitoring and alerting
+
+**Technical Requirements**:
+- Error boundaries
+- Retry mechanisms
+- Supabase backup features
+- Vercel monitoring
+
+**Acceptance Criteria**:
+- [ ] Application is stable
+- [ ] Errors are handled gracefully
+- [ ] Data is backed up
+- [ ] Monitoring is in place
+
+## 📊 Success Metrics
+
+### Technical Metrics
+- Page load time: < 2 seconds
+- API response time: < 500ms
+- Uptime: > 99%
+- Error rate: < 1%
+
+### User Metrics
+- User registration completion: > 80%
+- Daily active users
+- Time tracking accuracy: > 95%
+- Ticket resolution time
+
+### Business Metrics
+- User adoption rate
+- Feature usage statistics
+- User satisfaction scores
+- Support ticket volume
+
+## 🚀 Launch Criteria
+
+### MVP Launch Requirements
+- [ ] User authentication works reliably
+- [ ] Project creation and management functions
+- [ ] Ticket creation and workflow operates correctly
+- [ ] Time tracking is accurate and easy to use
+- [ ] Dashboard provides useful insights
+- [ ] Search and navigation work properly
+- [ ] UI is responsive and accessible
+- [ ] Performance meets requirements
+- [ ] Security requirements are met
+- [ ] Basic testing is complete
+
+### Post-Launch Features (Future Releases)
+- Advanced reporting and analytics
+- File attachments for tickets
+- Email notifications
+- Custom workflows
+- API integrations
+- Mobile application
+- Advanced time reports
+- Real-time notifications
+
+## 📝 Assumptions and Constraints
+
+### Assumptions
+- Users have basic computer literacy
+- Users work in teams of 2-50 people
+- Users primarily use desktop/laptop computers
+- Users need to track time for billing or productivity
+- Users want simple, intuitive interfaces
+
+### Constraints
+- MVP must be completed within 6 weeks
+- Team size is limited to 2-3 developers
+- Budget constraints limit third-party integrations
+- Must work with existing Supabase free tier initially
+- Must be deployable on Vercel
+
+## 🔄 Future Considerations
+
+### Scalability
+- Support for larger teams (100+ users)
+- Multi-tenant architecture
+- Advanced performance optimization
+- Mobile application development
+
+### Integration
+- Third-party tool integrations
+- API for external access
+- Webhook support
+- SSO integration
+
+### Advanced Features
+- Custom workflows
+- Advanced reporting
+- Time analytics
+- Project templates
+
+---
+
+**Document Version**: 1.0
+**Last Updated**: [Current Date]
+**Next Review**: [Date + 2 weeks] 
