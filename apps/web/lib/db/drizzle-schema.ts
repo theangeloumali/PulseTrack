@@ -1,5 +1,5 @@
 // Drizzle schema for migrations only - not used at runtime
-import { pgTable, uuid, text, timestamp, integer, unique } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, text, timestamp, integer, unique, decimal, foreignKey } from 'drizzle-orm/pg-core';
 
 // Companies table
 export const companies = pgTable('companies', {
@@ -23,11 +23,21 @@ export const users = pgTable(
 		company_id: uuid('company_id')
 			.notNull()
 			.references(() => companies.id, { onDelete: 'cascade' }),
+		hourly_rate: decimal('hourly_rate', { precision: 10, scale: 2 }), // Hourly rate in dollars
+		status: text('status').default('active'), // 'active' | 'inactive'
+		invited_by: uuid('invited_by'), // Self-referencing FK defined below
+		invited_at: timestamp('invited_at', { withTimezone: true }), // When the invitation was sent
 		created_at: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 		updated_at: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 	},
 	(table) => ({
 		emailCompanyUnique: unique().on(table.email, table.company_id),
+		// Self-referencing foreign key for invited_by
+		invitedByFK: foreignKey({
+			columns: [table.invited_by],
+			foreignColumns: [table.id],
+			name: 'users_invited_by_fkey'
+		}).onDelete('set null'),
 	})
 ).enableRLS();
 
@@ -46,6 +56,25 @@ export const projects = pgTable('projects', {
 	created_at: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 	updated_at: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 }).enableRLS();
+
+// Project members table (many-to-many relationship between projects and users)
+export const projectMembers = pgTable(
+	'project_members',
+	{
+		id: uuid('id').primaryKey().defaultRandom(),
+		project_id: uuid('project_id')
+			.notNull()
+			.references(() => projects.id, { onDelete: 'cascade' }),
+		user_id: uuid('user_id')
+			.notNull()
+			.references(() => users.id, { onDelete: 'cascade' }),
+		role: text('role').default('member'), // 'lead' | 'member'
+		created_at: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+	},
+	(table) => ({
+		projectUserUnique: unique().on(table.project_id, table.user_id),
+	})
+).enableRLS();
 
 // Tickets table
 export const tickets = pgTable('tickets', {

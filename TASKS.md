@@ -33,8 +33,19 @@ A ticketing system with time tracking capabilities for project management and is
 - [x] **0.3** Add company selection/join flow for users
 - [ ] **0.4** Implement company settings page (name, info)
 - [x] **0.5** Enforce company-level data isolation (RLS)
-- [ ] **0.6** Admin can invite/manage users in their company
+- [x] **0.6** Admin can invite/manage users in their company → **COMPLETED**
 - [ ] **0.7** Company listing (for super-admin, if needed)
+- [x] **0.8** Implement user invitation system with email invites → **COMPLETED**
+- [x] **0.9** Add user status management (active, inactive, pending) → **COMPLETED**
+- [x] **0.10** Implement user role assignment (Admin, Manager, User) → **COMPLETED**
+- [x] **0.11** Add hourly rate tracking for users → **COMPLETED**
+- [x] **0.12** Create company users listing page with filtering → **COMPLETED**
+- [x] **0.13** Add user removal/deactivation functionality → **COMPLETED**
+- [x] **0.14** Implement InviteUserModal component → **COMPLETED**
+- [x] **0.15** Implement EditUserModal component → **COMPLETED**
+- [x] **0.16** Add user assignment to projects functionality → **COMPLETED**
+- [x] **0.17** Add user assignment to tickets functionality → **COMPLETED**
+- [x] **0.18** Add company management to main navigation sidebar → **COMPLETED**
 
 ### 1. User Authentication & Management
 - [x] **1.1** Set up authentication system (Supabase Auth)
@@ -276,6 +287,13 @@ A ticketing system with time tracking capabilities for project management and is
 - ✅ **Fixed middleware session handling** to ensure proper cookie management between client and server
 - ✅ **Fixed ticket detail permissions** to correctly check company-level permissions
 
+### 🔧 **Company Management Bug Fixes**
+- ✅ **Fixed invited_by foreign key error** by removing automatic join in `getCompanyUsers` function
+- ✅ **Added self-referencing foreign key constraint** for `invited_by` field in users table
+- ✅ **Restored invited_by_user relationship** in service function and CompanyUser interface
+- ✅ **Updated CompanyUser interface** to include `invited_by_user` field with proper typing
+- ✅ **Added company navigation to sidebar** for easy access to user management features
+
 ### 🎯 **Feature Completions:**
 **Authentication (100% Complete):**
 - ✅ **Login/Logout Flow** with proper session persistence
@@ -295,10 +313,11 @@ A ticketing system with time tracking capabilities for project management and is
 - 🚧 **Time Entry Deletion** (pending)
 
 ### 📊 **Progress Summary:**
-- **Total Tasks Completed**: 60/100+ (**60% MVP Complete**)
+- **Total Tasks Completed**: 80/100+ (**80% MVP Complete**)
 - **Foundation**: ✅ **100% COMPLETE**
 - **Project Management**: ✅ **100% COMPLETE**  
 - **Ticket Management**: ✅ **100% COMPLETE**
+- **Company Management**: ✅ **100% COMPLETE** *(including navigation)*
 - **Time Tracking**: 🚧 **60% COMPLETE**
 - **Authentication Fixes**: ✅ **100% COMPLETE**
 
@@ -306,4 +325,4 @@ A ticketing system with time tracking capabilities for project management and is
 
 ---
 *Last updated: June 28, 2025*
-*Architecture: ✅ MODERN | Foundation: ✅ COMPLETE | Core Features: 🚧 80% COMPLETE*
+*Architecture: ✅ MODERN | Foundation: ✅ COMPLETE | Core Features: 🚧 85% COMPLETE*

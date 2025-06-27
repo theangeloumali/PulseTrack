@@ -33,6 +33,10 @@ export interface User extends BaseRecord {
   avatar_url?: string | null
   role: UserRole
   company_id: string
+  hourly_rate?: number | null // Hourly rate in dollars
+  status?: 'active' | 'inactive' // User status within company
+  invited_by?: string | null // ID of user who invited this user
+  invited_at?: string | null // When the invitation was sent
 }
 
 export interface NewUser {
@@ -60,6 +64,24 @@ export interface NewProject {
   status?: ProjectStatus
   company_id: string
   owner_id: string
+}
+
+// Project member types (many-to-many relationship)
+export interface ProjectMember extends BaseRecord {
+  project_id: string
+  user_id: string
+  role: 'lead' | 'member'
+}
+
+export interface NewProjectMember {
+  project_id: string
+  user_id: string
+  role?: 'lead' | 'member'
+}
+
+// Project member with user relation
+export interface ProjectMemberWithUser extends ProjectMember {
+  user: User
 }
 
 // Ticket types

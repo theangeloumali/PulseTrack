@@ -8,6 +8,27 @@
       "when": 1751007160862,
       "tag": "0000_premium_sleeper",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1751045163397,
+      "tag": "0001_bizarre_tenebrous",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1751045887758,
+      "tag": "0002_open_captain_cross",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1751047315820,
+      "tag": "0003_ambitious_makkari",
+      "breakpoints": true
     }
   ]
 }

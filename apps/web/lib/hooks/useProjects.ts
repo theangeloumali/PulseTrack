@@ -5,7 +5,12 @@ import {
   updateProject, 
   deleteProject,
   getProjectById,
-  getProjectsWithTicketCounts 
+  getProjectsWithTicketCounts,
+  addProjectMember,
+  removeProjectMember,
+  getProjectMembers,
+  getUserProjects,
+  updateProjectMemberRole
 } from '@/lib/db/service';
 import { NewProject, Project } from '@/lib/db/schema';
 import { useAuthStore } from '@/lib/stores/auth';
@@ -17,6 +22,8 @@ export const projectKeys = {
   list: (companyId: string) => [...projectKeys.lists(), companyId] as const,
   details: () => [...projectKeys.all, 'detail'] as const,
   detail: (id: string) => [...projectKeys.details(), id] as const,
+  members: (projectId: string) => [...projectKeys.all, 'members', projectId] as const,
+  userProjects: (userId: string) => [...projectKeys.all, 'userProjects', userId] as const,
 };
 
 // Projects list query
@@ -126,5 +133,84 @@ export function useProjectsWithTicketCountsQuery() {
     },
     enabled: !!user?.company_id,
     staleTime: 1000 * 60 * 5, // 5 minutes
+  });
+}
+
+// Project member hooks
+
+// Get project members
+export function useProjectMembersQuery(projectId: string) {
+  return useQuery({
+    queryKey: projectKeys.members(projectId),
+    queryFn: () => getProjectMembers(projectId),
+    enabled: !!projectId,
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
+}
+
+// Get user's projects
+export function useUserProjectsQuery(userId?: string) {
+  const { user } = useAuthStore();
+  const targetUserId = userId || user?.id;
+  
+  return useQuery({
+    queryKey: projectKeys.userProjects(targetUserId || ''),
+    queryFn: () => getUserProjects(targetUserId!),
+    enabled: !!targetUserId,
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
+}
+
+// Add project member
+export function useAddProjectMember() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: ({ projectId, userId, role = 'member' }: { 
+      projectId: string; 
+      userId: string; 
+      role?: 'lead' | 'member' 
+    }) => addProjectMember(projectId, userId, role),
+    onSuccess: (_, { projectId, userId }) => {
+      // Invalidate project members query
+      queryClient.invalidateQueries({ queryKey: projectKeys.members(projectId) });
+      // Invalidate user projects query
+      queryClient.invalidateQueries({ queryKey: projectKeys.userProjects(userId) });
+    },
+  });
+}
+
+// Remove project member
+export function useRemoveProjectMember() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: ({ projectId, userId }: { projectId: string; userId: string }) => 
+      removeProjectMember(projectId, userId),
+    onSuccess: (_, { projectId, userId }) => {
+      // Invalidate project members query
+      queryClient.invalidateQueries({ queryKey: projectKeys.members(projectId) });
+      // Invalidate user projects query
+      queryClient.invalidateQueries({ queryKey: projectKeys.userProjects(userId) });
+    },
+  });
+}
+
+// Update project member role
+export function useUpdateProjectMemberRole() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: ({ projectId, userId, role }: { 
+      projectId: string; 
+      userId: string; 
+      role: 'lead' | 'member' 
+    }) => updateProjectMemberRole(projectId, userId, role),
+    onSuccess: (_, { projectId, userId }) => {
+      // Invalidate project members query
+      queryClient.invalidateQueries({ queryKey: projectKeys.members(projectId) });
+      // Invalidate user projects query
+      queryClient.invalidateQueries({ queryKey: projectKeys.userProjects(userId) });
+    },
   });
 }

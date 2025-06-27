@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/db'
-import type { NewCompany, NewUser, NewProject, NewTicket, NewTimeEntry, NewComment } from '@/lib/db/schema'
+import type { NewCompany, NewUser, NewProject, NewProjectMember, NewTicket, NewTimeEntry, NewComment } from '@/lib/db/schema'
 import {
   userBasicFields,
   userWithCompanyFields,
@@ -152,6 +152,83 @@ export async function deleteProject(id: string) {
     .eq('id', id)
   
   if (error) throw error
+}
+
+// Project member operations
+export async function addProjectMember(projectId: string, userId: string, role: 'lead' | 'member' = 'member') {
+  const { data, error } = await supabase
+    .from('project_members')
+    .insert({
+      project_id: projectId,
+      user_id: userId,
+      role
+    })
+    .select()
+    .single()
+  
+  if (error) throw error
+  return data
+}
+
+export async function removeProjectMember(projectId: string, userId: string) {
+  const { error } = await supabase
+    .from('project_members')
+    .delete()
+    .eq('project_id', projectId)
+    .eq('user_id', userId)
+  
+  if (error) throw error
+}
+
+export async function getProjectMembers(projectId: string) {
+  const { data, error } = await supabase
+    .from('project_members')
+    .select(`
+      id,
+      role,
+      created_at,
+      user_id,
+      users!inner(${userBasicFields})
+    `)
+    .eq('project_id', projectId)
+    .order('created_at', { ascending: true })
+  
+  if (error) throw error
+  
+  // Transform the data to have the user as a single object
+  const transformedData = data?.map(member => ({
+    ...member,
+    user: Array.isArray(member.users) ? member.users[0] : member.users
+  })) || []
+  
+  return transformedData
+}
+
+export async function getUserProjects(userId: string) {
+  const { data, error } = await supabase
+    .from('project_members')
+    .select(`
+      role,
+      projects!project_members_project_id_projects_id_fk(${projectBasicFields})
+    `)
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false })
+  
+  if (error) throw error
+  return data || []
+}
+
+export async function updateProjectMemberRole(projectId: string, userId: string, role: 'lead' | 'member') {
+  const { data, error } = await supabase
+    .from('project_members')
+    .update({ role })
+    .eq('project_id', projectId)
+    .eq('user_id', userId)
+    .select()
+    .single()
+  
+  if (error) throw error
+  return data
 }
 
 // Ticket operations
@@ -383,4 +460,156 @@ export async function getProjectsWithTicketCounts(companyId: string) {
   }));
   
   return transformedData;
+}
+
+// Company User Management Operations
+
+/**
+ * Get all users in a company with their details
+ */
+export async function getCompanyUsers(companyId: string) {
+  const { data, error } = await supabase
+    .from('users')
+    .select(`
+      id,
+      email,
+      first_name,
+      last_name,
+      avatar_url,
+      role,
+      status,
+      hourly_rate,
+      invited_by,
+      invited_at,
+      created_at,
+      updated_at,
+      invited_by_user:invited_by (
+        id,
+        first_name,
+        last_name,
+        email
+      )
+    `)
+    .eq('company_id', companyId)
+    .order('created_at', { ascending: false })
+  
+  if (error) throw error
+  return data || []
+}
+
+/**
+ * Update user role and status
+ */
+export async function updateUserRole(userId: string, role: 'admin' | 'manager' | 'user') {
+  const { data, error } = await supabase
+    .from('users')
+    .update({ role, updated_at: new Date().toISOString() })
+    .eq('id', userId)
+    .select()
+    .single()
+  
+  if (error) throw error
+  return data
+}
+
+/**
+ * Update user status (active/inactive)
+ */
+export async function updateUserStatus(userId: string, status: 'active' | 'inactive') {
+  const { data, error } = await supabase
+    .from('users')
+    .update({ status, updated_at: new Date().toISOString() })
+    .eq('id', userId)
+    .select()
+    .single()
+  
+  if (error) throw error
+  return data
+}
+
+/**
+ * Update user hourly rate
+ */
+export async function updateUserHourlyRate(userId: string, hourlyRate: number | null) {
+  const { data, error } = await supabase
+    .from('users')
+    .update({ hourly_rate: hourlyRate, updated_at: new Date().toISOString() })
+    .eq('id', userId)
+    .select()
+    .single()
+  
+  if (error) throw error
+  return data
+}
+
+/**
+ * Remove user from company (set as inactive)
+ */
+export async function removeUserFromCompany(userId: string) {
+  const { data, error } = await supabase
+    .from('users')
+    .update({ 
+      status: 'inactive', 
+      updated_at: new Date().toISOString() 
+    })
+    .eq('id', userId)
+    .select()
+    .single()
+  
+  if (error) throw error
+  return data
+}
+
+/**
+ * Get users available for assignment (active users in company)
+ */
+export async function getAssignableUsers(companyId: string) {
+  const { data, error } = await supabase
+    .from('users')
+    .select(`
+      id,
+      first_name,
+      last_name,
+      email,
+      role,
+      avatar_url
+    `)
+    .eq('company_id', companyId)
+    .eq('status', 'active')
+    .order('first_name', { ascending: true })
+  
+  if (error) throw error
+  return data || []
+}
+
+/**
+ * Invite user to company (creates user record with invited status)
+ */
+export async function inviteUserToCompany(data: {
+  email: string
+  role: 'admin' | 'manager' | 'user'
+  companyId: string
+  invitedBy: string
+  firstName?: string
+  lastName?: string
+  hourlyRate?: number
+}) {
+  const { data: result, error } = await supabase
+    .from('users')
+    .insert({
+      email: data.email,
+      role: data.role,
+      company_id: data.companyId,
+      invited_by: data.invitedBy,
+      invited_at: new Date().toISOString(),
+      first_name: data.firstName || null,
+      last_name: data.lastName || null,
+      hourly_rate: data.hourlyRate || null,
+      status: 'inactive' // Will be activated when they accept invitation
+    })
+    .select()
+    .single()
+  
+  if (error) throw error
+  return result
 }

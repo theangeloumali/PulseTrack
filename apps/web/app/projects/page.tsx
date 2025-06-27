@@ -10,7 +10,8 @@ import { Badge } from '@workspace/ui/components/badge';
 import { useProjectsWithTicketCountsQuery } from '@/lib/hooks/useProjects';
 import { useAuthStore } from '@/lib/stores/auth';
 import { CreateProjectModal } from '@/components/modals/create-project-modal';
-import { Plus, Search, Loader2, FolderOpen, Calendar, AlertCircle, User } from 'lucide-react';
+import { ProjectMembersModal } from '@/components/modals/project-members-modal';
+import { Plus, Search, Loader2, FolderOpen, Calendar, AlertCircle, User, Users } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,6 +19,7 @@ export default function ProjectsPage() {
 	const [searchQuery, setSearchQuery] = useState('');
 	const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'archived' | 'completed'>('all');
 	const [showCreateProjectModal, setShowCreateProjectModal] = useState(false);
+	const [membersModalProject, setMembersModalProject] = useState<{ id: string; name: string } | null>(null);
 	
 	const { user } = useAuthStore();
 	const router = useRouter();
@@ -181,34 +183,59 @@ export default function ProjectsPage() {
 					) : (
 						<div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
 							{sortedProjects.map((project) => (
-								<Card key={project.id} className="hover:shadow-lg transition-shadow cursor-pointer">
-									<Link href={`/projects/${project.id}`}>
-										<CardHeader>
-											<div className="flex items-start justify-between">
-												<CardTitle className="text-lg">{project.name}</CardTitle>
-												<Badge className={`${getStatusColor(project.status)} border-0`}>
-													{project.status}
-												</Badge>
-											</div>
-											{project.description && (
-												<CardDescription className="line-clamp-2">
+								<Card key={project.id} className="hover:shadow-lg transition-shadow">
+									<CardHeader>
+										<div className="flex items-start justify-between">
+											<Link href={`/projects/${project.id}`} className="flex-1">
+												<CardTitle className="text-lg hover:text-blue-600 transition-colors">
+													{project.name}
+												</CardTitle>
+											</Link>
+											<Badge className={`${getStatusColor(project.status)} border-0 ml-2`}>
+												{project.status}
+											</Badge>
+										</div>
+										{project.description && (
+											<Link href={`/projects/${project.id}`}>
+												<CardDescription className="line-clamp-2 hover:text-gray-700 transition-colors">
 													{project.description}
 												</CardDescription>
-											)}
-										</CardHeader>
-										<CardContent>
-											<div className="flex items-center justify-between text-sm text-gray-500">
-												<div className="flex items-center">
-													<Calendar className="h-4 w-4 mr-1" />
-													{new Date(project.created_at).toLocaleDateString()}
-												</div>
-												<div className="flex items-center">
-													<User className="h-4 w-4 mr-1" />
-													{project.ticket_count || 0} tickets
-												</div>
+											</Link>
+										)}
+									</CardHeader>
+									<CardContent>
+										<div className="flex items-center justify-between text-sm text-gray-500 mb-4">
+											<div className="flex items-center">
+												<Calendar className="h-4 w-4 mr-1" />
+												{new Date(project.created_at).toLocaleDateString()}
 											</div>
-										</CardContent>
-									</Link>
+											<div className="flex items-center">
+												<User className="h-4 w-4 mr-1" />
+												{project.ticket_count || 0} tickets
+											</div>
+										</div>
+										
+										{/* Action buttons */}
+										<div className="flex gap-2">
+											<Link href={`/projects/${project.id}`} className="flex-1">
+												<Button variant="outline" size="sm" className="w-full">
+													View Project
+												</Button>
+											</Link>
+											<Button 
+												variant="outline" 
+												size="sm"
+												onClick={(e) => {
+													e.preventDefault();
+													setMembersModalProject({ id: project.id, name: project.name });
+												}}
+												className="flex items-center gap-1"
+											>
+												<Users className="h-4 w-4" />
+												Members
+											</Button>
+										</div>
+									</CardContent>
 								</Card>
 							))}
 						</div>
@@ -221,6 +248,16 @@ export default function ProjectsPage() {
 				isOpen={showCreateProjectModal} 
 				onClose={() => setShowCreateProjectModal(false)} 
 			/>
+			
+			{/* Project Members Modal */}
+			{membersModalProject && (
+				<ProjectMembersModal
+					isOpen={!!membersModalProject}
+					onClose={() => setMembersModalProject(null)}
+					projectId={membersModalProject.id}
+					projectName={membersModalProject.name}
+				/>
+			)}
 		</div>
 	);
 }

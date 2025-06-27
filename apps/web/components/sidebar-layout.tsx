@@ -18,7 +18,8 @@ import {
   X,
   Plus,
   Search,
-  Bug
+  Bug,
+  Users
 } from 'lucide-react';
 import { cn } from '@workspace/ui/lib/utils';
 
@@ -31,6 +32,7 @@ const navigation = [
   { name: 'Projects', href: '/projects', icon: FolderOpen },
   { name: 'Tickets', href: '/tickets', icon: Ticket },
   { name: 'Time Tracking', href: '/time-tracking', icon: Clock },
+  { name: 'Company', href: '/company/users', icon: Users },
   { name: 'Diagnostics', href: '/diagnostics', icon: Bug },
   { name: 'Settings', href: '/settings', icon: Settings },
 ];
@@ -120,7 +122,9 @@ export function SidebarLayout({ children }: SidebarLayoutProps) {
           {/* Navigation */}
           <nav className="flex-1 px-4 py-4 space-y-1 overflow-y-auto">
             {navigation.map((item) => {
-              const isActive = pathname.startsWith(item.href);
+              const isActive = item.href === '/company/users' 
+                ? pathname.startsWith('/company')
+                : pathname.startsWith(item.href);
               return (
                 <Link
                   key={item.name}
