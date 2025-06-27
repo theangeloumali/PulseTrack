@@ -9,6 +9,7 @@ import { Badge } from '@workspace/ui/components/badge';
 import { useAuthStore } from '@/lib/stores/auth';
 import { useProjectStore } from '@/lib/stores/project';
 import { useProjectQuery } from '@/lib/hooks/useProjects';
+import { useRecentProjectTicketsQuery, useProjectTicketCountQuery } from '@/lib/hooks/useTickets';
 import { CreateTicketModal } from '@/components/modals/create-ticket-modal';
 import { 
 	ArrowLeft, 
@@ -34,6 +35,7 @@ interface Props {
 
 export default function ProjectDetailPage({ params }: Props) {
 	const resolvedParams = use(params);
+	
 	const [showCreateTicketModal, setShowCreateTicketModal] = useState(false);
 	
 	const { user } = useAuthStore();
@@ -48,30 +50,40 @@ export default function ProjectDetailPage({ params }: Props) {
 		error,
 		isError
 	} = useProjectQuery(resolvedParams.id);
+	
+	// Use React Query for recent tickets
+	const {
+		data: recentTickets = [],
+		isLoading: ticketsLoading
+	} = useRecentProjectTicketsQuery(resolvedParams.id, 5);
+	
+	// Use React Query for ticket count
+	const {
+		data: ticketCount = 0,
+		isLoading: countLoading
+	} = useProjectTicketCountQuery(resolvedParams.id);
 
-	// Handle URL parameter for opening ticket creation modal
+	// Combine all effects for better performance
 	useEffect(() => {
+		// Handle URL parameter for opening ticket creation modal
 		const openCreateTicket = searchParams.get('openCreateTicket');
 		if (openCreateTicket === 'true') {
 			setShowCreateTicketModal(true);
 			// Clean up URL
 			router.replace(`/projects/${resolvedParams.id}`, { scroll: false });
 		}
-	}, [searchParams, resolvedParams.id, router]);
-
-	// Update Zustand store when project data changes
-	useEffect(() => {
+		
+		// Update Zustand store when project data changes
 		if (project) {
 			setSelectedProject(project);
+			
+			// Security check: ensure project belongs to user's company (PRD requirement)
+			if (user && project.company_id !== user.company_id) {
+				router.push('/projects');
+				return;
+			}
 		}
-	}, [project, setSelectedProject]);
-
-	// Security check: ensure project belongs to user's company (PRD requirement)
-	useEffect(() => {
-		if (project && user && project.company_id !== user.company_id) {
-			router.push('/projects');
-		}
-	}, [project, user, router]);
+	}, [searchParams, resolvedParams.id, router, project, setSelectedProject, user]);
 
 	const getStatusColor = (status: string) => {
 		switch (status) {
@@ -81,6 +93,36 @@ export default function ProjectDetailPage({ params }: Props) {
 				return 'bg-yellow-100 text-yellow-800';
 			case 'completed':
 				return 'bg-blue-100 text-blue-800';
+			default:
+				return 'bg-gray-100 text-gray-800';
+		}
+	};
+
+	const getTicketStatusColor = (status: string) => {
+		switch (status) {
+			case 'new':
+				return 'bg-gray-100 text-gray-800';
+			case 'in_progress':
+				return 'bg-blue-100 text-blue-800';
+			case 'review':
+				return 'bg-yellow-100 text-yellow-800';
+			case 'done':
+				return 'bg-green-100 text-green-800';
+			default:
+				return 'bg-gray-100 text-gray-800';
+		}
+	};
+
+	const getTicketPriorityColor = (priority: string) => {
+		switch (priority) {
+			case 'low':
+				return 'bg-green-100 text-green-800';
+			case 'medium':
+				return 'bg-yellow-100 text-yellow-800';
+			case 'high':
+				return 'bg-orange-100 text-orange-800';
+			case 'critical':
+				return 'bg-red-100 text-red-800';
 			default:
 				return 'bg-gray-100 text-gray-800';
 		}
@@ -169,15 +211,25 @@ export default function ProjectDetailPage({ params }: Props) {
 								<CardContent>
 									<div className="grid grid-cols-2 md:grid-cols-4 gap-4">
 										<div className="text-center p-4 bg-gray-50 rounded-lg">
-											<div className="text-2xl font-bold text-gray-900">0</div>
+											<div className="text-2xl font-bold text-gray-900">
+												{countLoading ? (
+													<Loader2 className="h-6 w-6 animate-spin mx-auto" />
+												) : (
+													ticketCount
+												)}
+											</div>
 											<div className="text-sm text-gray-500">Total Tickets</div>
 										</div>
 										<div className="text-center p-4 bg-gray-50 rounded-lg">
-											<div className="text-2xl font-bold text-green-600">0</div>
+											<div className="text-2xl font-bold text-green-600">
+												{recentTickets.filter(t => t.status === 'done').length}
+											</div>
 											<div className="text-sm text-gray-500">Completed</div>
 										</div>
 										<div className="text-center p-4 bg-gray-50 rounded-lg">
-											<div className="text-2xl font-bold text-blue-600">0</div>
+											<div className="text-2xl font-bold text-blue-600">
+												{recentTickets.filter(t => t.status === 'in_progress').length}
+											</div>
 											<div className="text-sm text-gray-500">In Progress</div>
 										</div>
 										<div className="text-center p-4 bg-gray-50 rounded-lg">
@@ -203,11 +255,54 @@ export default function ProjectDetailPage({ params }: Props) {
 									</div>
 								</CardHeader>
 								<CardContent>
-									<div className="text-center py-8 text-gray-500">
-										<FolderOpen className="mx-auto h-12 w-12 mb-4 opacity-50" />
-										<p>No tickets yet</p>
-										<p className="text-sm">Create your first ticket to get started</p>
-									</div>
+									{ticketsLoading ? (
+										<div className="text-center py-8">
+											<Loader2 className="h-8 w-8 animate-spin mx-auto" />
+											<p className="text-gray-500 mt-2">Loading tickets...</p>
+										</div>
+									) : recentTickets.length === 0 ? (
+										<div className="text-center py-8 text-gray-500">
+											<FolderOpen className="mx-auto h-12 w-12 mb-4 opacity-50" />
+											<p>No tickets yet</p>
+											<p className="text-sm">Create your first ticket to get started</p>
+										</div>
+									) : (
+										<div className="space-y-3">
+											{recentTickets.map((ticket) => (
+												<Link 
+													key={ticket.id} 
+													href={`/projects/${project.id}/tickets/${ticket.id}`}
+													className="block p-3 border rounded-lg hover:bg-gray-50 transition-colors"
+												>
+													<div className="flex items-center justify-between">
+														<div className="flex-1 min-w-0">
+															<h4 className="text-sm font-medium text-gray-900 truncate">
+																{ticket.title}
+															</h4>
+															<div className="flex items-center mt-1 space-x-2">
+																<Badge className={`text-xs ${getTicketStatusColor(ticket.status)}`}>
+																	{ticket.status.replace('_', ' ')}
+																</Badge>
+																<Badge className={`text-xs ${getTicketPriorityColor(ticket.priority)}`}>
+																	{ticket.priority}
+																</Badge>
+															</div>
+														</div>
+														<div className="text-xs text-gray-500">
+															{new Date(ticket.created_at).toLocaleDateString()}
+														</div>
+													</div>
+												</Link>
+											))}
+											<div className="pt-3 border-t">
+												<Link href={`/projects/${project.id}/tickets`}>
+													<Button variant="outline" className="w-full">
+														View All Tickets ({ticketCount})
+													</Button>
+												</Link>
+											</div>
+										</div>
+									)}
 								</CardContent>
 							</Card>
 						</div>

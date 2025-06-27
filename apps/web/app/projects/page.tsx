@@ -7,7 +7,7 @@ import { Button } from '@workspace/ui/components/button';
 import { Input } from '@workspace/ui/components/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@workspace/ui/components/card';
 import { Badge } from '@workspace/ui/components/badge';
-import { useProjectsQuery } from '@/lib/hooks/useProjects';
+import { useProjectsWithTicketCountsQuery } from '@/lib/hooks/useProjects';
 import { useAuthStore } from '@/lib/stores/auth';
 import { CreateProjectModal } from '@/components/modals/create-project-modal';
 import { Plus, Search, Loader2, FolderOpen, Calendar, AlertCircle, User } from 'lucide-react';
@@ -23,23 +23,13 @@ export default function ProjectsPage() {
 	const router = useRouter();
 	const searchParams = useSearchParams();
 	
-	// Use React Query for projects
+	// Use React Query for projects with ticket counts
 	const {
 		data: projects = [],
 		isLoading,
 		error,
 		isError
-	} = useProjectsQuery();
-
-	// Debug logging
-	console.log('Projects page - projects:', projects);
-	console.log('Projects page - projects type:', typeof projects);
-	console.log('Projects page - projects array?:', Array.isArray(projects));
-	console.log('Projects page - projects length:', projects?.length);
-	console.log('Projects page - isLoading:', isLoading);
-	console.log('Projects page - error:', error);
-	console.log('Projects page - isError:', isError);
-	console.log('Projects page - user:', user);
+	} = useProjectsWithTicketCountsQuery();
 
 	// Handle URL parameter for opening project creation modal
 	useEffect(() => {
@@ -60,10 +50,6 @@ export default function ProjectsPage() {
 		
 		return matchesSearch && matchesStatus;
 	});
-
-	// Debug filtered projects
-	console.log('Projects page - filteredProjects:', filteredProjects);
-	console.log('Projects page - filteredProjects length:', filteredProjects.length);
 
 	// Sort projects by recent activity (updated_at desc)
 	const sortedProjects = filteredProjects.sort((a, b) => 
@@ -218,8 +204,7 @@ export default function ProjectsPage() {
 												</div>
 												<div className="flex items-center">
 													<User className="h-4 w-4 mr-1" />
-													{/* TODO: Add actual ticket/member count */}
-													0 tickets
+													{project.ticket_count || 0} tickets
 												</div>
 											</div>
 										</CardContent>

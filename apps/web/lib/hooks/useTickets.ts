@@ -1,8 +1,11 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { 
   getTicketsByProject,
+  getTicketsByCompany,
   getTicketById,
   createTicket,
+  getRecentTicketsByProject,
+  getTicketCountByProject,
   // TODO: Add updateTicket, deleteTicket to service
 } from '@/lib/db/service';
 import { NewTicket, Ticket } from '@/lib/db/schema';
@@ -24,6 +27,16 @@ export function useProjectTicketsQuery(projectId: string) {
     queryFn: () => getTicketsByProject(projectId),
     enabled: !!projectId,
     staleTime: 1000 * 60 * 2, // 2 minutes (tickets change more frequently)
+  });
+}
+
+// Tickets by company query (for main tickets page)
+export function useCompanyTicketsQuery(companyId?: string) {
+  return useQuery({
+    queryKey: [...ticketKeys.all, 'company', companyId],
+    queryFn: () => getTicketsByCompany(companyId!),
+    enabled: !!companyId,
+    staleTime: 1000 * 60 * 2, // 2 minutes
   });
 }
 
@@ -57,5 +70,25 @@ export function useCreateTicketMutation() {
         (old: Ticket[] = []) => [newTicket, ...old]
       );
     },
+  });
+}
+
+// Get recent tickets for project dashboard
+export function useRecentProjectTicketsQuery(projectId: string, limit: number = 5) {
+  return useQuery({
+    queryKey: [...ticketKeys.all, 'recent', projectId, limit],
+    queryFn: () => getRecentTicketsByProject(projectId, limit),
+    enabled: !!projectId,
+    staleTime: 1000 * 60 * 2, // 2 minutes
+  });
+}
+
+// Get ticket count for project
+export function useProjectTicketCountQuery(projectId: string) {
+  return useQuery({
+    queryKey: [...ticketKeys.all, 'count', projectId],
+    queryFn: () => getTicketCountByProject(projectId),
+    enabled: !!projectId,
+    staleTime: 1000 * 60 * 2, // 2 minutes
   });
 }

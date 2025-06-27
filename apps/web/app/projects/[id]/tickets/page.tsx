@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, use } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@workspace/ui/components/button';
@@ -8,9 +8,9 @@ import { Input } from '@workspace/ui/components/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@workspace/ui/components/card';
 import { Badge } from '@workspace/ui/components/badge';
 import { useAuthStore } from '@/lib/stores/auth';
-import { useTicketStore } from '@/lib/stores/ticket';
-import { getProjectById, getTicketsByProject } from '@/lib/db/service';
-import { Project, Ticket } from '@/lib/db/schema';
+import { useProjectQuery } from '@/lib/hooks/useProjects';
+import { useProjectTicketsQuery } from '@/lib/hooks/useTickets';
+import { CreateTicketModal } from '@/components/modals/create-ticket-modal';
 import { 
 	ArrowLeft, 
 	Plus, 
@@ -27,74 +27,62 @@ import {
 export const dynamic = 'force-dynamic';
 
 interface Props {
-	params: {
+	params: Promise<{
 		id: string; // project ID
-	};
+	}>;
 }
 
 export default function ProjectTicketsPage({ params }: Props) {
-	const [project, setProject] = useState<Project | null>(null);
-	const [tickets, setTickets] = useState<Ticket[]>([]);
-	const [filteredTickets, setFilteredTickets] = useState<Ticket[]>([]);
-	const [isLoading, setIsLoading] = useState(true);
+	const resolvedParams = use(params);
+	const [showCreateTicketModal, setShowCreateTicketModal] = useState(false);
 	const [searchTerm, setSearchTerm] = useState('');
 	const [statusFilter, setStatusFilter] = useState('all');
 	const [priorityFilter, setPriorityFilter] = useState('all');
-	const [error, setError] = useState('');
 	
 	const { user } = useAuthStore();
 	const router = useRouter();
 
-	useEffect(() => {
-		loadData();
-	}, [params.id]);
+	// Use React Query for project data
+	const {
+		data: project,
+		isLoading: projectLoading,
+		error: projectError,
+		isError: isProjectError
+	} = useProjectQuery(resolvedParams.id);
 
-	useEffect(() => {
-		// Filter tickets based on search and filters
-		let filtered = tickets;
+	// Use React Query for tickets data
+	const {
+		data: tickets = [],
+		isLoading: ticketsLoading,
+		error: ticketsError,
+		isError: isTicketsError
+	} = useProjectTicketsQuery(resolvedParams.id);
 
-		if (searchTerm) {
-			filtered = filtered.filter(ticket => 
-				ticket.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-				(ticket.description && ticket.description.toLowerCase().includes(searchTerm.toLowerCase()))
-			);
-		}
+	// Debug logging
+	console.log('Tickets page - project:', project);
+	console.log('Tickets page - tickets:', tickets);
+	console.log('Tickets page - tickets length:', tickets?.length);
+	console.log('Tickets page - projectLoading:', projectLoading);
+	console.log('Tickets page - ticketsLoading:', ticketsLoading);
+	console.log('Tickets page - user:', user);
 
-		if (statusFilter !== 'all') {
-			filtered = filtered.filter(ticket => ticket.status === statusFilter);
-		}
+	// Filter tickets based on search and filters
+	const filteredTickets = (tickets || []).filter(ticket => {
+		const matchesSearch = !searchTerm || 
+			ticket.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+			(ticket.description && ticket.description.toLowerCase().includes(searchTerm.toLowerCase()));
+		
+		const matchesStatus = statusFilter === 'all' || ticket.status === statusFilter;
+		const matchesPriority = priorityFilter === 'all' || ticket.priority === priorityFilter;
+		
+		return matchesSearch && matchesStatus && matchesPriority;
+	});
 
-		if (priorityFilter !== 'all') {
-			filtered = filtered.filter(ticket => ticket.priority === priorityFilter);
-		}
-
-		setFilteredTickets(filtered);
-	}, [tickets, searchTerm, statusFilter, priorityFilter]);
-
-	const loadData = async () => {
-		try {
-			setIsLoading(true);
-			
-			// Load project
-			const projectData = await getProjectById(params.id);
-			
-			// Security check: ensure project belongs to user's company (PRD requirement)
-			if (projectData.company_id !== user?.company_id) {
-				setError('Project not found or access denied');
-				return;
-			}
-			
-			setProject(projectData);
-
-			// Load tickets for this project
-			const ticketsData = await getTicketsByProject(params.id);
-			setTickets(ticketsData);
-		} catch (err: any) {
-			setError(err.message || 'Failed to load data');
-		} finally {
-			setIsLoading(false);
-		}
-	};
+	// Security check: ensure project belongs to user's company (PRD requirement)
+	if (project && user && project.company_id !== user.company_id) {
+		router.push('/projects');
+		return null;
+	}
 
 	const getStatusColor = (status: string) => {
 		switch (status) {
@@ -140,7 +128,10 @@ export default function ProjectTicketsPage({ params }: Props) {
 		}
 	};
 
-	if (!user || isLoading) {
+	const isLoading = projectLoading || ticketsLoading;
+	const error = projectError || ticketsError;
+
+	if (isLoading) {
 		return (
 			<div className="min-h-screen bg-gray-50">
 				<div className="flex items-center justify-center py-12">
@@ -150,14 +141,16 @@ export default function ProjectTicketsPage({ params }: Props) {
 		);
 	}
 
-	if (error || !project) {
+	if (isProjectError || isTicketsError || !project) {
 		return (
 			<div className="min-h-screen bg-gray-50">
 				<div className="flex items-center justify-center py-12">
 					<Card className="w-96">
 						<CardHeader>
 							<CardTitle>Error</CardTitle>
-							<CardDescription>{error || 'Project not found'}</CardDescription>
+							<CardDescription>
+								{error?.message || 'Failed to load project or tickets'}
+							</CardDescription>
 						</CardHeader>
 						<CardContent>
 							<Link href="/projects">
@@ -188,12 +181,10 @@ export default function ProjectTicketsPage({ params }: Props) {
 								<p className="text-gray-600">Manage tickets for "{project.name}"</p>
 							</div>
 						</div>
-						<Link href={`/projects/${project.id}/tickets/new`}>
-							<Button>
-								<Plus className="h-4 w-4 mr-2" />
-								New Ticket
-							</Button>
-						</Link>
+						<Button onClick={() => setShowCreateTicketModal(true)}>
+							<Plus className="h-4 w-4 mr-2" />
+							New Ticket
+						</Button>
 					</div>
 				</div>
 			</header>
@@ -365,6 +356,13 @@ export default function ProjectTicketsPage({ params }: Props) {
 					)}
 				</div>
 			</main>
+
+			{/* Create Ticket Modal */}
+			<CreateTicketModal 
+				isOpen={showCreateTicketModal} 
+				onClose={() => setShowCreateTicketModal(false)} 
+				defaultProjectId={resolvedParams.id} 
+			/>
 		</div>
 	);
 }

@@ -1,5 +1,19 @@
 import { supabase } from '@/lib/db'
 import type { NewCompany, NewUser, NewProject, NewTicket, NewTimeEntry, NewComment } from '@/lib/db/schema'
+import {
+  userBasicFields,
+  userWithCompanyFields,
+  companyBasicFields,
+  projectBasicFields,
+  projectWithRelationsFields,
+  ticketBasicFields,
+  ticketWithUsersFields,
+  ticketWithProjectFields,
+  ticketFullFields,
+  timeEntryWithUserFields,
+  timeEntryWithTicketFields,
+  commentWithUserFields
+} from './queries'
 
 // Company operations
 export async function getCompanyById(id: string) {
@@ -50,10 +64,7 @@ export async function getUserById(id: string) {
 export async function getUserWithCompany(id: string) {
   const { data, error } = await supabase
     .from('users')
-    .select(`
-      *,
-      companies (*)
-    `)
+    .select(userWithCompanyFields)
     .eq('id', id)
     .single()
   
@@ -96,20 +107,13 @@ export async function getProjectById(id: string) {
 }
 
 export async function getProjectsByCompany(companyId: string) {
-  console.log('getProjectsByCompany called with companyId:', companyId);
-  
-  // First, let's try without the join to see if basic fetching works
   const { data, error } = await supabase
     .from('projects')
-    .select('*')
+    .select(projectWithRelationsFields)
     .eq('company_id', companyId)
     .order('created_at', { ascending: false })
   
-  console.log('Database response - data:', data);
-  console.log('Database response - error:', error);
-  
   if (error) {
-    console.error('Error fetching projects:', error);
     throw error;
   }
   return data || []
@@ -122,8 +126,11 @@ export async function createProject(data: NewProject) {
     .select()
     .single()
   
-  if (error) throw error
-  return result
+  if (error) {
+    throw error;
+  }
+  
+  return result;
 }
 
 export async function updateProject(id: string, updates: Partial<NewProject>) {
@@ -151,12 +158,7 @@ export async function deleteProject(id: string) {
 export async function getTicketById(id: string) {
   const { data, error } = await supabase
     .from('tickets')
-    .select(`
-      *,
-      projects (*),
-      assignee:users!tickets_assignee_id_fkey (*),
-      reporter:users!tickets_reporter_id_fkey (*)
-    `)
+    .select(ticketFullFields)
     .eq('id', id)
     .single()
   
@@ -167,11 +169,7 @@ export async function getTicketById(id: string) {
 export async function getTicketsByProject(projectId: string) {
   const { data, error } = await supabase
     .from('tickets')
-    .select(`
-      *,
-      assignee:users!tickets_assignee_id_fkey (*),
-      reporter:users!tickets_reporter_id_fkey (*)
-    `)
+    .select(ticketWithUsersFields)
     .eq('project_id', projectId)
     .order('created_at', { ascending: false })
   
@@ -182,12 +180,7 @@ export async function getTicketsByProject(projectId: string) {
 export async function getTicketsByCompany(companyId: string) {
   const { data, error } = await supabase
     .from('tickets')
-    .select(`
-      *,
-      projects!inner (*),
-      assignee:users!tickets_assignee_id_fkey (*),
-      reporter:users!tickets_reporter_id_fkey (*)
-    `)
+    .select(ticketWithProjectFields)
     .eq('projects.company_id', companyId)
     .order('created_at', { ascending: false })
   
@@ -206,14 +199,35 @@ export async function createTicket(data: NewTicket) {
   return result
 }
 
+// Get ticket count by project
+export async function getTicketCountByProject(projectId: string) {
+  const { count, error } = await supabase
+    .from('tickets')
+    .select('*', { count: 'exact', head: true })
+    .eq('project_id', projectId)
+  
+  if (error) throw error
+  return count || 0
+}
+
+// Get recent tickets by project (for project dashboard)
+export async function getRecentTicketsByProject(projectId: string, limit: number = 5) {
+  const { data, error } = await supabase
+    .from('tickets')
+    .select(ticketWithUsersFields)
+    .eq('project_id', projectId)
+    .order('created_at', { ascending: false })
+    .limit(limit)
+  
+  if (error) throw error
+  return data || []
+}
+
 // Time entry operations
 export async function getTimeEntriesByTicket(ticketId: string) {
   const { data, error } = await supabase
     .from('time_entries')
-    .select(`
-      *,
-      users (*)
-    `)
+    .select(timeEntryWithUserFields)
     .eq('ticket_id', ticketId)
     .order('start_time', { ascending: false })
   
@@ -224,11 +238,7 @@ export async function getTimeEntriesByTicket(ticketId: string) {
 export async function getTimeEntriesByUser(userId: string, limit?: number): Promise<any[]> {
   let query = supabase
     .from('time_entries')
-    .select(`
-      *,
-      tickets (*),
-      tickets.projects (*)
-    `)
+    .select(timeEntryWithTicketFields)
     .eq('user_id', userId)
     .order('start_time', { ascending: false })
 
@@ -257,10 +267,7 @@ export async function createTimeEntry(data: NewTimeEntry) {
 export async function getCommentsByTicket(ticketId: string) {
   const { data, error } = await supabase
     .from('comments')
-    .select(`
-      *,
-      users (*)
-    `)
+    .select(commentWithUserFields)
     .eq('ticket_id', ticketId)
     .order('created_at', { ascending: true })
   
@@ -277,4 +284,34 @@ export async function createComment(data: NewComment) {
   
   if (error) throw error
   return result
+}
+
+// Get projects with ticket counts for a company
+export async function getProjectsWithTicketCounts(companyId: string) {
+  const { data, error } = await supabase
+    .from('projects')
+    .select(`
+      ${projectBasicFields},
+      companies (
+        ${companyBasicFields}
+      ),
+      users:owner_id (
+        ${userBasicFields}
+      ),
+      ticket_count:tickets(count)
+    `)
+    .eq('company_id', companyId)
+    .order('created_at', { ascending: false })
+  
+  if (error) {
+    throw error;
+  }
+  
+  // Transform the data to include ticket_count as a number
+  const transformedData = (data || []).map(project => ({
+    ...project,
+    ticket_count: project.ticket_count?.[0]?.count || 0
+  }));
+  
+  return transformedData;
 }

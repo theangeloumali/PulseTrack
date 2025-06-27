@@ -272,37 +272,69 @@ console.log('Starting email verification with params:', { token, email, tokenHas
 
 			initialize: async () => {
 				try {
+					console.log('🔄 Auth Store: Starting initialization...');
+					
+					// First, check if we have a valid session
 					const {
 						data: { session },
 						error,
 					} = await supabase.auth.getSession();
 
+					console.log('🔄 Auth Store: Got session:', { 
+						sessionExists: !!session, 
+						userExists: !!session?.user,
+						userId: session?.user?.id,
+						error: error?.message 
+					});
+
 					if (error) {
-						console.error('Error getting session:', error);
-						set({ isLoading: false });
+						console.error('❌ Auth Store: Error getting session:', error);
+						set({ isLoading: false, session: null, supabaseUser: null, user: null });
 						return;
 					}
 
 					if (session?.user) {
+						console.log('🔄 Auth Store: Session found, setting session and supabaseUser...');
 						set({
 							session,
 							supabaseUser: session.user,
 						});
 
+						console.log('🔄 Auth Store: Fetching user from database...');
 						// Get user from database
-						const dbUser = await getUserById(session.user.id);
-						if (dbUser) {
-							set({ user: dbUser });
+						try {
+							const dbUser = await getUserById(session.user.id);
+							if (dbUser) {
+								console.log('✅ Auth Store: Database user found:', { 
+									id: dbUser.id, 
+									email: dbUser.email, 
+									companyId: dbUser.company_id,
+									firstName: dbUser.first_name 
+								});
+								set({ user: dbUser, isLoading: false });
+							} else {
+								console.log('❌ Auth Store: No database user found for:', session.user.id);
+								// Clear the invalid session since we don't have a complete user profile
+								set({ session: null, supabaseUser: null, user: null, isLoading: false });
+							}
+						} catch (dbError) {
+							console.error('❌ Auth Store: Error fetching user from database:', dbError);
+							// Clear the invalid session since we couldn't get the user profile
+							set({ session: null, supabaseUser: null, user: null, isLoading: false });
 						}
+					} else {
+						console.log('🔄 Auth Store: No session found');
+						set({ session: null, supabaseUser: null, user: null, isLoading: false });
 					}
 
-					// Listen for auth changes
+					console.log('🔄 Auth Store: Setting up auth state change listener...');
 					const {
 						data: { subscription },
 					} = supabase.auth.onAuthStateChange(async (event, session) => {
-						console.log('Auth state changed:', event, session?.user?.id);
+						console.log('🔄 Auth Store: Auth state changed:', event, session?.user?.id);
 
 						if (session?.user) {
+							console.log('🔄 Auth Store: Setting session from auth change...');
 							set({
 								session,
 								supabaseUser: session.user,
@@ -310,24 +342,27 @@ console.log('Starting email verification with params:', { token, email, tokenHas
 
 							try {
 								const dbUser = await getUserById(session.user.id);
-								set({ user: dbUser });
+								if (dbUser) {
+									console.log('🔄 Auth Store: User updated from auth change:', dbUser.email);
+									set({ user: dbUser, isLoading: false });
+								} else {
+									console.log('❌ Auth Store: No user found on auth change');
+									set({ user: null, isLoading: false });
+								}
 							} catch (error) {
-								console.error('Error fetching user:', error);
-								set({ user: null });
+								console.error('❌ Auth Store: Error fetching user on auth change:', error);
+								set({ user: null, isLoading: false });
 							}
 						} else {
-							set({ session: null, supabaseUser: null, user: null });
+							console.log('🔄 Auth Store: Session cleared from auth change');
+							set({ session: null, supabaseUser: null, user: null, isLoading: false });
 						}
-
-						set({ isLoading: false });
 					});
 
-					// Return cleanup function - but we can't return from here since this is initialize
-					// Instead we'll store the cleanup in the store if needed later
+					console.log('✅ Auth Store: Initialization complete');
 				} catch (error) {
-					console.error('Error in initialize:', error);
-				} finally {
-					set({ isLoading: false });
+					console.error('❌ Auth Store: Error in initialize:', error);
+					set({ session: null, supabaseUser: null, user: null, isLoading: false });
 				}
 			},
 		}),
@@ -335,11 +370,31 @@ console.log('Starting email verification with params:', { token, email, tokenHas
 			name: 'currentUser',
 			storage: {
 				getItem: (key) => {
-					const item = localStorage.getItem(key);
-					return item ? JSON.parse(item) : null;
+					if (typeof window === 'undefined') return null;
+					try {
+						const item = localStorage.getItem(key);
+						const parsed = item ? JSON.parse(item) : null;
+						console.log('🔄 Zustand: Retrieved from localStorage:', { key, hasData: !!parsed });
+						return parsed;
+					} catch (error) {
+						console.error('🔄 Zustand: Error reading from localStorage:', error);
+						return null;
+					}
 				},
-				setItem: (key, value) => localStorage.setItem(key, JSON.stringify(value)),
-				removeItem: (key) => localStorage.removeItem(key),
+				setItem: (key, value) => {
+					if (typeof window === 'undefined') return;
+					try {
+						console.log('🔄 Zustand: Saving to localStorage:', { key, hasUser: !!value?.state?.user });
+						localStorage.setItem(key, JSON.stringify(value));
+					} catch (error) {
+						console.error('🔄 Zustand: Error saving to localStorage:', error);
+					}
+				},
+				removeItem: (key) => {
+					if (typeof window === 'undefined') return;
+					console.log('🔄 Zustand: Removing from localStorage:', key);
+					localStorage.removeItem(key);
+				},
 			},
 		}
 	)

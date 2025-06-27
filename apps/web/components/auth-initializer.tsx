@@ -29,23 +29,41 @@ export function AuthInitializer() {
 
 	useEffect(() => {
 		if (mounted && typeof window !== 'undefined') {
+			console.log('🔄 AuthInitializer: Starting auth initialization...');
 			// Dynamically import the auth store only on the client
-			import('@/lib/stores/auth').then(({ useAuthStore }) => {
+			import('@/lib/stores/auth').then(async ({ useAuthStore }) => {
 				const store = useAuthStore.getState();
 				
+				console.log('🔄 AuthInitializer: Store imported, current user:', store.user);
+				console.log('🔄 AuthInitializer: Store isLoading:', store.isLoading);
+				
 				// Initialize auth
-				store.initialize();
+				console.log('🔄 AuthInitializer: Calling store.initialize()...');
+				try {
+					await store.initialize();
+					console.log('🔄 AuthInitializer: Initialize completed');
+				} catch (error) {
+					console.error('❌ AuthInitializer: Initialize failed:', error);
+				}
 				
 				// Set up subscription to auth state changes
 				const unsubscribe = useAuthStore.subscribe(
 					(state) => {
+						console.log('🔄 AuthInitializer: Store state changed:', {
+							user: state.user ? `${state.user.first_name} (${state.user.email})` : null,
+							isLoading: state.isLoading,
+							hasSupabaseUser: !!state.supabaseUser,
+							hasSession: !!state.session
+						});
 						setUser(state.user);
 						setIsInitialized(true);
 					}
 				);
 
 				// Set initial user state
-				setUser(store.user);
+				console.log('🔄 AuthInitializer: Setting initial user state...');
+				const currentState = useAuthStore.getState();
+				setUser(currentState.user);
 				setIsInitialized(true);
 
 				// Cleanup subscription on unmount
@@ -60,6 +78,15 @@ export function AuthInitializer() {
 
 		const isPublicRoute = PUBLIC_ROUTES.some(route => pathname.startsWith(route));
 		const isAuthRoute = AUTH_ROUTES.some(route => pathname.startsWith(route));
+
+		console.log('🔄 AuthInitializer: Route protection check:', {
+			pathname,
+			user: user ? `${user.first_name} (${user.email})` : null,
+			isPublicRoute,
+			isAuthRoute,
+			mounted,
+			isInitialized
+		});
 
 		// If user is authenticated and trying to access auth pages, redirect to dashboard
 		if (user && isAuthRoute) {
@@ -83,6 +110,7 @@ export function AuthInitializer() {
 				<div className="text-center">
 					<Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-blue-600" />
 					<p className="text-gray-600">Loading...</p>
+					<p className="text-xs text-gray-500 mt-2">Debug: mounted={mounted ? 'true' : 'false'}, initialized={isInitialized ? 'true' : 'false'}, user={user ? 'exists' : 'null'}</p>
 				</div>
 			</div>
 		);

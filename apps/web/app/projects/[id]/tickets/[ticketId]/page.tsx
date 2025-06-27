@@ -38,7 +38,7 @@ export default function TicketDetailPage({ params }: Props) {
 	const [error, setError] = useState('');
 	
 	const { user } = useAuthStore();
-	const { setSelectedTicket } = useTicketStore();
+	const { setSelectedTicketId } = useTicketStore();
 	const router = useRouter();
 
 	useEffect(() => {
@@ -57,7 +57,7 @@ export default function TicketDetailPage({ params }: Props) {
 			}
 			
 			setTicket(ticketData);
-			setSelectedTicket(ticketData);
+			setSelectedTicketId(ticketData.id);
 		} catch (err: any) {
 			setError(err.message || 'Failed to load ticket');
 		} finally {

@@ -4,7 +4,8 @@ import {
   createProject, 
   updateProject, 
   deleteProject,
-  getProjectById 
+  getProjectById,
+  getProjectsWithTicketCounts 
 } from '@/lib/db/service';
 import { NewProject, Project } from '@/lib/db/schema';
 import { useAuthStore } from '@/lib/stores/auth';
@@ -22,16 +23,10 @@ export const projectKeys = {
 export function useProjectsQuery() {
   const { user } = useAuthStore();
   
-  // Debug logging
-  console.log('useProjectsQuery - User:', user);
-  console.log('useProjectsQuery - Company ID:', user?.company_id);
-  
   return useQuery({
     queryKey: projectKeys.list(user?.company_id || ''),
     queryFn: async () => {
-      console.log('Fetching projects for company:', user!.company_id);
       const result = await getProjectsByCompany(user!.company_id);
-      console.log('Projects fetched:', result);
       return result;
     },
     enabled: !!user?.company_id,
@@ -45,9 +40,15 @@ export function useProjectQuery(projectId: string) {
   
   return useQuery({
     queryKey: projectKeys.detail(projectId),
-    queryFn: () => getProjectById(projectId),
-    enabled: !!projectId && !!user,
+    queryFn: async () => {
+      const result = await getProjectById(projectId);
+      return result;
+    },
+    enabled: !!projectId, // Remove user dependency to allow immediate fetching
     staleTime: 1000 * 60 * 5,
+    retry: (failureCount, error: any) => {
+      return failureCount < 3;
+    },
   });
 }
 
@@ -110,5 +111,20 @@ export function useDeleteProjectMutation() {
       // Remove individual project cache
       queryClient.removeQueries({ queryKey: projectKeys.detail(deletedId) });
     },
+  });
+}
+
+// Projects list query with ticket counts
+export function useProjectsWithTicketCountsQuery() {
+  const { user } = useAuthStore();
+  
+  return useQuery({
+    queryKey: [...projectKeys.all, 'withTicketCounts', user?.company_id],
+    queryFn: async () => {
+      const result = await getProjectsWithTicketCounts(user!.company_id);
+      return result;
+    },
+    enabled: !!user?.company_id,
+    staleTime: 1000 * 60 * 5, // 5 minutes
   });
 }
