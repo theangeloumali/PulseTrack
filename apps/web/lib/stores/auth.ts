@@ -80,34 +80,50 @@ export const useAuthStore = create<AuthState>()(
 
 			signIn: async (email: string, password: string) => {
 				try {
+					console.log('Attempting sign in for:', email);
 					const { data, error } = await supabase.auth.signInWithPassword({
 						email,
 						password,
 					});
-
+					
 					if (error) {
 						console.error('Sign in error:', error);
 						return { error };
 					}
 
 					if (data.user && data.session) {
+						console.log('Supabase sign in successful, setting session...');
 						set({
 							supabaseUser: data.user,
 							session: data.session,
 						});
 
-						// Get user from database
-						const dbUser = await getUserById(data.user.id);
-						if (dbUser) {
-							set({ user: dbUser });
+						// Get user from database - this is critical for the app to work
+						console.log('Fetching user profile from database...');
+						try {
+							const dbUser = await getUserById(data.user.id);
+							if (dbUser) {
+								console.log('Database user found, setting user state...');
+								set({ user: dbUser, isLoading: false });
+								return { error: null };
+							} else {
+								console.error('No user profile found in database for:', data.user.id);
+								// Clear the session since we don't have a complete user profile
+								set({ supabaseUser: null, session: null, user: null, isLoading: false });
+								return { error: new Error('User profile not found. Please contact support.') };
+							}
+						} catch (dbError) {
+							console.error('Error fetching user from database:', dbError);
+							// Clear the session since we couldn't get the user profile
+							set({ supabaseUser: null, session: null, user: null, isLoading: false });
+							return { error: new Error('Failed to load user profile. Please try again.') };
 						}
-
-						return { error: null };
 					}
 
 					return { error: new Error('No user returned from sign in') };
 				} catch (error) {
 					console.error('Sign in error:', error);
+					set({ isLoading: false });
 					return { error };
 				}
 			},
@@ -130,7 +146,7 @@ export const useAuthStore = create<AuthState>()(
 				try {
 					const { token, email, tokenHash } = params;
 					set({ isLoading: true });
-
+console.log('Starting email verification with params:', { token, email, tokenHash });
 					let authResponse: any;
 
 					// Flow 1: Email link verification (token_hash from URL)
@@ -172,7 +188,10 @@ export const useAuthStore = create<AuthState>()(
 					// This can happen if the cookie is set but the response has an error
 					if (authResponse.error) {
 						console.warn('Direct verification failed, attempting session refresh as a fallback.', authResponse.error.message);
-						const { data: { session: refreshedSession }, error: refreshError } = await supabase.auth.refreshSession();
+						const {
+							data: { session: refreshedSession },
+							error: refreshError,
+						} = await supabase.auth.refreshSession();
 
 						if (refreshedSession && !refreshError) {
 							console.log('Session refresh successful! Using refreshed session.');

@@ -30,8 +30,16 @@ export default function LoginPage() {
 
 			if (error) {
 				setError(error.message);
-			} else {
-				router.push('/dashboard');
+      } else {
+        console.log('Login successful, redirecting to dashboard...');
+        // Use a combination approach: first try client-side, then fallback to server-side
+        router.push('/dashboard');
+        // As a backup, force reload after a short delay if client-side navigation fails
+        setTimeout(() => {
+          if (window.location.pathname === '/login') {
+            window.location.href = '/dashboard';
+          }
+        }, 500);
 			}
 		} catch (err) {
 			setError('An unexpected error occurred');

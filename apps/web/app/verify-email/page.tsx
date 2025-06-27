@@ -18,7 +18,8 @@ function VerifyEmailContent() {
 	const { verifyEmailAndCreateUser } = useAuth();
 	const router = useRouter();
 	const searchParams = useSearchParams();
-	const email = searchParams.get('email');
+	const { supabaseUser } = useAuth();
+	const email = supabaseUser?.email;
 
 	const handleVerification = async (e: React.FormEvent) => {
 		e.preventDefault();
@@ -32,7 +33,7 @@ function VerifyEmailContent() {
 		}
 
 		try {
-			const { error } = await verifyEmailAndCreateUser({ token, email: email || undefined });
+			const { error } = await verifyEmailAndCreateUser({ token, email });
 
 			if (error) {
 				setError(error.message);

@@ -5,11 +5,25 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@work
 import { Button } from '@workspace/ui/components/button';
 import { Loader2, Plus, Users, FolderOpen, Timer, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 
 export default function DashboardPage() {
-	const { user, isLoading, signOut } = useAuthStore();
+	const { user, isLoading, signOut, initialize } = useAuthStore();
+	const [isInitialized, setIsInitialized] = useState(false);
+	const router = useRouter();
 
-	if (isLoading) {
+	useEffect(() => {
+		// Ensure auth store is initialized when dashboard loads
+		const initAuth = async () => {
+			await initialize();
+			setIsInitialized(true);
+		};
+		initAuth();
+	}, [initialize]);
+
+	// Show loading while auth store is initializing
+	if (!isInitialized || isLoading) {
 		return (
 			<div className='min-h-screen flex items-center justify-center'>
 				<Loader2 className='h-8 w-8 animate-spin' />
@@ -18,19 +32,12 @@ export default function DashboardPage() {
 	}
 
 	if (!user) {
+		// If we reach here, it means the middleware allowed access but no user in store
+		// This could be a session/state sync issue, redirect to login
+		router.push('/login');
 		return (
 			<div className='min-h-screen flex items-center justify-center'>
-				<Card className='w-96'>
-					<CardHeader>
-						<CardTitle>Access Denied</CardTitle>
-						<CardDescription>Please log in to access the dashboard</CardDescription>
-					</CardHeader>
-					<CardContent>
-						<Link href='/login'>
-							<Button className='w-full'>Go to Login</Button>
-						</Link>
-					</CardContent>
-				</Card>
+				<Loader2 className='h-8 w-8 animate-spin' />
 			</div>
 		);
 	}
