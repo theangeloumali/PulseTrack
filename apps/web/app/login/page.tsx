@@ -61,24 +61,44 @@ export default function LoginPage() {
 					</p>
 				</div>
 
-				<Card>
-					<CardHeader>
-						<CardTitle>Welcome back</CardTitle>
-						<CardDescription>Enter your credentials to access your workspace</CardDescription>
+				<Card className="bg-white border border-gray-200 shadow-sm">
+					<CardHeader className="bg-white">
+						<CardTitle className="text-gray-900">Welcome back</CardTitle>
+						<CardDescription className="text-gray-600">Enter your credentials to access your workspace</CardDescription>
 					</CardHeader>
-					<CardContent>
+					<CardContent className="bg-white">"
 						<form onSubmit={handleSubmit} className='space-y-6'>
 							{error && <div className='bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md text-sm'>{error}</div>}
 
 							<div className='space-y-2'>
-								<Label htmlFor='email'>Email address</Label>
-								<Input id='email' name='email' type='email' autoComplete='email' required value={email} onChange={(e) => setEmail(e.target.value)} placeholder='Enter your email' />
+								<Label htmlFor='email' className="text-gray-700">Email address</Label>
+								<Input 
+									id='email' 
+									name='email' 
+									type='email' 
+									autoComplete='email' 
+									required 
+									value={email} 
+									onChange={(e) => setEmail(e.target.value)} 
+									placeholder='Enter your email'
+									className="bg-white border-gray-300 text-gray-900 placeholder-gray-500"
+								/>
 							</div>
 
 							<div className='space-y-2'>
-								<Label htmlFor='password'>Password</Label>
+								<Label htmlFor='password' className="text-gray-700">Password</Label>
 								<div className='relative'>
-									<Input id='password' name='password' type={showPassword ? 'text' : 'password'} autoComplete='current-password' required value={password} onChange={(e) => setPassword(e.target.value)} placeholder='Enter your password' />
+									<Input 
+										id='password' 
+										name='password' 
+										type={showPassword ? 'text' : 'password'} 
+										autoComplete='current-password' 
+										required 
+										value={password} 
+										onChange={(e) => setPassword(e.target.value)} 
+										placeholder='Enter your password'
+										className="bg-white border-gray-300 text-gray-900 placeholder-gray-500"
+									/>
 									<button type='button' className='absolute inset-y-0 right-0 pr-3 flex items-center' onClick={() => setShowPassword(!showPassword)}>
 										{showPassword ? <EyeOff className='h-4 w-4 text-gray-400' /> : <Eye className='h-4 w-4 text-gray-400' />}
 									</button>
@@ -93,7 +113,7 @@ export default function LoginPage() {
 								</div>
 							</div>
 
-							<Button type='submit' className='w-full' disabled={isLoading}>
+							<Button type='submit' className='w-full bg-blue-600 hover:bg-blue-700 text-white' disabled={isLoading}>
 								{isLoading ? (
 									<>
 										<Loader2 className='h-4 w-4 animate-spin' />

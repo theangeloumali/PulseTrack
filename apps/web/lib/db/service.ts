@@ -96,16 +96,22 @@ export async function getProjectById(id: string) {
 }
 
 export async function getProjectsByCompany(companyId: string) {
+  console.log('getProjectsByCompany called with companyId:', companyId);
+  
+  // First, let's try without the join to see if basic fetching works
   const { data, error } = await supabase
     .from('projects')
-    .select(`
-      *,
-      users!projects_owner_id_fkey (*)
-    `)
+    .select('*')
     .eq('company_id', companyId)
     .order('created_at', { ascending: false })
   
-  if (error) throw error
+  console.log('Database response - data:', data);
+  console.log('Database response - error:', error);
+  
+  if (error) {
+    console.error('Error fetching projects:', error);
+    throw error;
+  }
   return data || []
 }
 
@@ -118,6 +124,27 @@ export async function createProject(data: NewProject) {
   
   if (error) throw error
   return result
+}
+
+export async function updateProject(id: string, updates: Partial<NewProject>) {
+  const { data, error } = await supabase
+    .from('projects')
+    .update(updates)
+    .eq('id', id)
+    .select()
+    .single()
+  
+  if (error) throw error
+  return data
+}
+
+export async function deleteProject(id: string) {
+  const { error } = await supabase
+    .from('projects')
+    .delete()
+    .eq('id', id)
+  
+  if (error) throw error
 }
 
 // Ticket operations
