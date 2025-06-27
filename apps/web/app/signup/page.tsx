@@ -10,7 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@work
 import { useAuth } from '@/lib/hooks/useAuth'
 import { generateSlug } from '@/lib/utils'
 import { Eye, EyeOff, Loader2 } from 'lucide-react'
-
+console.log(process.env.NEXT_PUBLIC_SUPABASE_URL)
 export default function SignUpPage() {
   const [formData, setFormData] = useState({
     email: '',

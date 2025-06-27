@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { createClient } from '@/lib/supabase/client'
+import { supabase } from '@/lib/supabase/client'
 
 export default function AuthDebugPage() {
   const [authUser, setAuthUser] = useState<any>(null)
@@ -12,8 +12,6 @@ export default function AuthDebugPage() {
 
   useEffect(() => {
     const checkAuth = async () => {
-      const supabase = createClient()
-      
       try {
         // Check auth user
         const { data: { user }, error: authError } = await supabase.auth.getUser()

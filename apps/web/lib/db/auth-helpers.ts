@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/db'
+import { supabase } from '@/lib/supabase/client'
 import type { NewCompany, NewUser } from '@/lib/db/schema'
 import { generateSlug } from '@/lib/utils'
 
