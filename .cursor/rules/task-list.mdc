@@ -1,0 +1,207 @@
+---
+description:
+globs:
+alwaysApply: false
+---
+# Task List Cursor Rules
+
+## Project Structure Guidelines
+
+### File Organization
+- Keep related files in the same directory
+- Use consistent naming conventions (kebab-case for files, PascalCase for components)
+- Group components by feature or functionality
+- Maintain clear separation between UI components, business logic, and utilities
+
+### Component Guidelines
+- Create reusable components in the `packages/ui/src/components` directory
+- Use TypeScript for all new components
+- Include proper prop types and interfaces
+- Add JSDoc comments for complex functions
+- Follow the existing component patterns in the codebase
+
+## Code Quality Standards
+
+### TypeScript
+- Use strict TypeScript configuration
+- Define proper interfaces for all data structures
+- Avoid `any` types - use proper typing
+- Use union types for better type safety
+- Implement proper error handling with typed errors
+
+### React Best Practices
+- Use functional components with hooks
+- Implement proper state management
+- Use React.memo for performance optimization when needed
+- Follow the single responsibility principle
+- Keep components small and focused
+
+### Styling
+- Use Tailwind CSS for styling
+- Follow the design system defined in `packages/ui`
+- Maintain consistent spacing and typography
+- Use CSS variables for theme customization
+- Ensure responsive design for all components
+
+## Development Workflow
+
+### Git Practices
+- Use conventional commit messages
+- Create feature branches for new development
+- Keep commits atomic and focused
+- Write meaningful commit messages
+- Review code before merging
+
+### Testing
+- Write unit tests for utility functions
+- Test component behavior and user interactions
+- Use React Testing Library for component tests
+- Maintain good test coverage
+- Test error scenarios and edge cases
+
+### Performance
+- Optimize bundle size
+- Use code splitting for large applications
+- Implement proper loading states
+- Optimize images and assets
+- Monitor and improve Core Web Vitals
+
+## Documentation
+
+### Code Documentation
+- Document complex business logic
+- Add README files for new packages
+- Include usage examples for components
+- Document API endpoints and data structures
+- Keep documentation up to date
+
+### Architecture Decisions
+- Document major architectural decisions
+- Explain design patterns used
+- Record technical debt and future improvements
+- Maintain architecture decision records (ADRs)
+
+## Security Guidelines
+
+### Data Handling
+- Validate all user inputs
+- Sanitize data before rendering
+- Use proper authentication and authorization
+- Implement secure API communication
+- Follow OWASP security guidelines
+
+### Environment Variables
+- Never commit sensitive data to version control
+- Use environment variables for configuration
+- Document required environment variables
+- Use different configurations for different environments
+
+## Accessibility
+
+### Web Accessibility
+- Follow WCAG 2.1 guidelines
+- Use semantic HTML elements
+- Provide proper ARIA labels
+- Ensure keyboard navigation works
+- Test with screen readers
+
+### User Experience
+- Design for mobile-first approach
+- Ensure fast loading times
+- Provide clear error messages
+- Implement proper loading states
+- Use consistent UI patterns
+
+## Monitoring and Logging
+
+### Error Handling
+- Implement proper error boundaries
+- Log errors with context
+- Provide user-friendly error messages
+- Monitor application performance
+- Set up alerting for critical issues
+
+### Analytics
+- Track user interactions
+- Monitor application performance
+- Use analytics to improve user experience
+- Respect user privacy preferences
+- Follow GDPR compliance guidelines
+
+## Deployment and DevOps
+
+### Build Process
+- Optimize build configuration
+- Use proper environment variables
+- Implement CI/CD pipelines
+- Run tests before deployment
+- Use proper versioning
+
+### Infrastructure
+- Use containerization when appropriate
+- Implement proper backup strategies
+- Monitor system resources
+- Set up proper logging and monitoring
+- Plan for scalability
+
+## Code Review Checklist
+
+### Before Submitting
+- [ ] Code follows project conventions
+- [ ] All tests pass
+- [ ] No console errors or warnings
+- [ ] Documentation is updated
+- [ ] Performance impact is considered
+- [ ] Security implications are reviewed
+- [ ] Accessibility requirements are met
+
+### During Review
+- [ ] Code is readable and maintainable
+- [ ] Logic is correct and efficient
+- [ ] Error handling is appropriate
+- [ ] Tests cover the new functionality
+- [ ] No breaking changes without proper migration
+- [ ] Dependencies are properly managed
+
+## Common Patterns
+
+### State Management
+- Use React Context for global state
+- Implement proper state updates
+- Avoid prop drilling
+- Use local state for component-specific data
+- Consider using state management libraries for complex state
+
+### API Integration
+- Use consistent API client patterns
+- Implement proper error handling
+- Use TypeScript for API responses
+- Cache data when appropriate
+- Handle loading and error states
+
+### Form Handling
+- Use form validation libraries
+- Implement proper error messages
+- Handle form submission states
+- Provide user feedback
+- Use controlled components
+
+## Future Considerations
+
+### Scalability
+- Plan for application growth
+- Consider microservices architecture
+- Implement proper caching strategies
+- Use CDN for static assets
+- Monitor performance metrics
+
+### Maintenance
+- Regular dependency updates
+- Code refactoring when needed
+- Performance optimization
+- Security updates
+- Documentation maintenance
+
+---
+
+*This document should be updated regularly to reflect the current state of the project and team practices.*
