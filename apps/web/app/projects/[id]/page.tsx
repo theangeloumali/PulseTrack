@@ -49,13 +49,6 @@ export default function ProjectDetailPage({ params }: Props) {
 		isError
 	} = useProjectQuery(resolvedParams.id);
 
-	useEffect(() => {
-		if (!user) {
-			router.push('/login');
-			return;
-		}
-	}, [user, router]);
-
 	// Handle URL parameter for opening ticket creation modal
 	useEffect(() => {
 		const openCreateTicket = searchParams.get('openCreateTicket');
@@ -92,14 +85,6 @@ export default function ProjectDetailPage({ params }: Props) {
 				return 'bg-gray-100 text-gray-800';
 		}
 	};
-
-	if (!user) {
-		return (
-			<div className="min-h-screen flex items-center justify-center">
-				<Loader2 className="h-8 w-8 animate-spin" />
-			</div>
-		);
-	}
 
 	if (isLoading) {
 		return (

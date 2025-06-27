@@ -46,13 +46,8 @@ export default function ProjectTicketsPage({ params }: Props) {
 	const router = useRouter();
 
 	useEffect(() => {
-		if (!user) {
-			router.push('/login');
-			return;
-		}
-
 		loadData();
-	}, [user, params.id]);
+	}, [params.id]);
 
 	useEffect(() => {
 		// Filter tickets based on search and filters

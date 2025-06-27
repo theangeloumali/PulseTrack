@@ -41,14 +41,6 @@ export default function ProjectsPage() {
 	console.log('Projects page - isError:', isError);
 	console.log('Projects page - user:', user);
 
-	// Redirect if not authenticated
-	useEffect(() => {
-		if (!user) {
-			router.push('/login');
-			return;
-		}
-	}, [user, router]);
-
 	// Handle URL parameter for opening project creation modal
 	useEffect(() => {
 		const openCreateProject = searchParams.get('openCreateProject');
@@ -91,7 +83,7 @@ export default function ProjectsPage() {
 		}
 	};
 
-	if (!user || isLoading) {
+	if (isLoading) {
 		return (
 			<div className="min-h-screen flex items-center justify-center">
 				<Loader2 className="h-8 w-8 animate-spin" />

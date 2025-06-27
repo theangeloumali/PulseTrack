@@ -66,7 +66,7 @@ export default function LoginPage() {
 						<CardTitle className="text-gray-900">Welcome back</CardTitle>
 						<CardDescription className="text-gray-600">Enter your credentials to access your workspace</CardDescription>
 					</CardHeader>
-					<CardContent className="bg-white">"
+					<CardContent className="bg-white">
 						<form onSubmit={handleSubmit} className='space-y-6'>
 							{error && <div className='bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md text-sm'>{error}</div>}
 

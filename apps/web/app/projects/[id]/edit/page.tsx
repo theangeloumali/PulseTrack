@@ -40,13 +40,8 @@ export default function EditProjectPage({ params }: Props) {
 	const router = useRouter();
 
 	useEffect(() => {
-		if (!user) {
-			router.push('/login');
-			return;
-		}
-
 		loadProject();
-	}, [user, resolvedParams.id]);
+	}, [resolvedParams.id]);
 
 	const loadProject = async () => {
 		try {

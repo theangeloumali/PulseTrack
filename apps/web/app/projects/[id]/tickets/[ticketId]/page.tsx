@@ -42,13 +42,8 @@ export default function TicketDetailPage({ params }: Props) {
 	const router = useRouter();
 
 	useEffect(() => {
-		if (!user) {
-			router.push('/login');
-			return;
-		}
-
 		loadTicket();
-	}, [user, params.ticketId]);
+	}, [params.ticketId]);
 
 	const loadTicket = async () => {
 		try {

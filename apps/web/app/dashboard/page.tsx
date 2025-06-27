@@ -31,17 +31,6 @@ export default function DashboardPage() {
 		);
 	}
 
-	if (!user) {
-		// If we reach here, it means the middleware allowed access but no user in store
-		// This could be a session/state sync issue, redirect to login
-		router.push('/login');
-		return (
-			<div className='min-h-screen flex items-center justify-center'>
-				<Loader2 className='h-8 w-8 animate-spin' />
-			</div>
-		);
-	}
-
 	const handleSignOut = async () => {
 		await signOut();
 	};
@@ -54,7 +43,7 @@ export default function DashboardPage() {
 					<div className='flex justify-between items-center py-6'>
 						<div>
 							<h1 className='text-3xl font-bold text-gray-900'>Dashboard</h1>
-							<p className='text-gray-600'>Welcome back, {user.first_name || 'User'}!</p>
+							<p className='text-gray-600'>Welcome back, {user?.first_name || 'User'}!</p>
 						</div>
 						<div className='flex items-center space-x-4'>
 							<Button variant='outline' onClick={handleSignOut}>
