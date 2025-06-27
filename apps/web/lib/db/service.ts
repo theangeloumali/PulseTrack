@@ -594,22 +594,23 @@ export async function inviteUserToCompany(data: {
   lastName?: string
   hourlyRate?: number
 }) {
-  const { data: result, error } = await supabase
-    .from('users')
-    .insert({
-      email: data.email,
-      role: data.role,
-      company_id: data.companyId,
-      invited_by: data.invitedBy,
-      invited_at: new Date().toISOString(),
-      first_name: data.firstName || null,
-      last_name: data.lastName || null,
-      hourly_rate: data.hourlyRate || null,
-      status: 'inactive' // Will be activated when they accept invitation
+  try {
+    const response = await fetch('/api/invite-user', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
     })
-    .select()
-    .single()
-  
-  if (error) throw error
-  return result
+
+    const result = await response.json()
+
+    if (!response.ok) {
+      throw new Error(result.error || 'Failed to invite user')
+    }
+
+    return result.data
+  } catch (error) {
+    throw error
+  }
 }

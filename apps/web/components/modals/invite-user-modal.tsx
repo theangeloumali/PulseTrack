@@ -40,7 +40,7 @@ export function InviteUserModal({ isOpen, onClose }: InviteUserModalProps) {
         hourlyRate: formData.hourlyRate ? parseFloat(formData.hourlyRate) : undefined,
       })
 
-      alert('User invitation sent successfully')
+      alert('User invitation sent successfully! They will receive an email with instructions to set up their account.')
       handleClose()
     } catch (error) {
       alert(error instanceof Error ? error.message : 'Failed to invite user')
