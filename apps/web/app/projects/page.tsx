@@ -1,6 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+export const dynamic = 'force-dynamic';
+
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@workspace/ui/components/button';
@@ -13,9 +15,7 @@ import { CreateProjectModal } from '@/components/modals/create-project-modal';
 import { ProjectMembersModal } from '@/components/modals/project-members-modal';
 import { Plus, Search, Loader2, FolderOpen, Calendar, AlertCircle, User, Users } from 'lucide-react';
 
-export const dynamic = 'force-dynamic';
-
-export default function ProjectsPage() {
+function ProjectsContent() {
 	const [searchQuery, setSearchQuery] = useState('');
 	const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'archived' | 'completed'>('all');
 	const [showCreateProjectModal, setShowCreateProjectModal] = useState(false);
@@ -259,5 +259,17 @@ export default function ProjectsPage() {
 				/>
 			)}
 		</div>
+	);
+}
+
+export default function ProjectsPage() {
+	return (
+		<Suspense fallback={
+			<div className="min-h-screen flex items-center justify-center">
+				<Loader2 className="h-8 w-8 animate-spin" />
+			</div>
+		}>
+			<ProjectsContent />
+		</Suspense>
 	);
 }

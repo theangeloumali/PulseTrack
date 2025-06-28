@@ -46,6 +46,7 @@ A streamlined ticketing system with integrated time tracking capabilities that e
 - Simple dashboard with key metrics
 - Basic search and filtering
 - User role management (Admin, Manager, User)
+- Billing periods and time reports (weekly, bi-monthly, monthly)
 
 ### ❌ Excluded from MVP (Future Releases)
 - Advanced reporting and analytics
@@ -54,8 +55,9 @@ A streamlined ticketing system with integrated time tracking capabilities that e
 - Email notifications
 - API integrations
 - Mobile app
-- Advanced time reports
+- Advanced billing automation
 - Real-time notifications
+- Invoice generation
 
 ## 🎯 Core Features Requirements
 
@@ -448,9 +450,166 @@ time_entries {
 - [ ] Quick access works
 - [ ] Mobile navigation is usable
 
-## 🎨 User Interface Requirements
+## 7. Billing & Time Reports
 
-### 7.1 Design System
+### 7.1 Billing Periods Management
+**Requirement**: Companies can define and manage billing periods for time tracking reports.
+
+**Functional Requirements**:
+- Companies can create billing periods (weekly, bi-monthly, monthly)
+- Billing periods have start date, end date, and status
+- Users can view active and past billing periods
+- Time entries are automatically grouped by billing period
+- Only company admins can manage billing periods
+
+**Technical Requirements**:
+- Billing periods table with company scoping
+- Automatic time entry aggregation by period
+- Efficient querying for large time entry datasets
+- Period overlap validation
+
+**Data Model**:
+```sql
+billing_periods {
+  id: uuid (primary key)
+  company_id: uuid (foreign key to companies)
+  name: text (required, e.g., "Week 26 2025", "January 2025")
+  start_date: date (required)
+  end_date: date (required)
+  frequency: enum ('weekly', 'bi_monthly', 'monthly')
+  status: enum ('active', 'closed', 'draft')
+  created_by: uuid (foreign key to users)
+  created_at: timestamp
+  updated_at: timestamp
+}
+```
+
+**Acceptance Criteria**:
+- [ ] Admin can create new billing periods
+- [ ] Billing periods cannot overlap for the same company
+- [ ] Users can view current and past billing periods
+- [ ] Time entries are automatically associated with periods
+- [ ] Period status can be changed (draft → active → closed)
+
+### 7.2 Billing Rates Management
+**Requirement**: Companies can set hourly rates for billing calculations.
+
+**Functional Requirements**:
+- Companies can set default hourly rates
+- Rates can be overridden per user
+- Rates can be overridden per project
+- Rate history is maintained for auditing
+- Multiple currencies supported (MVP: USD only)
+
+**Technical Requirements**:
+- Billing rates table with versioning
+- Rate lookup priority: Project > User > Company Default
+- Currency handling with proper formatting
+- Historical rate tracking
+
+**Data Model**:
+```sql
+billing_rates {
+  id: uuid (primary key)
+  company_id: uuid (foreign key to companies)
+  user_id: uuid (nullable, foreign key to users)
+  project_id: uuid (nullable, foreign key to projects)
+  hourly_rate: decimal(10,2) (required)
+  currency: text (default 'USD')
+  effective_from: date (required)
+  effective_to: date (nullable)
+  created_by: uuid (foreign key to users)
+  created_at: timestamp
+}
+```
+
+**Acceptance Criteria**:
+- [ ] Admin can set company default rates
+- [ ] Admin can set user-specific rates
+- [ ] Admin can set project-specific rates
+- [ ] Rate changes are tracked with effective dates
+- [ ] Billing calculations use correct historical rates
+
+### 7.3 Time Reports & Billing Export
+**Requirement**: Users can generate detailed time reports for billing purposes.
+
+**Functional Requirements**:
+- Generate time reports by billing period
+- Filter reports by user, project, or date range
+- Export reports in multiple formats (PDF, CSV, Excel)
+- Include billable hours, rates, and total amounts
+- Support different aggregation levels (daily, weekly, monthly)
+- Include detailed time entry descriptions
+
+**Technical Requirements**:
+- Efficient aggregation queries for large datasets
+- PDF generation with company branding
+- CSV/Excel export with proper formatting
+- Report caching for performance
+
+**Report Data Includes**:
+- User information and hourly rates
+- Project details and time allocation
+- Detailed time entries with descriptions
+- Total hours and calculated amounts
+- Billing period information
+- Company information for invoicing
+
+**Acceptance Criteria**:
+- [ ] Users can generate reports for any billing period
+- [ ] Reports include all necessary billing information
+- [ ] Export formats are properly formatted
+- [ ] Reports load within 5 seconds for up to 1000 entries
+- [ ] Reports can be filtered and customized
+
+### 7.4 Billing Dashboard
+**Requirement**: Provide overview of billing information and quick access to reports.
+
+**Functional Requirements**:
+- Display current billing period status
+- Show total billable hours for current period
+- Quick access to generate reports
+- Recent billing activity
+- Outstanding billing periods requiring attention
+
+**Acceptance Criteria**:
+- [ ] Dashboard shows current period information
+- [ ] Quick actions for common billing tasks
+- [ ] Visual indicators for billing status
+- [ ] Fast loading performance
+
+## 📊 Data Model Summary
+
+### Additional Tables for Billing
+
+```sql
+-- Company billing settings
+company_billing_settings {
+  id: uuid (primary key)
+  company_id: uuid (foreign key to companies)
+  default_hourly_rate: decimal(10,2)
+  default_currency: text (default 'USD')
+  billing_frequency: enum ('weekly', 'bi_monthly', 'monthly')
+  invoice_prefix: text
+  created_at: timestamp
+  updated_at: timestamp
+}
+
+-- Time entry billing associations
+time_entry_billing {
+  id: uuid (primary key)
+  time_entry_id: uuid (foreign key to time_entries)
+  billing_period_id: uuid (foreign key to billing_periods)
+  hourly_rate: decimal(10,2)
+  billable_amount: decimal(10,2)
+  is_billable: boolean (default true)
+  created_at: timestamp
+}
+```
+
+## 8. User Interface Requirements
+
+### 8.1 Design System
 **Requirement**: Consistent and accessible user interface.
 
 **Functional Requirements**:
@@ -471,7 +630,7 @@ time_entries {
 - [ ] Theme switching works
 - [ ] Accessibility requirements met
 
-### 7.2 User Experience
+### 8.2 User Experience
 **Requirement**: Intuitive and efficient user experience.
 
 **Functional Requirements**:

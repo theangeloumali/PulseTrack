@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, use } from 'react';
+import { useEffect, useState, use, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@workspace/ui/components/button';
@@ -33,7 +33,7 @@ interface Props {
 	}>;
 }
 
-export default function ProjectDetailPage({ params }: Props) {
+function ProjectDetailContent({ params }: Props) {
 	const resolvedParams = use(params);
 	
 	const [showCreateTicketModal, setShowCreateTicketModal] = useState(false);
@@ -388,5 +388,17 @@ export default function ProjectDetailPage({ params }: Props) {
 				defaultProjectId={resolvedParams.id} 
 			/>
 		</div>
+	);
+}
+
+export default function ProjectDetailPage({ params }: Props) {
+	return (
+		<Suspense fallback={
+			<div className="min-h-screen flex items-center justify-center">
+				<Loader2 className="h-8 w-8 animate-spin" />
+			</div>
+		}>
+			<ProjectDetailContent params={params} />
+		</Suspense>
 	);
 }

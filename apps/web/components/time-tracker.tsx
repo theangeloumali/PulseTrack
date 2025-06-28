@@ -220,7 +220,7 @@ export function TimeTracker({ ticket, compact = false }: TimeTrackerProps) {
 
               {activeEntry && !isActiveForTicket && (
                 <p className="text-sm text-amber-600">
-                  Timer is running on another ticket: {activeEntry.tickets?.title || 'Unknown ticket'}
+                  Timer is running on another ticket: {(activeEntry as any).tickets?.title || 'Unknown ticket'}
                 </p>
               )}
             </div>

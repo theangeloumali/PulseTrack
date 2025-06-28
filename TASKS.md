@@ -126,6 +126,20 @@ A ticketing system with time tracking capabilities for project management and is
 - [ ] **8.4** Create backup/restore functionality
 - [ ] **8.5** Implement data export options
 
+### 9. Billing & Time Reports
+- [ ] **9.1** Design billing data model and schema
+- [ ] **9.2** Create billing periods table (weekly, bi-monthly, monthly)
+- [ ] **9.3** Implement time entries aggregation by billing period
+- [ ] **9.4** Create billing rates management (per user, per project)
+- [ ] **9.5** Build billing report generation system
+- [ ] **9.6** Implement billing period management UI
+- [ ] **9.7** Create time entries report filtering by date range
+- [ ] **9.8** Add billing export functionality (PDF, CSV)
+- [ ] **9.9** Implement billing approval workflow
+- [ ] **9.10** Create client billing dashboard
+- [ ] **9.11** Add billing notifications and reminders
+- [ ] **9.12** Implement billing history and tracking
+
 ## 🗄️ Database Schema Tasks
 
 ### Core Tables
@@ -137,12 +151,17 @@ A ticketing system with time tracking capabilities for project management and is
 - [x] **DB.5** Comments table
 - [ ] **DB.6** Attachments table
 - [ ] **DB.7** Notifications table
+- [ ] **DB.8** Billing periods table
+- [ ] **DB.9** Billing rates table
+- [ ] **DB.10** Billing reports table
 
 ### Relationships
 - [x] **DB.8** Company-User relationships
 - [x] **DB.9** Company-Project relationships
 - [x] **DB.10** Project-Ticket relationships
 - [x] **DB.11** Time entry-Ticket relationships
+- [ ] **DB.12** Billing period-Time entry relationships
+- [ ] **DB.13** Billing rate-User/Project relationships
 
 ## 🎨 UI/UX Tasks
 
