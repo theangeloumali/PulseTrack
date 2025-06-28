@@ -104,6 +104,8 @@ A ticketing system with time tracking capabilities for project management and is
 - [ ] **5.6** Add recent activity feed
 - [ ] **5.7** Create performance metrics
 - [ ] **5.8** Implement notification system
+- [x] **5.9** Add "My Weekly Summary" widget to dashboard
+- [x] **5.10** Display computed value (total hours * hourly rate) in "My Weekly Summary" widget
 
 ### 6. Search & Filtering
 - [ ] **6.1** Implement global search functionality
@@ -127,18 +129,24 @@ A ticketing system with time tracking capabilities for project management and is
 - [ ] **8.5** Implement data export options
 
 ### 9. Billing & Time Reports
-- [ ] **9.1** Design billing data model and schema
-- [ ] **9.2** Create billing periods table (weekly, bi-monthly, monthly)
-- [ ] **9.3** Implement time entries aggregation by billing period
-- [ ] **9.4** Create billing rates management (per user, per project)
-- [ ] **9.5** Build billing report generation system
-- [ ] **9.6** Implement billing period management UI
-- [ ] **9.7** Create time entries report filtering by date range
+- [x] **9.1** Design billing data model and schema
+- [x] **9.2** Create billing periods table (weekly, bi-monthly, monthly)
+- [x] **9.3** Implement time entries aggregation by billing period
+- [x] **9.4** Create billing rates management (per user, per project)
+- [x] **9.5** Build billing report generation system
+- [x] **9.6** Implement billing period management UI
+- [x] **9.7** Create time entries report filtering by date range
 - [ ] **9.8** Add billing export functionality (PDF, CSV)
 - [ ] **9.9** Implement billing approval workflow
-- [ ] **9.10** Create client billing dashboard
+- [x] **9.10** Create client billing dashboard
 - [ ] **9.11** Add billing notifications and reminders
 - [ ] **9.12** Implement billing history and tracking
+- [x] **9.13** Refactor Billing UI to remove default hourly rate and currency
+- [x] **9.14** Update Billing Report to fetch user hourly rates and show daily ticket breakdown
+- [x] **9.15** Add weekly total to Billing Report
+- [x] **9.16** Replace `getSession()` with `getUser()` for security
+- [x] **9.17** Add filtering options (week, bi-monthly, monthly, yearly, overall) to billing report
+- [x] **9.18** Display computed value (total hours * hourly rate) with currency in billing report
 
 ## 🗄️ Database Schema Tasks
 
@@ -151,17 +159,18 @@ A ticketing system with time tracking capabilities for project management and is
 - [x] **DB.5** Comments table
 - [ ] **DB.6** Attachments table
 - [ ] **DB.7** Notifications table
-- [ ] **DB.8** Billing periods table
-- [ ] **DB.9** Billing rates table
-- [ ] **DB.10** Billing reports table
+- [x] **DB.8** Billing periods table
+- [x] **DB.9** Billing rates table
+- [x] **DB.10** Billing reports table
+- [x] **DB.11** Add currency column to company_billing_settings table
 
 ### Relationships
 - [x] **DB.8** Company-User relationships
 - [x] **DB.9** Company-Project relationships
-- [x] **DB.10** Project-Ticket relationships
+- [x_ **DB.10** Project-Ticket relationships
 - [x] **DB.11** Time entry-Ticket relationships
-- [ ] **DB.12** Billing period-Time entry relationships
-- [ ] **DB.13** Billing rate-User/Project relationships
+- [x] **DB.12** Billing period-Time entry relationships
+- [x] **DB.13** Billing rate-User/Project relationships
 
 ## 🎨 UI/UX Tasks
 
@@ -179,12 +188,12 @@ A ticketing system with time tracking capabilities for project management and is
 - [x] **UI.9** Project management pages → **MODAL-BASED FORMS**
 - [x] **UI.10** Ticket management pages → **MODAL-BASED FORMS**
 - [x] **UI.11** Time tracking interface
-- [ ] **UI.12** Settings pages
+- [x] **UI.12** Settings pages
 
 ## 🔧 Technical Implementation
 
 ### Backend API
-- [ ] **API.1** Set up API routes structure
+- [x] **API.1** Set up API routes structure
 - [ ] **API.2** Implement user authentication endpoints
 - [ ] **API.3** Create project CRUD endpoints
 - [ ] **API.4** Implement ticket CRUD endpoints
@@ -199,7 +208,7 @@ A ticketing system with time tracking capabilities for project management and is
 - [x] **FE.3** Add data table components
 - [x] **FE.4** Create modal/dialog components → **HEADLESS UI**
 - [x] **FE.5** Implement navigation components → **SIDEBAR LAYOUT**
-- [ ] **FE.6** Add chart/graph components
+- [x] **FE.6** Add chart/graph components
 
 ### State Management
 - [x] **SM.1** Set up global state management → **REACT QUERY + ZUSTAND**

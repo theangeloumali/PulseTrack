@@ -19,7 +19,8 @@ import {
   Plus,
   Search,
   Bug,
-  Users
+  Users,
+  CreditCard
 } from 'lucide-react';
 import { cn } from '@workspace/ui/lib/utils';
 
@@ -33,6 +34,7 @@ const navigation = [
   { name: 'Tickets', href: '/tickets', icon: Ticket, roles: ['admin', 'manager', 'user'] },
   { name: 'Time Tracking', href: '/time-tracking', icon: Clock, roles: ['admin', 'manager', 'user'] },
   { name: 'Company', href: '/company/users', icon: Users, roles: ['admin', 'manager'] },
+  { name: 'Billing', href: '/billing', icon: CreditCard, roles: ['admin', 'manager'] },
   { name: 'Diagnostics', href: '/diagnostics', icon: Bug, roles: ['admin', 'manager'] },
   { name: 'Settings', href: '/settings', icon: Settings, roles: ['admin', 'manager'] },
 ];

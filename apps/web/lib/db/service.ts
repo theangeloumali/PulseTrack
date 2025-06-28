@@ -281,7 +281,7 @@ export async function updateTicket(id: string, data: Partial<NewTicket>) {
     .from('tickets')
     .update(data)
     .eq('id', id)
-    .select(ticketWithProjectFields)
+    .select()
     .single()
   
   if (error) throw error
@@ -462,6 +462,54 @@ export async function getProjectsWithTicketCounts(companyId: string) {
   return transformedData;
 }
 
+/**
+ * Get time entries for billing within a company and date range.
+ * Includes joins to tickets, projects, and users for comprehensive data.
+ */
+export async function getTimeEntriesForBilling(companyId: string, startDate: string, endDate: string) {
+  const { data, error } = await supabase
+    .from('time_entries')
+    .select(`
+      id,
+      start_time,
+      end_time,
+      duration,
+      description,
+      tickets (
+        id,
+        title,
+        projects (
+          id,
+          name,
+          company_id
+        )
+      ),
+      users (
+        id,
+        first_name,
+        last_name,
+        email,
+        hourly_rate
+      )
+    `)
+    .gte('start_time', startDate)
+    .lte('start_time', endDate)
+    .eq('tickets.projects.company_id', companyId) // Ensure time entries belong to projects within the company
+    .order('start_time', { ascending: true });
+
+  if (error) throw error;
+
+  // Flatten the structure for easier processing
+  const flattenedData = data.map(entry => ({
+    ...entry,
+    ticket: entry.tickets,
+    project: entry.tickets?.[0]?.projects,
+    user: entry.users,
+  })).filter(entry => entry.ticket && entry.project && entry.user);
+
+  return flattenedData;
+}
+
 // Company User Management Operations
 
 /**
@@ -613,4 +661,20 @@ export async function inviteUserToCompany(data: {
   } catch (error) {
     throw error
   }
+}
+
+
+/**
+ * Update user details (first name, last name, etc.)
+ */
+export async function updateUser(userId: string, updates: Partial<NewUser>) {
+  const { data, error } = await supabase
+    .from('users')
+    .update({ ...updates, updated_at: new Date().toISOString() })
+    .eq('id', userId)
+    .select()
+    .single()
+  
+  if (error) throw error
+  return data
 }

@@ -28,11 +28,11 @@ export default function AuthDiagnosticPage() {
   // Auto-refresh current state
   useEffect(() => {
     const updateCurrentState = async () => {
-      const { data: sessionData } = await supabase.auth.getSession();
+      const { data: { user: sessionData } } = await supabase.auth.getUser();
       const { data: userData } = await supabase.auth.getUser();
       
       setCurrentState({
-        supabaseSession: sessionData.session,
+        supabaseSession: sessionData,
         supabaseUser: userData.user,
         authStore: authStore,
         localStorage: typeof window !== 'undefined' ? {
@@ -109,16 +109,15 @@ export default function AuthDiagnosticPage() {
       // Session test
       addLog('Testing authentication session...');
       try {
-        const { data, error } = await supabase.auth.getSession();
+        const { data, error } = await supabase.auth.getUser();
         const sessionTest = {
           test: 'Authentication Session',
-          success: !!data.session && !error,
+          success: !!data.user && !error,
           data: {
-            hasSession: !!data.session,
-            hasUser: !!data.session?.user,
-            userId: data.session?.user?.id,
-            userEmail: data.session?.user?.email,
-            expiresAt: data.session?.expires_at,
+            hasSession: !!data.user,
+            hasUser: !!data.user,
+            userId: data.user?.id,
+            userEmail: data.user?.email,
           },
           error: error?.message,
           timestamp: new Date().toISOString(),
@@ -390,12 +389,12 @@ export default function AuthDiagnosticPage() {
 
   const checkSession = async () => {
     addLog('Checking current session...');
-    const { data, error } = await supabase.auth.getSession();
+    const { data, error } = await supabase.auth.getUser();
     
     if (error) {
       addLog(`Session check failed: ${error.message}`);
-    } else if (data.session) {
-      addLog(`Session found for user: ${data.session.user.email}`);
+    } else if (data.user) {
+      addLog(`Session found for user: ${data.user.email}`);
     } else {
       addLog('No active session found');
     }
@@ -404,10 +403,10 @@ export default function AuthDiagnosticPage() {
   const initializeAuth = async () => {
     addLog('Initializing auth...');
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { user: session } } = await supabase.auth.getUser();
       if (session) {
         // Don't set the supabase user directly in auth store, just log it
-        addLog(`Auth initialized with existing session for: ${session.user.email}`);
+        addLog(`Auth initialized with existing session for: ${session.email}`);
       } else {
         addLog('No session found during auth initialization');
       }

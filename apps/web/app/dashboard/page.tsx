@@ -7,6 +7,7 @@ import { Loader2, Plus, Users, FolderOpen, Timer, AlertCircle } from 'lucide-rea
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import MyWeeklySummary from '@/components/dashboard/my-weekly-summary';
 
 export default function DashboardPage() {
 	const { user, isLoading, signOut, initialize } = useAuthStore();
@@ -101,6 +102,11 @@ export default function DashboardPage() {
 								<p className='text-xs text-muted-foreground'>Just you for now</p>
 							</CardContent>
 						</Card>
+					</div>
+
+					{/* My Weekly Summary */}
+					<div className='mb-8'>
+						<MyWeeklySummary />
 					</div>
 
 					{/* Quick Actions */}

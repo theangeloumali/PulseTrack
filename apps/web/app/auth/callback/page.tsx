@@ -56,10 +56,10 @@ function AuthCallbackContent() {
                 return
               }
               
-              if (sessionData.session?.user) {
+              if (sessionData.user) {
                 console.log('Callback - Session established via code exchange')
-                console.log('Callback - User:', sessionData.session.user.id)
-                console.log('Callback - Metadata:', sessionData.session.user.user_metadata)
+                console.log('Callback - User:', sessionData.user.id)
+                console.log('Callback - Metadata:', sessionData.user.user_metadata)
                 
                 // Add a small delay to ensure session is fully synced before redirecting
                 setTimeout(() => {
@@ -87,9 +87,9 @@ function AuthCallbackContent() {
                 return
               }
               
-              if (sessionData.session?.user) {
+              if (sessionData.user) {
                 console.log('Callback - Session set via tokens')
-                console.log('Callback - User:', sessionData.session.user.id)
+                console.log('Callback - User:', sessionData.user.id)
                 
                 // Add a small delay to ensure session is fully synced before redirecting
                 setTimeout(() => {
@@ -104,7 +104,7 @@ function AuthCallbackContent() {
           
           // If no code or tokens, try to get existing session
           console.log('Callback - No code/tokens found, checking existing session')
-          const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
+          const { data: { user: sessionData }, error: sessionError } = await supabase.auth.getUser()
           
           if (sessionError) {
             console.error('Callback - Session check error:', sessionError)
@@ -112,12 +112,12 @@ function AuthCallbackContent() {
             return
           }
           
-          if (sessionData.session?.user) {
+          if (sessionData) {
             console.log('Callback - Found existing session')
-            console.log('Callback - User:', sessionData.session.user.id)
+            console.log('Callback - User:', sessionData.id)
             
             // Check if user needs to complete setup
-            const userMetadata = sessionData.session.user.user_metadata
+            const userMetadata = sessionData.user_metadata
             const setupComplete = userMetadata?.setup_complete
             
             console.log('Callback - Setup complete:', setupComplete)
@@ -138,7 +138,7 @@ function AuthCallbackContent() {
           }
         } else {
           // Regular login callback
-          const { data, error } = await supabase.auth.getSession()
+          const { data, error } = await supabase.auth.getUser()
           
           if (error) {
             console.error('Auth callback error:', error)
@@ -146,7 +146,7 @@ function AuthCallbackContent() {
             return
           }
 
-          if (data.session?.user) {
+          if (data.user) {
             console.log('Callback - Regular login, redirecting to dashboard')
             router.push('/dashboard')
           } else {

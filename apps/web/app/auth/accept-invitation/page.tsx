@@ -78,15 +78,15 @@ function AcceptInvitationContent() {
       
       try {
         console.log('AcceptInvitation - Checking current session...')
-        const { data: { session }, error } = await supabase.auth.getSession()
+        const { data: { user: session }, error } = await supabase.auth.getUser()
         
         if (error) {
           console.error('AcceptInvitation - Session error:', error)
           return
         }
         
-        if (session?.user) {
-          console.log('AcceptInvitation - Found existing session:', session.user.id)
+        if (session) {
+          console.log('AcceptInvitation - Found existing session:', session.id)
           
           // Clear any pending auto-refresh
           if (autoRefreshTimeout) {
@@ -94,11 +94,11 @@ function AcceptInvitationContent() {
           }
           
           // Get user metadata from the session
-          const metadata = session.user.user_metadata
+          const metadata = session.user_metadata
           console.log('AcceptInvitation - User metadata:', metadata)
           
           setUserInfo({
-            email: session.user.email,
+            email: session.email,
             firstName: metadata?.first_name || '',
             lastName: metadata?.last_name || '',
             role: metadata?.role || 'user',
@@ -195,11 +195,11 @@ function AcceptInvitationContent() {
       }
 
       // Get the current session to get user ID
-      const { data: { session } } = await supabase.auth.getSession()
+      const { data: { user: session } } = await supabase.auth.getUser()
       
-      if (session?.user) {
+      if (session) {
         // Activate the user account and update their details
-        await updateUserStatus(session.user.id, 'active')
+        await updateUserStatus(session.id, 'active')
 
         // Update user details in our database
         const { error: updateError } = await supabase
@@ -210,7 +210,7 @@ function AcceptInvitationContent() {
             status: 'active',
             updated_at: new Date().toISOString()
           })
-          .eq('id', session.user.id)
+          .eq('id', session.id)
 
         if (updateError) {
           console.error('Failed to update user details:', updateError)
