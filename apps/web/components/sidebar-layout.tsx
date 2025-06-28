@@ -28,13 +28,13 @@ interface SidebarLayoutProps {
 }
 
 const navigation = [
-  { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-  { name: 'Projects', href: '/projects', icon: FolderOpen },
-  { name: 'Tickets', href: '/tickets', icon: Ticket },
-  { name: 'Time Tracking', href: '/time-tracking', icon: Clock },
-  { name: 'Company', href: '/company/users', icon: Users },
-  { name: 'Diagnostics', href: '/diagnostics', icon: Bug },
-  { name: 'Settings', href: '/settings', icon: Settings },
+  { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, roles: ['admin', 'manager', 'user'] },
+  { name: 'Projects', href: '/projects', icon: FolderOpen, roles: ['admin', 'manager', 'user'] },
+  { name: 'Tickets', href: '/tickets', icon: Ticket, roles: ['admin', 'manager', 'user'] },
+  { name: 'Time Tracking', href: '/time-tracking', icon: Clock, roles: ['admin', 'manager', 'user'] },
+  { name: 'Company', href: '/company/users', icon: Users, roles: ['admin', 'manager'] },
+  { name: 'Diagnostics', href: '/diagnostics', icon: Bug, roles: ['admin', 'manager'] },
+  { name: 'Settings', href: '/settings', icon: Settings, roles: ['admin', 'manager'] },
 ];
 
 export function SidebarLayout({ children }: SidebarLayoutProps) {
@@ -121,7 +121,9 @@ export function SidebarLayout({ children }: SidebarLayoutProps) {
 
           {/* Navigation */}
           <nav className="flex-1 px-4 py-4 space-y-1 overflow-y-auto">
-            {navigation.map((item) => {
+            {navigation
+              .filter(item => item.roles.includes(user.role))
+              .map((item) => {
               const isActive = item.href === '/company/users' 
                 ? pathname.startsWith('/company')
                 : pathname.startsWith(item.href);

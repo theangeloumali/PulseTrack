@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { Users, UserPlus, Search, Filter, MoreVertical, Edit, Trash2, Shield } from 'lucide-react';
 import { Button } from '@workspace/ui/components/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@workspace/ui/components/card';
@@ -9,14 +10,17 @@ import { Input } from '@workspace/ui/components/input';
 import { useCompanyUsers } from '@/lib/hooks/useUsers';
 import { useCompanyStore, CompanyUser } from '@/lib/stores/company';
 import { useAuthStore } from '@/lib/stores/auth';
+import { useRoleAccess } from '@/lib/hooks/useRoleAccess';
 import { InviteUserModal } from '@/components/modals/invite-user-modal';
 import { EditUserModal } from '@/components/modals/edit-user-modal';
 
 export default function CompanyUsersPage() {
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [editingUser, setEditingUser] = useState<CompanyUser | null>(null);
+  const router = useRouter();
   
   const { user: currentUser } = useAuthStore();
+  const { canAccessCompany } = useRoleAccess();
   const { 
     getFilteredUsers, 
     getUserStats, 
@@ -27,6 +31,18 @@ export default function CompanyUsersPage() {
     setStatusFilter,
     setSearchQuery 
   } = useCompanyStore();
+  
+  // Redirect users without company access
+  useEffect(() => {
+    if (currentUser && !canAccessCompany()) {
+      router.push('/dashboard');
+    }
+  }, [currentUser, canAccessCompany, router]);
+
+  // Don't render the page if user doesn't have access
+  if (currentUser && !canAccessCompany()) {
+    return null;
+  }
   
   // Fetch company users
   const { isLoading, error } = useCompanyUsers();
