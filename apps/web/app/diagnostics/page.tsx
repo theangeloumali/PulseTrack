@@ -1,11 +1,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { Button } from '@workspace/ui/components/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@workspace/ui/components/card';
 import { Badge } from '@workspace/ui/components/badge';
 import { Input } from '@workspace/ui/components/input';
 import { useAuthStore } from '@/lib/stores/auth';
+import { useRoleAccess } from '@/lib/hooks/useRoleAccess';
 import { useProjectsQuery, useProjectsWithTicketCountsQuery } from '@/lib/hooks/useProjects';
 import { useCompanyTicketsQuery } from '@/lib/hooks/useTickets';
 import { createProject, createTicket, getProjectsByCompany, getTicketsByCompany, getProjectsWithTicketCounts, getTicketCountByProject, getTicketsByProject } from '@/lib/db/service';
@@ -19,8 +21,22 @@ export default function DiagnosticsPage() {
 	const [isRunningTests, setIsRunningTests] = useState(false);
 	const [testProjectName, setTestProjectName] = useState('Test Project ' + Date.now());
 	const [testTicketTitle, setTestTicketTitle] = useState('Test Ticket ' + Date.now());
+	const router = useRouter();
 
 	const { user } = useAuthStore();
+	const { canAccessDiagnostics } = useRoleAccess();
+
+	// Redirect users without diagnostics access
+	useEffect(() => {
+		if (user && !canAccessDiagnostics()) {
+			router.push('/dashboard');
+		}
+	}, [user, canAccessDiagnostics, router]);
+
+	// Don't render the page if user doesn't have access
+	if (user && !canAccessDiagnostics()) {
+		return null;
+	}
 
 	// Fetch data for diagnostics
 	const { data: projects = [], isLoading: projectsLoading, error: projectsError } = useProjectsQuery();
