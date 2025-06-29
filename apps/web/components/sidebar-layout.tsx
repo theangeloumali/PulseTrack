@@ -92,10 +92,8 @@ export function SidebarLayout({ children }: SidebarLayoutProps) {
 						{navigation
 							.filter((item) => item.roles.includes(user.role as string))
 							.map((item) => {
-								const isActive = pathname === item.href || 
-									(item.href === '/company/users' && pathname.startsWith('/company')) ||
-									(item.href === '/admin/users' && pathname === '/admin/users') ||
-									(item.href === '/admin/companies' && pathname === '/admin/companies');
+								const isActive =
+									pathname === item.href || (item.href === '/company/users' && pathname.startsWith('/company')) || (item.href === '/admin/users' && pathname === '/admin/users') || (item.href === '/admin/companies' && pathname === '/admin/companies');
 								return (
 									<Link
 										key={item.name}
@@ -122,18 +120,21 @@ export function SidebarLayout({ children }: SidebarLayoutProps) {
 								</p>
 								<p className='text-xs text-gray-500 truncate'>{user.email}</p>
 								<div className='flex items-center mt-1'>
-									<span className={cn(
-										'text-xs px-2 py-0.5 rounded-full font-medium',
-										user.role === 'super_admin' ? 'bg-purple-100 text-purple-800' :
-										user.role === 'system_admin' ? 'bg-red-100 text-red-800' :
-										user.role === 'company_admin' ? 'bg-blue-100 text-blue-800' :
-										user.role === 'manager' ? 'bg-green-100 text-green-800' :
-										'bg-gray-100 text-gray-800'
-									)}>
-										{user.role === 'super_admin' ? 'Super Admin' :
-										 user.role === 'system_admin' ? 'System Admin' :
-										 user.role === 'company_admin' ? 'Company Admin' :
-										 user.role === 'manager' ? 'Manager' : 'User'}
+									<span
+										className={cn(
+											'text-xs px-2 py-0.5 rounded-full font-medium',
+											user.role === 'super_admin'
+												? 'bg-purple-100 text-purple-800'
+												: user.role === 'system_admin'
+													? 'bg-red-100 text-red-800'
+													: user.role === 'company_admin'
+														? 'bg-blue-100 text-blue-800'
+														: user.role === 'manager'
+															? 'bg-green-100 text-green-800'
+															: 'bg-gray-100 text-gray-800'
+										)}
+									>
+										{user.role === 'super_admin' ? 'Super Admin' : user.role === 'system_admin' ? 'System Admin' : user.role === 'company_admin' ? 'Company Admin' : user.role === 'manager' ? 'Manager' : 'User'}
 									</span>
 								</div>
 							</div>
