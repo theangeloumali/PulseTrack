@@ -105,8 +105,8 @@ This is PulseTrack, a comprehensive project management system that includes tick
 * Supabase Auth for authentication and authorization
 * TanStack Query for data fetching and caching
 * Zustand for client-side state management
-* **IMPORTANT**: Always run `pnpm build` after making changes to ensure the project builds without errors
-* **IMPORTANT**: Always run `pnpm typecheck` to check for TypeScript errors
+* **IMPORTANT**: Run `pnpm build` after making changes if needed to ensure the project builds without errors
+* **IMPORTANT**: Always run `cd apps/web && pnpm typecheck` to check for TypeScript errors  
 * **IMPORTANT**: Use `pnpm lint` to check for linting issues
 
 ## 7. Deployment

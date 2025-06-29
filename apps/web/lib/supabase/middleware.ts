@@ -36,13 +36,14 @@ export async function updateSession(request: NextRequest) {
 		const isVerifyEmail = request.nextUrl.pathname.startsWith('/verify-email')
 		const isAuthDiagnostic = request.nextUrl.pathname.startsWith('/auth-diagnostic')
 		const isAuthCallback = request.nextUrl.pathname.startsWith('/auth/callback')
+		const isRecoveryCallback = request.nextUrl.pathname.startsWith('/auth/callback/recovery')
 		const isAcceptInvitation = request.nextUrl.pathname.startsWith('/auth/accept-invitation')
 		const isAuthRoute = request.nextUrl.pathname.startsWith('/auth/')
 		const isForgotPassword = request.nextUrl.pathname.startsWith('/forgot-password')
 		const isResetPassword = request.nextUrl.pathname.startsWith('/reset-password')
 		
 		console.log('Middleware - Path checks:', {
-			isLogin, isSignup, isVerifyEmail, isAuthDiagnostic, isAuthCallback, isAcceptInvitation, isAuthRoute, isForgotPassword, isResetPassword
+			isLogin, isSignup, isVerifyEmail, isAuthDiagnostic, isAuthCallback, isRecoveryCallback, isAcceptInvitation, isAuthRoute, isForgotPassword, isResetPassword
 		})
 		
 		// For API routes, don't redirect to login - let them handle their own auth

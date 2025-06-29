@@ -9,6 +9,7 @@ import { Label } from '@workspace/ui/components/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@workspace/ui/components/card';
 import { useAuthStore } from '@/lib/stores/auth';
 import { Eye, EyeOff, Loader2 } from 'lucide-react';
+import { supabase } from '@/lib/db';
 
 const isDev = false;
 
@@ -23,12 +24,50 @@ function LoginContent() {
 	const router = useRouter();
 	const searchParams = useSearchParams();
 	const urlError = searchParams.get('error');
+	const authCode = searchParams.get('code');
 
 	useEffect(() => {
 		if (urlError) {
 			setError(`Redirect error: ${urlError}`);
 		}
 	}, [urlError]);
+
+	useEffect(() => {
+		// Handle password reset auth code
+		const handlePasswordResetCode = async () => {
+			if (!authCode) return;
+
+			console.log('Login - Detected auth code, checking if password reset flow');
+			setIsLoading(true);
+
+			try {
+				// Exchange the code for a session
+				const { data, error } = await supabase.auth.exchangeCodeForSession(authCode);
+
+				if (error) {
+					console.error('Login - Code exchange error:', error);
+					setError('Invalid or expired reset link');
+					setIsLoading(false);
+					return;
+				}
+
+				if (data.user) {
+					console.log('Login - Code exchange successful, redirecting to reset password');
+					// Successfully exchanged code for session, redirect to reset password
+					router.push('/reset-password');
+				} else {
+					setError('Invalid reset link');
+					setIsLoading(false);
+				}
+			} catch (err) {
+				console.error('Login - Code exchange failed:', err);
+				setError('An error occurred while processing the reset link');
+				setIsLoading(false);
+			}
+		};
+
+		handlePasswordResetCode();
+	}, [authCode, router]);
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();

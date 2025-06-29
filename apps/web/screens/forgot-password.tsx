@@ -8,6 +8,7 @@ import { Label } from '@workspace/ui/components/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@workspace/ui/components/card';
 import { Loader2, ArrowLeft, Mail } from 'lucide-react';
 import { supabase } from '@/lib/db';
+import { useResetPasswordStore } from '@/lib/stores/reset-password';
 
 export default function ForgotPasswordPage() {
 	const [email, setEmail] = useState('');
@@ -15,6 +16,8 @@ export default function ForgotPasswordPage() {
 	const [message, setMessage] = useState('');
 	const [error, setError] = useState('');
 	const [isSubmitted, setIsSubmitted] = useState(false);
+	
+	const { setPasswordResetFlow } = useResetPasswordStore();
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
@@ -23,13 +26,16 @@ export default function ForgotPasswordPage() {
 		setMessage('');
 
 		try {
+			const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin;
 			const { error } = await supabase.auth.resetPasswordForEmail(email, {
-				redirectTo: `${window.location.origin}/reset-password`,
+				redirectTo: `${siteUrl}/auth/callback/recovery`,
 			});
 
 			if (error) {
 				setError(error.message);
 			} else {
+				// Set the password reset flow flag in store
+				setPasswordResetFlow(email);
 				setMessage('Check your email for a password reset link');
 				setIsSubmitted(true);
 			}
