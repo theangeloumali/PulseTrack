@@ -626,7 +626,7 @@ _This guide ensures Claude Code has immediate access to Task Master's essential 
 
 ## Current Project Status
 
-This project has 10 defined tasks in Task Master. Always check `task-master list` for current status and work only on the next available task from `task-master next`.
+This project has 23 defined tasks in Task Master (IDs 11-33), with 16 completed, 1 in progress, and 6 pending. Always check `task-master list` for current status and work only on the next available task from `task-master next`.
 
 ## Important Reminders
 

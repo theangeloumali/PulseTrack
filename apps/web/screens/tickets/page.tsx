@@ -9,6 +9,8 @@ import { Badge } from '@workspace/ui/components/badge';
 import { useAuthStore } from '@/lib/stores/auth';
 import { useCompanyTicketsQuery } from '@/lib/hooks/useTickets';
 import { CreateTicketModal } from '@/components/modals/create-ticket-modal';
+import { TicketBoard } from '@/components/tickets/ticket-board';
+import { TicketList } from '@/components/tickets/ticket-list';
 import { 
 	Plus, 
 	Search,
@@ -19,7 +21,9 @@ import {
 	Calendar,
 	AlertCircle,
 	CheckCircle2,
-	FolderOpen
+	FolderOpen,
+	LayoutGrid,
+	List
 } from 'lucide-react';
 
 export default function TicketsPage() {
@@ -27,6 +31,7 @@ export default function TicketsPage() {
 	const [searchTerm, setSearchTerm] = useState('');
 	const [statusFilter, setStatusFilter] = useState('all');
 	const [priorityFilter, setPriorityFilter] = useState('all');
+	const [viewMode, setViewMode] = useState<'board' | 'list'>('board');
 	
 	const { user } = useAuthStore();
 
@@ -50,49 +55,6 @@ export default function TicketsPage() {
 		return matchesSearch && matchesStatus && matchesPriority;
 	});
 
-	const getStatusColor = (status: string) => {
-		switch (status) {
-			case 'new':
-				return 'bg-gray-100 text-gray-800';
-			case 'in_progress':
-				return 'bg-blue-100 text-blue-800';
-			case 'review':
-				return 'bg-yellow-100 text-yellow-800';
-			case 'done':
-				return 'bg-green-100 text-green-800';
-			default:
-				return 'bg-gray-100 text-gray-800';
-		}
-	};
-
-	const getPriorityColor = (priority: string) => {
-		switch (priority) {
-			case 'low':
-				return 'bg-green-100 text-green-800';
-			case 'medium':
-				return 'bg-yellow-100 text-yellow-800';
-			case 'high':
-				return 'bg-orange-100 text-orange-800';
-			case 'critical':
-				return 'bg-red-100 text-red-800';
-			default:
-				return 'bg-gray-100 text-gray-800';
-		}
-	};
-
-	const getPriorityIcon = (priority: string) => {
-		switch (priority) {
-			case 'critical':
-			case 'high':
-				return <AlertCircle className="h-4 w-4" />;
-			case 'medium':
-				return <FileText className="h-4 w-4" />;
-			case 'low':
-				return <CheckCircle2 className="h-4 w-4" />;
-			default:
-				return <FileText className="h-4 w-4" />;
-		}
-	};
 
 	if (ticketsLoading) {
 		return (
@@ -137,10 +99,33 @@ export default function TicketsPage() {
 							Manage all tickets across your projects
 						</p>
 					</div>
-					<Button onClick={() => setShowCreateTicketModal(true)}>
-						<Plus className="h-4 w-4 mr-2" />
-						Create Ticket
-					</Button>
+					<div className="flex items-center gap-3">
+						{/* View Toggle */}
+						<div className="flex bg-gray-100 rounded-lg p-1">
+							<Button
+								variant={viewMode === 'board' ? 'default' : 'ghost'}
+								size="sm"
+								onClick={() => setViewMode('board')}
+								className="h-8 px-3"
+							>
+								<LayoutGrid className="h-4 w-4 mr-1" />
+								Board
+							</Button>
+							<Button
+								variant={viewMode === 'list' ? 'default' : 'ghost'}
+								size="sm"
+								onClick={() => setViewMode('list')}
+								className="h-8 px-3"
+							>
+								<List className="h-4 w-4 mr-1" />
+								List
+							</Button>
+						</div>
+						<Button onClick={() => setShowCreateTicketModal(true)}>
+							<Plus className="h-4 w-4 mr-2" />
+							Create Ticket
+						</Button>
+					</div>
 				</div>
 
 				{/* Filters */}
@@ -186,8 +171,8 @@ export default function TicketsPage() {
 					</CardContent>
 				</Card>
 
-				{/* Tickets Grid */}
-				{filteredTickets.length === 0 ? (
+				{/* Tickets Display */}
+				{filteredTickets.length === 0 && !ticketsLoading ? (
 					<Card>
 						<CardContent className="flex flex-col items-center justify-center py-12">
 							<FileText className="h-12 w-12 text-gray-400 mb-4" />
@@ -204,62 +189,13 @@ export default function TicketsPage() {
 						</CardContent>
 					</Card>
 				) : (
-					<div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-						{filteredTickets.map((ticket) => (
-							<Link
-								key={ticket.id}
-								href={`/projects/${ticket.project_id}/tickets/${ticket.id}`}
-							>
-								<Card className="hover:shadow-md transition-shadow cursor-pointer">
-									<CardHeader className="pb-3">
-										<div className="flex items-start justify-between">
-											<div className="flex-1 min-w-0">
-												<CardTitle className="text-lg font-medium text-gray-900 truncate">
-													{ticket.title}
-												</CardTitle>
-												<div className="flex items-center mt-1 text-sm text-gray-500">
-													<FolderOpen className="h-3 w-3 mr-1" />
-													<span className="truncate">
-														{(ticket.projects as any)?.name || 'Unknown Project'}
-													</span>
-												</div>
-											</div>
-											<div className="flex items-center ml-2">
-												{getPriorityIcon(ticket.priority)}
-											</div>
-										</div>
-									</CardHeader>
-									<CardContent className="pt-0">
-										{ticket.description && (
-											<p className="text-sm text-gray-600 mb-3 line-clamp-2">
-												{ticket.description}
-											</p>
-										)}
-										
-										<div className="flex flex-wrap gap-2 mb-3">
-											<Badge className={getStatusColor(ticket.status)}>
-												{ticket.status.replace('_', ' ')}
-											</Badge>
-											<Badge className={getPriorityColor(ticket.priority)}>
-												{ticket.priority}
-											</Badge>
-										</div>
-
-										<div className="flex items-center justify-between text-xs text-gray-500">
-											<div className="flex items-center">
-												<User className="h-3 w-3 mr-1" />
-												<span>{(ticket.assignee as any)?.first_name || 'Unassigned'}</span>
-											</div>
-											<div className="flex items-center">
-												<Calendar className="h-3 w-3 mr-1" />
-												<span>{new Date(ticket.created_at).toLocaleDateString()}</span>
-											</div>
-										</div>
-									</CardContent>
-								</Card>
-							</Link>
-						))}
-					</div>
+					<>
+						{viewMode === 'board' ? (
+							<TicketBoard tickets={filteredTickets} isLoading={ticketsLoading} />
+						) : (
+							<TicketList tickets={filteredTickets} isLoading={ticketsLoading} />
+						)}
+					</>
 				)}
 			</div>
 

@@ -5,9 +5,9 @@ import {
   getTicketById,
   createTicket,
   updateTicket,
+  deleteTicket,
   getRecentTicketsByProject,
   getTicketCountByProject,
-  // TODO: Add deleteTicket to service
 } from '@/lib/db/service';
 import { NewTicket, Ticket } from '@/lib/db/schema';
 import { useAuthStore } from '@/lib/stores/auth';
@@ -159,5 +159,36 @@ export function useProjectTicketCountQuery(projectId: string) {
     queryFn: () => getTicketCountByProject(projectId),
     enabled: !!projectId,
     staleTime: 1000 * 60 * 2, // 2 minutes
+  });
+}
+
+// Delete ticket mutation
+export function useDeleteTicketMutation() {
+  const queryClient = useQueryClient();
+  const { user } = useAuthStore();
+
+  return useMutation({
+    mutationFn: deleteTicket,
+    onSuccess: (_, deletedTicketId) => {
+      // Invalidate all ticket-related queries
+      queryClient.invalidateQueries({ 
+        queryKey: ticketKeys.all
+      });
+      
+      // Invalidate company tickets query
+      queryClient.invalidateQueries({ 
+        queryKey: [...ticketKeys.all, 'company', user?.company_id] 
+      });
+      
+      // Invalidate projects with ticket counts
+      queryClient.invalidateQueries({ 
+        queryKey: ['projects', 'withTicketCounts', user?.company_id] 
+      });
+      
+      // Remove from cache optimistically
+      queryClient.removeQueries({
+        queryKey: ticketKeys.detail(deletedTicketId)
+      });
+    },
   });
 }

@@ -288,6 +288,15 @@ export async function updateTicket(id: string, data: Partial<NewTicket>) {
   return result
 }
 
+export async function deleteTicket(id: string) {
+  const { error } = await supabase
+    .from('tickets')
+    .delete()
+    .eq('id', id)
+  
+  if (error) throw error
+}
+
 // Get ticket count by project
 export async function getTicketCountByProject(projectId: string) {
   const { count, error } = await supabase
