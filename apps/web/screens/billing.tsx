@@ -22,6 +22,18 @@ const BillingPage = () => {
 	const companyId = user?.company_id;
 	const isAdmin = user?.role === 'company_admin' || user?.role === 'system_admin' || user?.role === 'super_admin';
 
+	// Helper function to format duration hours to HH:MM:SS
+	const formatDuration = (hours: number | null) => {
+		if (!hours) return '00:00:00'
+		
+		const totalSeconds = Math.round(hours * 3600) // Convert hours to seconds
+		const wholeHours = Math.floor(totalSeconds / 3600)
+		const minutes = Math.floor((totalSeconds % 3600) / 60)
+		const seconds = totalSeconds % 60
+		
+		return `${wholeHours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
+	}
+
 	const { data: settings, isLoading, isError } = useBillingSettings(companyId || '');
 	const { mutate: updateSettings, isPending: isUpdating } = useUpdateBillingSettings(companyId || '');
 
@@ -229,7 +241,7 @@ console.log('filteredBillingReport:', filteredBillingReport);
 						<Clock className="h-4 w-4 text-muted-foreground" />
 					</CardHeader>
 					<CardContent>
-						<div className="text-2xl font-bold">{dashboardStats.totalHours.toFixed(1)}</div>
+						<div className="text-2xl font-bold font-mono">{formatDuration(dashboardStats.totalHours)}</div>
 						<p className="text-xs text-muted-foreground">
 							{reportFilter} period
 						</p>
@@ -418,8 +430,8 @@ console.log('filteredBillingReport:', filteredBillingReport);
 																		<div className="font-medium">{ticket.ticketTitle}</div>
 																	</td>
 																	<td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-																		<span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-																			{ticket.hours.toFixed(1)}h
+																		<span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium font-mono bg-gray-100 text-gray-800">
+																			{formatDuration(ticket.hours)}
 																		</span>
 																	</td>
 																	<td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
@@ -450,7 +462,7 @@ console.log('filteredBillingReport:', filteredBillingReport);
 														<div className="text-center">
 															<h5 className="font-medium">{weeklyData.userName}</h5>
 															<div className="mt-2 space-y-1">
-																<div className="text-2xl font-bold">{weeklyData.totalHours.toFixed(1)}h</div>
+																<div className="text-2xl font-bold font-mono">{formatDuration(weeklyData.totalHours)}</div>
 																<div className="text-lg font-semibold text-green-600">
 																	{settings?.currency || '$'}{weeklyData.totalAmount.toFixed(2)}
 																</div>

@@ -29,15 +29,15 @@ export function TimeEntriesList({ ticketId }: TimeEntriesListProps) {
   const [editingEntry, setEditingEntry] = useState<EditingEntry | null>(null)
 
   const formatDuration = (hours: number | null) => {
-    if (!hours) return '0:00'
+    if (!hours) return '00:00:00'
     
-    const wholeHours = Math.floor(hours)
-    const minutes = Math.round((hours - wholeHours) * 60)
+    const totalSeconds = Math.round(hours * 3600) // Convert hours to seconds
+    const wholeHours = Math.floor(totalSeconds / 3600)
+    const minutes = Math.floor((totalSeconds % 3600) / 60)
+    const seconds = totalSeconds % 60
     
-    if (wholeHours > 0) {
-      return `${wholeHours}:${minutes.toString().padStart(2, '0')}`
-    }
-    return `0:${minutes.toString().padStart(2, '0')}`
+    // Always show hours:minutes:seconds format
+    return `${wholeHours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
   }
 
   const formatDate = (dateString: string) => {

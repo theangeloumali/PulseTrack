@@ -9,6 +9,18 @@ export default function MyWeeklySummary() {
     const { user } = useAuthStore();
     const { data: summary, isLoading, isError } = useMyWeeklySummary(user?.id || '');
 
+    // Helper function to format duration hours to HH:MM:SS
+    const formatDuration = (hours: number | null) => {
+        if (!hours) return '00:00:00'
+        
+        const totalSeconds = Math.round(hours * 3600) // Convert hours to seconds
+        const wholeHours = Math.floor(totalSeconds / 3600)
+        const minutes = Math.floor((totalSeconds % 3600) / 60)
+        const seconds = totalSeconds % 60
+        
+        return `${wholeHours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
+    }
+
     if (isLoading) {
         return (
             <div className='flex items-center justify-center'>
@@ -37,7 +49,7 @@ export default function MyWeeklySummary() {
                 <CardTitle>My Weekly Summary</CardTitle>
             </CardHeader>
             <CardContent>
-                <div className='text-2xl font-bold'>{totalHours.toFixed(2)} hours (${totalAmount.toFixed(2)})</div>
+                <div className='text-2xl font-bold'><span className="font-mono">{formatDuration(totalHours)}</span> (${totalAmount.toFixed(2)})</div>
                 <p className='text-xs text-muted-foreground'>Total time tracked and billed this week</p>
                 <ul className='mt-4 space-y-2'>
                     {summary && summary.map(entry => {
@@ -51,7 +63,7 @@ export default function MyWeeklySummary() {
                         
                         return (
                             <li key={entry.id} className='text-sm'>
-                                <span className='font-semibold'>{entry.ticket.title}:</span> {(entry.duration || 0).toFixed(2)} hours (${entryAmount.toFixed(2)})
+                                <span className='font-semibold'>{entry.ticket.title}:</span> <span className="font-mono">{formatDuration(entry.duration)}</span> (${entryAmount.toFixed(2)})
                             </li>
                         );
                     })}

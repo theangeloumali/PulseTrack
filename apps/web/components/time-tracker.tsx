@@ -55,10 +55,8 @@ export function TimeTracker({ ticket, compact = false }: TimeTrackerProps) {
     const minutes = Math.floor((seconds % 3600) / 60)
     const secs = seconds % 60
     
-    if (hours > 0) {
-      return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
-    }
-    return `${minutes}:${secs.toString().padStart(2, '0')}`
+    // Always show hours:minutes:seconds format
+    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
   }
 
   const startTimer = async () => {
