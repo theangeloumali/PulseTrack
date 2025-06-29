@@ -136,6 +136,9 @@ export function useUpdateUserHourlyRate() {
     onSuccess: () => {
       // Invalidate and refetch company users
       queryClient.invalidateQueries({ queryKey: userKeys.companyUsers(user?.company_id || '') });
+      
+      // Invalidate billing reports since hourly rates affect billing calculations
+      queryClient.invalidateQueries({ queryKey: ['billing-report'] });
     },
   });
 }
