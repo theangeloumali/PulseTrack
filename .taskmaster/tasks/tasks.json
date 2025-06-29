@@ -503,11 +503,41 @@
         ],
         "priority": "medium",
         "subtasks": []
+      },
+      {
+        "id": 40,
+        "title": "Implement Soft Delete System for Tickets with Data Integrity Preservation",
+        "description": "Implement comprehensive soft delete functionality for tickets using deleted_at timestamp field, ensuring time tracking and billing data integrity while maintaining historical accuracy for reporting.",
+        "details": "Add deleted_at timestamp field to tickets table schema with nullable datetime type and appropriate database index for performance. Update all ticket query functions in lib/db/service.ts to include WHERE deleted_at IS NULL filter for normal operations, ensuring soft-deleted tickets are excluded from standard views and operations. Modify foreign key constraints from CASCADE to RESTRICT on related tables (time_entries, ticket_comments, ticket_history) to prevent accidental data loss when tickets are soft-deleted. Create comprehensive database migration script (0007_gigantic_sage.sql) to implement schema changes including adding deleted_at column, updating constraints, and creating performance indexes. Update ticket deletion API endpoint to set deleted_at timestamp instead of hard deletion. Modify ticket listing, search, and filtering functions to respect soft delete status. Ensure billing reports and time tracking queries can still access soft-deleted ticket data for historical accuracy by creating separate query functions that include deleted tickets when needed for reporting purposes. Update ticket management UI to show deletion status and provide restoration functionality for authorized users.",
+        "testStrategy": "Test soft delete functionality by creating tickets, soft-deleting them, and verifying they no longer appear in normal ticket listings while remaining in database. Verify foreign key constraints prevent data loss by attempting to delete tickets with associated time entries and comments. Test database migration rollback and forward compatibility. Validate billing reports continue to include time tracking data from soft-deleted tickets by creating time entries, soft-deleting associated tickets, and confirming reports show complete historical data. Test ticket restoration functionality and verify proper permission controls. Perform comprehensive query performance testing with large datasets containing both active and soft-deleted tickets to ensure indexes are properly utilized.",
+        "status": "done",
+        "dependencies": [
+          14,
+          37,
+          39
+        ],
+        "priority": "medium",
+        "subtasks": []
+      },
+      {
+        "id": 41,
+        "title": "Clean Production UI and Complete PulseTrack Rebranding",
+        "description": "Remove development debug information from production UI, implement clean loading states with PulseTrack branding, and complete full rebranding from TicketFlow to PulseTrack across all user-facing elements.",
+        "details": "Remove all console.log statements and debug information from production builds by implementing environment-based conditional logging and protecting debug pages with authentication checks. Create clean loading spinner components with PulseTrack branding including animated logo, consistent color scheme, and proper loading messages. Update all navigation menus, page titles, meta tags, and user-facing text to reflect PulseTrack branding. Implement production environment checks to hide debug routes and development tools. Add proper loading states for all async operations including API calls, page transitions, and data fetching. Ensure no sensitive information like API keys, internal URLs, or development configurations are exposed in production builds. Update application manifest, favicon, and PWA configurations with PulseTrack branding. Replace any remaining TicketFlow references in documentation, error messages, email templates, and system notifications.",
+        "testStrategy": "Test production build to verify no console.log statements appear in browser console and no debug information is visible in UI. Verify debug pages return 404 or redirect in production environment. Test loading states across all major user flows including login, dashboard loading, ticket creation, and data filtering. Verify PulseTrack branding appears consistently across all pages, navigation elements, and loading states. Test that no sensitive development information is exposed in production bundle or network requests. Validate that all error messages and system notifications display PulseTrack branding instead of TicketFlow references.",
+        "status": "done",
+        "dependencies": [
+          25,
+          37,
+          38
+        ],
+        "priority": "medium",
+        "subtasks": []
       }
     ],
     "metadata": {
       "created": "2025-06-29T02:06:57.806Z",
-      "updated": "2025-06-29T13:19:27.376Z",
+      "updated": "2025-06-29T13:52:50.585Z",
       "description": "Tasks for master context"
     }
   }

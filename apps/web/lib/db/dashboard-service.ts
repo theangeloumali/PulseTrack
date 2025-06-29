@@ -12,7 +12,12 @@ export async function getMyWeeklySummary(userId: string) {
             description,
             start_time,
             ticket:tickets!inner(title),
-            user:users!inner(hourly_rate)
+            user:users!inner(hourly_rate),
+            time_entry_billing (
+                hourly_rate,
+                billable_amount,
+                is_billable
+            )
         `)
         .eq('user_id', userId)
         .gte('start_time', startOfDay(sevenDaysAgo).toISOString())

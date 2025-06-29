@@ -5,6 +5,8 @@ import { getUserById, createUser, createCompany } from '@/lib/db/service';
 import type { User, NewUser, NewCompany } from '@/lib/db/schema';
 import { clearAuthState, isRefreshTokenError } from '@/lib/auth-utils';
 
+const isDevelopment = process.env.NODE_ENV === 'development';
+
 export interface CreateUserData {
 	firstName: string;
 	lastName: string;
@@ -64,7 +66,7 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
 						console.error('Signup error:', error);
 						return { error };
 					}
-					console.log('Signup data:', data);
+					// console.log('Signup data:', data);
 					set({
 						session: data.session,
 						supabaseUser: data.user,
@@ -78,7 +80,7 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
 
 			signIn: async (email: string, password: string) => {
 				try {
-					console.log('Attempting sign in for:', email);
+					// console.log('Attempting sign in for:', email);
 					const { data, error } = await supabase.auth.signInWithPassword({
 						email,
 						password,
@@ -90,18 +92,18 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
 					}
 
 					if (data.user && data.session) {
-						console.log('Supabase sign in successful, setting session...');
+						// console.log('Supabase sign in successful, setting session...');
 						set({
 							supabaseUser: data.user,
 							session: data.session,
 						});
 
 						// Get user from database - this is critical for the app to work
-						console.log('Fetching user profile from database...');
+						// console.log('Fetching user profile from database...');
 						try {
 							const dbUser = await getUserById(data.user.id);
 							if (dbUser) {
-								console.log('Database user found, setting user state...');
+								// console.log('Database user found, setting user state...');
 								set({ user: dbUser, isLoading: false });
 								return { error: null };
 							} else {
@@ -144,12 +146,12 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
 				try {
 					const { token, email, tokenHash } = params;
 					set({ isLoading: true });
-console.log('Starting email verification with params:', { token, email, tokenHash });
+// console.log('Starting email verification with params:', { token, email, tokenHash });
 					let authResponse: any;
 
 					// Flow 1: Email link verification (token_hash from URL)
 					if (tokenHash) {
-						console.log('Attempting verification with token_hash...');
+						// console.log('Attempting verification with token_hash...');
 						authResponse = await supabase.auth.verifyOtp({
 							token_hash: tokenHash,
 							type: 'email', // This is the type for email link verification
@@ -157,10 +159,10 @@ console.log('Starting email verification with params:', { token, email, tokenHas
 					}
 					// Flow 2: Manual OTP code verification
 					else if (token && email) {
-						console.log('Attempting verification with manual OTP code...');
+						// console.log('Attempting verification with manual OTP code...');
 
 						// Attempt 2a: Try with 'signup' type
-						console.log("Attempting with type: 'signup'");
+						// console.log("Attempting with type: 'signup'");
 						authResponse = await supabase.auth.verifyOtp({
 							email: email,
 							token: token,
@@ -170,7 +172,7 @@ console.log('Starting email verification with params:', { token, email, tokenHas
 						// Attempt 2b: If failed, try with 'email' type
 						if (authResponse.error) {
 							console.warn("Failed with type 'signup', trying 'email'", authResponse.error.message);
-							console.log("Attempting with type: 'email'");
+							// console.log("Attempting with type: 'email'");
 							authResponse = await supabase.auth.verifyOtp({
 								email: email,
 								token: token,
@@ -192,7 +194,7 @@ console.log('Starting email verification with params:', { token, email, tokenHas
 						} = await supabase.auth.refreshSession();
 
 						if (refreshedSession && !refreshError) {
-							console.log('Session refresh successful! Using refreshed session.');
+							// console.log('Session refresh successful! Using refreshed session.');
 							authResponse = {
 								data: {
 									user: refreshedSession.user,
@@ -210,7 +212,7 @@ console.log('Starting email verification with params:', { token, email, tokenHas
 						return { error: authResponse.error };
 					}
 
-					console.log('Verification successful.');
+					// console.log('Verification successful.');
 					const { user: authUser, session } = authResponse.data;
 
 					if (!authUser || !session) {
@@ -225,13 +227,13 @@ console.log('Starting email verification with params:', { token, email, tokenHas
 					// Check if user profile already exists in our public.users table
 					const existingUser = await getUserById(authUser.id);
 					if (existingUser) {
-						console.log('User profile already exists in DB. Setting user and finishing.');
+						// console.log('User profile already exists in DB. Setting user and finishing.');
 						set({ user: existingUser, isLoading: false });
 						return { error: null };
 					}
 
 					// Create user profile if it doesn't exist
-					console.log('User profile does not exist in DB. Creating new user...');
+					// console.log('User profile does not exist in DB. Creating new user...');
 					const userMetadata = authUser.user_metadata;
 					if (!userMetadata || !userMetadata.companyName || !userMetadata.companySlug) {
 						const error = new Error('User metadata is missing for new user creation.');
@@ -254,7 +256,7 @@ console.log('Starting email verification with params:', { token, email, tokenHas
 						company_id: company.id,
 					});
 
-					console.log('Successfully created new user profile.');
+					// console.log('Successfully created new user profile.');
 					set({
 						user: newUser,
 						isLoading: false,
@@ -270,7 +272,7 @@ console.log('Starting email verification with params:', { token, email, tokenHas
 
 			initialize: async () => {
 				try {
-					console.log('🔄 Auth Store: Starting initialization...');
+					// console.log('🔄 Auth Store: Starting initialization...');
 					
 					// First, check if we have a valid session
 					const {
@@ -278,12 +280,12 @@ console.log('Starting email verification with params:', { token, email, tokenHas
 						error,
 					} = await supabase.auth.getUser();
 
-					console.log('🔄 Auth Store: Got user:', { 
-						userExists: !!user,
-						userId: user?.id,
-						userEmail: user?.email,
-						error: error?.message 
-					});
+					// console.log('🔄 Auth Store: Got user:', { 
+					//	userExists: !!user,
+					//	userId: user?.id,
+					//	userEmail: user?.email,
+					//	error: error?.message 
+					// });
 
 					// If there's an error getting the session (e.g., invalid refresh token), 
 					// clear everything and let the user sign in again
@@ -292,7 +294,7 @@ console.log('Starting email verification with params:', { token, email, tokenHas
 						
 						// Check if it's a refresh token error and clear corrupted state
 						if (isRefreshTokenError(error)) {
-							console.log('🧹 Auth Store: Refresh token error detected, clearing corrupted state');
+							// console.log('🧹 Auth Store: Refresh token error detected, clearing corrupted state');
 							clearAuthState();
 						}
 						
@@ -302,25 +304,25 @@ console.log('Starting email verification with params:', { token, email, tokenHas
 					}
 
 					if (user) {
-							console.log('🔄 Auth Store: User found, setting supabaseUser...');
+							// console.log('🔄 Auth Store: User found, setting supabaseUser...');
 							set({
 								supabaseUser: user,
 							});
 
-							console.log('🔄 Auth Store: Fetching user from database...');
+							// console.log('🔄 Auth Store: Fetching user from database...');
 							// Get user from database
 							try {
 								const dbUser = await getUserById(user.id);
 								if (dbUser) {
-									console.log('✅ Auth Store: Database user found:', { 
-										id: dbUser.id, 
-										email: dbUser.email, 
-										companyId: dbUser.company_id,
-										firstName: dbUser.first_name 
-									});
+									// console.log('✅ Auth Store: Database user found:', { 
+									//	id: dbUser.id, 
+									//	email: dbUser.email, 
+									//	companyId: dbUser.company_id,
+									//	firstName: dbUser.first_name 
+									// });
 									set({ user: dbUser, isLoading: false });
 								} else {
-									console.log('❌ Auth Store: No database user found for:', user.id);
+									// console.log('❌ Auth Store: No database user found for:', user.id);
 									// Clear the invalid session since we don't have a complete user profile
 									await supabase.auth.signOut();
 									set({ session: null, supabaseUser: null, user: null, isLoading: false });
@@ -331,27 +333,27 @@ console.log('Starting email verification with params:', { token, email, tokenHas
 								set({ session: null, supabaseUser: null, user: null, isLoading: false });
 							}
 						} else {
-							console.log('🔄 Auth Store: No user found');
+							// console.log('🔄 Auth Store: No user found');
 							set({ session: null, supabaseUser: null, user: null, isLoading: false });
 						}
 
-						console.log('🔄 Auth Store: Setting up auth state change listener...');
+						// console.log('🔄 Auth Store: Setting up auth state change listener...');
 						const {
 							data: { subscription },
 						} = supabase.auth.onAuthStateChange(async (event, session) => {
-							console.log('🔄 Auth Store: Auth state changed:', event, session?.user?.id);
+							// console.log('🔄 Auth Store: Auth state changed:', event, session?.user?.id);
 
 							// Handle specific auth events
 							if (event === 'TOKEN_REFRESHED') {
-								console.log('🔄 Auth Store: Token refreshed successfully');
+								// console.log('🔄 Auth Store: Token refreshed successfully');
 							} else if (event === 'SIGNED_OUT') {
-								console.log('🔄 Auth Store: User signed out');
+								// console.log('🔄 Auth Store: User signed out');
 								set({ session: null, supabaseUser: null, user: null, isLoading: false });
 								return;
 							}
 
 							if (session?.user) {
-								console.log('🔄 Auth Store: Setting session from auth change...');
+								// console.log('🔄 Auth Store: Setting session from auth change...');
 								set({
 									session,
 									supabaseUser: session.user,
@@ -360,10 +362,10 @@ console.log('Starting email verification with params:', { token, email, tokenHas
 								try {
 									const dbUser = await getUserById(session.user.id);
 									if (dbUser) {
-										console.log('🔄 Auth Store: User updated from auth change:', dbUser.email);
+										// console.log('🔄 Auth Store: User updated from auth change:', dbUser.email);
 										set({ user: dbUser, isLoading: false });
 									} else {
-										console.log('❌ Auth Store: No user found on auth change');
+										// console.log('❌ Auth Store: No user found on auth change');
 										set({ user: null, isLoading: false });
 									}
 								} catch (error) {
@@ -371,7 +373,7 @@ console.log('Starting email verification with params:', { token, email, tokenHas
 									
 									// If it's a refresh token error, clear state
 									if (isRefreshTokenError(error)) {
-										console.log('🧹 Auth Store: Refresh token error in auth change, clearing state');
+										// console.log('🧹 Auth Store: Refresh token error in auth change, clearing state');
 										clearAuthState();
 										await supabase.auth.signOut();
 										set({ session: null, supabaseUser: null, user: null, isLoading: false });
@@ -381,12 +383,12 @@ console.log('Starting email verification with params:', { token, email, tokenHas
 									set({ user: null, isLoading: false });
 								}
 							} else {
-								console.log('🔄 Auth Store: Session cleared from auth change');
+								// console.log('🔄 Auth Store: Session cleared from auth change');
 								set({ session: null, supabaseUser: null, user: null, isLoading: false });
 							}
 						});
 
-					console.log('✅ Auth Store: Initialization complete');
+					// console.log('✅ Auth Store: Initialization complete');
 				} catch (error) {
 					console.error('❌ Auth Store: Error in initialize:', error);
 					// Clear any potentially corrupted state

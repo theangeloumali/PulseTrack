@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/db'
 import type { NewCompany, NewUser, NewProject, NewProjectMember, NewTicket, NewTimeEntry, NewComment } from '@/lib/db/schema'
+import { createOrUpdateTimeEntryBilling } from './billing-service'
 import {
   userBasicFields,
   userWithCompanyFields,
@@ -237,6 +238,7 @@ export async function getTicketById(id: string) {
     .from('tickets')
     .select(ticketFullFields)
     .eq('id', id)
+    .is('deleted_at', null)
     .single()
   
   if (error && error.code !== 'PGRST116') throw error
@@ -248,6 +250,7 @@ export async function getTicketsByProject(projectId: string) {
     .from('tickets')
     .select(ticketWithUsersFields)
     .eq('project_id', projectId)
+    .is('deleted_at', null)
     .order('created_at', { ascending: false })
   
   if (error) throw error
@@ -259,6 +262,7 @@ export async function getTicketsByCompany(companyId: string) {
     .from('tickets')
     .select(ticketWithProjectFields)
     .eq('projects.company_id', companyId)
+    .is('deleted_at', null)
     .order('created_at', { ascending: false })
   
   if (error) throw error
@@ -291,8 +295,12 @@ export async function updateTicket(id: string, data: Partial<NewTicket>) {
 export async function deleteTicket(id: string) {
   const { error } = await supabase
     .from('tickets')
-    .delete()
+    .update({ 
+      deleted_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    })
     .eq('id', id)
+    .is('deleted_at', null)
   
   if (error) throw error
 }
@@ -303,6 +311,7 @@ export async function getTicketCountByProject(projectId: string) {
     .from('tickets')
     .select('*', { count: 'exact', head: true })
     .eq('project_id', projectId)
+    .is('deleted_at', null)
   
   if (error) throw error
   return count || 0
@@ -314,6 +323,7 @@ export async function getRecentTicketsByProject(projectId: string, limit: number
     .from('tickets')
     .select(ticketWithUsersFields)
     .eq('project_id', projectId)
+    .is('deleted_at', null)
     .order('created_at', { ascending: false })
     .limit(limit)
   
@@ -358,6 +368,28 @@ export async function createTimeEntry(data: NewTimeEntry) {
     .single()
   
   if (error) throw error
+
+  // Automatically calculate billing if the entry has duration
+  if (result && result.duration && result.duration > 0) {
+    try {
+      // Get company_id from the ticket's project
+      const { data: ticketData } = await supabase
+        .from('tickets')
+        .select('projects(company_id)')
+        .eq('id', result.ticket_id)
+        .single()
+      
+      const projects = Array.isArray(ticketData?.projects) ? ticketData.projects[0] : ticketData?.projects
+      const companyId = projects?.company_id
+      if (companyId) {
+        await createOrUpdateTimeEntryBilling(result.id, companyId)
+      }
+    } catch (billingError) {
+      // Log error but don't fail the time entry creation
+      console.error('Failed to create billing record for time entry:', billingError)
+    }
+  }
+  
   return result
 }
 
@@ -370,6 +402,28 @@ export async function updateTimeEntry(id: string, data: Partial<NewTimeEntry>) {
     .single()
   
   if (error) throw error
+
+  // Recalculate billing if the entry has duration (including when duration is updated)
+  if (result && result.duration && result.duration > 0) {
+    try {
+      // Get company_id from the ticket's project
+      const { data: ticketData } = await supabase
+        .from('tickets')
+        .select('projects(company_id)')
+        .eq('id', result.ticket_id)
+        .single()
+      
+      const projects = Array.isArray(ticketData?.projects) ? ticketData.projects[0] : ticketData?.projects
+      const companyId = projects?.company_id
+      if (companyId) {
+        await createOrUpdateTimeEntryBilling(result.id, companyId)
+      }
+    } catch (billingError) {
+      // Log error but don't fail the time entry update
+      console.error('Failed to update billing record for time entry:', billingError)
+    }
+  }
+  
   return result
 }
 
@@ -474,6 +528,8 @@ export async function getProjectsWithTicketCounts(companyId: string) {
 /**
  * Get time entries for billing within a company and date range.
  * Includes joins to tickets, projects, and users for comprehensive data.
+ * IMPORTANT: This function intentionally includes time entries from soft-deleted tickets
+ * to preserve billing integrity and historical data for invoicing purposes.
  */
 export async function getTimeEntriesForBilling(companyId: string, startDate: string, endDate: string) {
   console.log('Fetching time entries for billing:', { companyId, startDate, endDate });
@@ -489,6 +545,7 @@ export async function getTimeEntriesForBilling(companyId: string, startDate: str
       tickets (
         id,
         title,
+        deleted_at,
         projects!inner (
           id,
           name,

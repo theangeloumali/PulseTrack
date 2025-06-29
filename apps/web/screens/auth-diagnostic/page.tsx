@@ -43,6 +43,17 @@ interface PerformanceResults {
 }
 
 export default function AuthDiagnosticPage() {
+  // Prevent access in production
+  if (process.env.NODE_ENV === 'production') {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">Page Not Available</h1>
+          <p className="text-gray-600">This diagnostic page is only available in development mode.</p>
+        </div>
+      </div>
+    );
+  }
   const [results, setResults] = useState<TestResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('overview');
@@ -306,6 +317,7 @@ export default function AuthDiagnosticPage() {
         const { data: ticketData, error: ticketError } = await supabase
           .from('tickets')
           .select('*')
+          .is('deleted_at', null)
           .limit(5);
         
         testResults.ticketQuery = {
@@ -341,7 +353,7 @@ export default function AuthDiagnosticPage() {
       const queries = [
         { name: 'Users Query', query: () => supabase.from('users').select('*').limit(10) },
         { name: 'Projects Query', query: () => supabase.from('projects').select('*').limit(10) },
-        { name: 'Tickets Query', query: () => supabase.from('tickets').select('*').limit(10) },
+        { name: 'Tickets Query', query: () => supabase.from('tickets').select('*').is('deleted_at', null).limit(10) },
       ];
 
       for (const { name, query } of queries) {

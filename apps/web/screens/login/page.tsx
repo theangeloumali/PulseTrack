@@ -26,7 +26,6 @@ function LoginContent() {
 
 	useEffect(() => {
 		if (urlError) {
-			console.log('Login page - URL Error parameter:', urlError);
 			setError(`Redirect error: ${urlError}`);
 		}
 	}, [urlError]);
@@ -42,7 +41,7 @@ function LoginContent() {
 			if (error) {
 				setError(error.message);
 			} else {
-				console.log('Login successful, redirecting to dashboard...');
+				// Login successful, redirecting to dashboard
 				// Use a combination approach: first try client-side, then fallback to server-side
 				router.push('/dashboard');
 				// As a backup, force reload after a short delay if client-side navigation fails

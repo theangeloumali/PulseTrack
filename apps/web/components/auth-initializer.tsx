@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 
+const isDevelopment = process.env.NODE_ENV === 'development';
+
 // Public routes that don't require authentication
 const PUBLIC_ROUTES = [
 	'/login',
@@ -29,39 +31,53 @@ export function AuthInitializer() {
 
 	useEffect(() => {
 		if (mounted && typeof window !== 'undefined') {
-			console.log('🔄 AuthInitializer: Starting auth initialization...');
+			if (isDevelopment) {
+				console.log('🔄 AuthInitializer: Starting auth initialization...');
+			}
 			// Dynamically import the auth store only on the client
 			import('@/lib/stores/auth').then(async ({ useAuthStore }) => {
 				const store = useAuthStore.getState();
 				
-				console.log('🔄 AuthInitializer: Store imported, current user:', store.user);
-				console.log('🔄 AuthInitializer: Store isLoading:', store.isLoading);
+				if (isDevelopment) {
+					console.log('🔄 AuthInitializer: Store imported, current user:', store.user);
+					console.log('🔄 AuthInitializer: Store isLoading:', store.isLoading);
+				}
 				
 				// Initialize auth
-				console.log('🔄 AuthInitializer: Calling store.initialize()...');
+				if (isDevelopment) {
+					console.log('🔄 AuthInitializer: Calling store.initialize()...');
+				}
 				try {
 					await store.initialize();
-					console.log('🔄 AuthInitializer: Initialize completed');
+					if (isDevelopment) {
+						console.log('🔄 AuthInitializer: Initialize completed');
+					}
 				} catch (error) {
-					console.error('❌ AuthInitializer: Initialize failed:', error);
+					if (isDevelopment) {
+						console.error('❌ AuthInitializer: Initialize failed:', error);
+					}
 				}
 				
 				// Set up subscription to auth state changes
 				const unsubscribe = useAuthStore.subscribe(
 					(state) => {
-						console.log('🔄 AuthInitializer: Store state changed:', {
-							user: state.user ? `${state.user.first_name} (${state.user.email})` : null,
-							isLoading: state.isLoading,
-							hasSupabaseUser: !!state.supabaseUser,
-							hasSession: !!state.session
-						});
+						if (isDevelopment) {
+							console.log('🔄 AuthInitializer: Store state changed:', {
+								user: state.user ? `${state.user.first_name} (${state.user.email})` : null,
+								isLoading: state.isLoading,
+								hasSupabaseUser: !!state.supabaseUser,
+								hasSession: !!state.session
+							});
+						}
 						setUser(state.user);
 						setIsInitialized(true);
 					}
 				);
 
 				// Set initial user state
-				console.log('🔄 AuthInitializer: Setting initial user state...');
+				if (isDevelopment) {
+					console.log('🔄 AuthInitializer: Setting initial user state...');
+				}
 				const currentState = useAuthStore.getState();
 				setUser(currentState.user);
 				setIsInitialized(true);
@@ -79,25 +95,31 @@ export function AuthInitializer() {
 		const isPublicRoute = PUBLIC_ROUTES.some(route => pathname.startsWith(route));
 		const isAuthRoute = AUTH_ROUTES.some(route => pathname.startsWith(route));
 
-		console.log('🔄 AuthInitializer: Route protection check:', {
-			pathname,
-			user: user ? `${user.first_name} (${user.email})` : null,
-			isPublicRoute,
-			isAuthRoute,
-			mounted,
-			isInitialized
-		});
+		if (isDevelopment) {
+			console.log('🔄 AuthInitializer: Route protection check:', {
+				pathname,
+				user: user ? `${user.first_name} (${user.email})` : null,
+				isPublicRoute,
+				isAuthRoute,
+				mounted,
+				isInitialized
+			});
+		}
 
 		// If user is authenticated and trying to access auth pages, redirect to dashboard
 		if (user && isAuthRoute) {
-			console.log('User authenticated, redirecting from auth page to dashboard');
+			if (isDevelopment) {
+				console.log('User authenticated, redirecting from auth page to dashboard');
+			}
 			router.replace('/dashboard');
 			return;
 		}
 
 		// If user is not authenticated and trying to access protected pages, redirect to login
 		if (!user && !isPublicRoute) {
-			console.log('User not authenticated, redirecting to login');
+			if (isDevelopment) {
+				console.log('User not authenticated, redirecting to login');
+			}
 			router.replace('/login');
 			return;
 		}
@@ -109,8 +131,7 @@ export function AuthInitializer() {
 			<div className="fixed inset-0 bg-white bg-opacity-75 flex items-center justify-center z-50">
 				<div className="text-center">
 					<Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-blue-600" />
-					<p className="text-gray-600">Loading...</p>
-					<p className="text-xs text-gray-500 mt-2">Debug: mounted={mounted ? 'true' : 'false'}, initialized={isInitialized ? 'true' : 'false'}, user={user ? 'exists' : 'null'}</p>
+					<p className="text-gray-600">Initializing PulseTrack...</p>
 				</div>
 			</div>
 		);

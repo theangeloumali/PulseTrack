@@ -45,7 +45,7 @@ const BillingPage = () => {
 
 	const { data: users } = useCompanyUsers();
 	const { data: projects } = useProjectsQuery();
-
+	console.log('BillingPage rendered with companyId:',  billingReport);
 	const filteredBillingReport = React.useMemo(() => {
 		if (!billingReport) return null;
 		if (isAdmin && selectedUserId === 'all') {
@@ -209,7 +209,7 @@ const BillingPage = () => {
     
 	if (isLoading) return <div>Loading...</div>;
 	if (isError) return <div>Error loading billing settings.</div>;
-
+console.log('filteredBillingReport:', filteredBillingReport);
 	return (
 		<div className='p-4 space-y-4'>
 			<div className='flex justify-between items-center'>

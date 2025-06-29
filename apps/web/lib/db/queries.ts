@@ -9,6 +9,15 @@ export const userBasicFields = `
   avatar_url
 `;
 
+export const userWithBillingFields = `
+  id,
+  first_name,
+  last_name,
+  email,
+  avatar_url,
+  hourly_rate
+`;
+
 export const userWithCompanyFields = `
   ${userBasicFields},
   role,
@@ -124,7 +133,7 @@ export const timeEntryBasicFields = `
 export const timeEntryWithUserFields = `
   ${timeEntryBasicFields},
   users (
-    ${userBasicFields}
+    ${userWithBillingFields}
   )
 `;
 

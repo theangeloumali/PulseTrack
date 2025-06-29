@@ -2,6 +2,12 @@ import { Geist, Geist_Mono } from 'next/font/google';
 import { Analytics } from '@vercel/analytics/next';
 import '@workspace/ui/globals.css';
 import { Providers } from '@/components/providers';
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: 'PulseTrack - Project Management & Time Tracking',
+  description: 'Comprehensive project management system with ticket tracking, time management, and billing features.',
+};
 
 const fontSans = Geist({
 	subsets: ['latin'],

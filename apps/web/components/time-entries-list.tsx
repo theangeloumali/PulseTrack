@@ -209,7 +209,7 @@ export function TimeEntriesList({ ticketId }: TimeEntriesListProps) {
                           {formatDate(entry.start_time)}
                         </span>
                         <span className="text-sm text-gray-500">
-                          by {entry.users?.[0]?.first_name || 'Unknown'} {entry.users?.[0]?.last_name || ''}
+                          by {(entry.users as any)?.first_name || 'Unknown'} {(entry.users as any)?.last_name || ''}
                         </span>
                       </div>
                       {entry.description && (
