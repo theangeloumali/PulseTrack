@@ -567,7 +567,7 @@ export async function getCompanyUsers(companyId: string) {
 /**
  * Update user role and status
  */
-export async function updateUserRole(userId: string, role: 'admin' | 'manager' | 'user') {
+export async function updateUserRole(userId: string, role: 'super_admin' | 'system_admin' | 'company_admin' | 'manager' | 'user') {
   const { data, error } = await supabase
     .from('users')
     .update({ role, updated_at: new Date().toISOString() })
@@ -654,7 +654,7 @@ export async function getAssignableUsers(companyId: string) {
  */
 export async function inviteUserToCompany(data: {
   email: string
-  role: 'admin' | 'manager' | 'user'
+  role: 'super_admin' | 'system_admin' | 'company_admin' | 'manager' | 'user'
   companyId: string
   invitedBy: string
   firstName?: string

@@ -20,7 +20,7 @@ const currencies = ['USD', 'EUR', 'GBP', 'JPY', 'AUD', 'CAD', 'CHF', 'CNY', 'SEK
 const BillingPage = () => {
 	const { user } = useAuthStore();
 	const companyId = user?.company_id;
-	const isAdmin = user?.role === 'admin';
+	const isAdmin = user?.role === 'company_admin' || user?.role === 'system_admin' || user?.role === 'super_admin';
 
 	const { data: settings, isLoading, isError } = useBillingSettings(companyId || '');
 	const { mutate: updateSettings, isPending: isUpdating } = useUpdateBillingSettings(companyId || '');

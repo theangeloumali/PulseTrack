@@ -24,4 +24,4 @@ async function handler(req: NextRequest) {
     return NextResponse.json({ error: `Method ${req.method} Not Allowed` }, { status: 405 });
 }
 
-export const GET = withAuth(handler, ['admin', 'manager']);
+export const GET = withAuth(handler, ['super_admin', 'system_admin', 'company_admin', 'manager', 'user']);

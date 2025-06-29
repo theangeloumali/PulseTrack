@@ -23,7 +23,7 @@ interface CompanyState {
   usersError: string | null
 
   // Filters and UI state
-  roleFilter: 'all' | 'admin' | 'manager' | 'user'
+  roleFilter: 'all' | 'super_admin' | 'system_admin' | 'company_admin' | 'manager' | 'user'
   statusFilter: 'all' | 'active' | 'inactive'
   searchQuery: string
 
@@ -36,7 +36,7 @@ interface CompanyState {
   setSelectedUser: (user: CompanyUser | null) => void
   setUsersLoading: (loading: boolean) => void
   setUsersError: (error: string | null) => void
-  setRoleFilter: (filter: 'all' | 'admin' | 'manager' | 'user') => void
+  setRoleFilter: (filter: 'all' | 'super_admin' | 'system_admin' | 'company_admin' | 'manager' | 'user') => void
   setStatusFilter: (filter: 'all' | 'active' | 'inactive') => void
   setSearchQuery: (query: string) => void
   
@@ -118,7 +118,7 @@ export const useCompanyStore = create<CompanyState>()(
           total: users.length,
           active: users.filter(u => u.status === 'active').length,
           inactive: users.filter(u => u.status === 'inactive').length,
-          admins: users.filter(u => u.role === 'admin').length,
+          admins: users.filter(u => ['super_admin', 'system_admin', 'company_admin'].includes(u.role)).length,
           managers: users.filter(u => u.role === 'manager').length,
           users: users.filter(u => u.role === 'user').length,
         };

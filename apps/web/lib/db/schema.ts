@@ -2,7 +2,7 @@
 // This file provides type safety without runtime dependencies
 
 // Define enum types
-export type UserRole = 'admin' | 'manager' | 'user'
+export type UserRole = 'super_admin' | 'system_admin' | 'company_admin' | 'manager' | 'user'
 export type UserStatus = 'active' | 'inactive'
 export type ProjectStatus = 'active' | 'archived' | 'completed'
 export type TicketStatus = 'new' | 'in_progress' | 'review' | 'done'

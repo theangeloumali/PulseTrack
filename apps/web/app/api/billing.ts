@@ -27,5 +27,5 @@ async function handler(req: NextRequest, { params }: { params: { companyId: stri
     return NextResponse.json({ error: `Method ${req.method} Not Allowed` }, { status: 405 });
 }
 
-export const PUT = withAuth(handler, ['admin', 'manager']);
-export const GET = withAuth(handler, ['admin', 'manager']);
+export const PUT = withAuth(handler, ['super_admin', 'system_admin', 'company_admin', 'manager']);
+export const GET = withAuth(handler, ['super_admin', 'system_admin', 'company_admin', 'manager']);

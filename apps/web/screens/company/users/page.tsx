@@ -194,7 +194,9 @@ export default function CompanyUsersPage() {
                   className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="all">All Roles</option>
-                  <option value="admin">Admin</option>
+                  <option value="super_admin">Super Admin</option>
+                  <option value="system_admin">System Admin</option>
+                  <option value="company_admin">Company Admin</option>
                   <option value="manager">Manager</option>
                   <option value="user">User</option>
                 </select>
@@ -302,7 +304,7 @@ export default function CompanyUsersPage() {
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                             {/* Only show actions if current user is admin or it's not themselves */}
-                            {(currentUser?.role === 'admin' && currentUser?.id !== user.id) && (
+                            {(['super_admin', 'system_admin', 'company_admin'].includes(currentUser?.role || '') && currentUser?.id !== user.id) && (
                               <Button
                                 variant="ghost"
                                 size="sm"

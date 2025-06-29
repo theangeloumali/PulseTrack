@@ -538,6 +538,61 @@ _This guide ensures Claude Code has immediate access to Task Master's essential 
 
 ## CRITICAL: Task Master Integration Required
 
+## MANDATORY: Task Master Updates for New Features
+
+**ALWAYS update Task Master whenever implementing new features or significant changes:**
+
+1. **After completing any new feature or major fix:**
+   - Run `task-master add-task --prompt="[Description of implemented feature]" --research`
+   - Immediately mark as completed: `task-master set-status --id=<new-id> --status=done`
+   - **MANDATORY**: Run `pnpm build` to ensure no build errors
+   - **MANDATORY**: Run `pnpm typecheck` to verify TypeScript compilation
+
+2. **Examples of changes that MUST be added to Task Master:**
+   - New API endpoints or routes
+   - New UI components or pages
+   - Bug fixes that affect functionality
+   - Performance improvements
+   - Security enhancements
+   - Database schema changes
+   - Authentication/authorization changes
+   - Query optimization fixes
+   - Role management updates
+
+3. **Task Master serves as the source of truth for:**
+   - Project completion status
+   - Feature implementation history
+   - Development progress tracking
+   - Code review and handoff documentation
+
+**Failure to update Task Master means features are not officially "complete" and may be overlooked in project planning.**
+
+## MANDATORY: Build Verification Steps
+
+**EVERY completed task MUST pass these verification steps:**
+
+1. **TypeScript Compilation Check:**
+   ```bash
+   pnpm typecheck
+   ```
+   - Must complete with no errors
+   - If errors exist, fix them before marking task complete
+
+2. **Build Verification:**
+   ```bash
+   pnpm build
+   ```
+   - Must complete successfully without errors
+   - If build fails, resolve issues before proceeding
+
+3. **Task Master Update:**
+   ```bash
+   task-master add-task --prompt="[Description of completed work]" --research
+   task-master set-status --id=<new-id> --status=done
+   ```
+
+**These steps are NON-NEGOTIABLE and MUST be completed for every development task.**
+
 **ALL development work MUST follow the Task Master workflow:**
 
 1. **Before starting any development task:**
@@ -551,6 +606,8 @@ _This guide ensures Claude Code has immediate access to Task Master's essential 
    - NEVER work on tasks that haven't been assigned or are blocked by dependencies
 
 3. **After completing work:**
+   - **MANDATORY**: Run `pnpm build` to ensure no build errors
+   - **MANDATORY**: Run `pnpm typecheck` to verify TypeScript compilation
    - Mark task as complete: `task-master set-status --id=<id> --status=done`
    - Run `task-master next` to get the next available task
 
