@@ -3,8 +3,10 @@
 import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
+import { useResetPasswordStore } from '@/lib/stores/reset-password';
+import { useAccountSetupStore } from '@/lib/stores/account-setup';
 
-const isDevelopment = process.env.NODE_ENV === 'development';
+const isDevelopment = true; // Temporarily enabled for debugging
 
 // Public routes that don't require authentication
 const PUBLIC_ROUTES = [
@@ -12,7 +14,8 @@ const PUBLIC_ROUTES = [
 	'/signup', 
 	'/verify-email',
 	'/forgot-password',
-	'/reset-password'
+	'/reset-password',
+	'/auth/accept-invitation'
 ];
 
 // Routes that should redirect to dashboard if user is already authenticated
@@ -24,6 +27,8 @@ export function AuthInitializer() {
 	const [user, setUser] = useState<any>(null);
 	const router = useRouter();
 	const pathname = usePathname();
+	const { isValidResetFlow, clearPasswordResetFlow } = useResetPasswordStore();
+	const { isValidSetupFlow, clearAccountSetupFlow } = useAccountSetupStore();
 
 	useEffect(() => {
 		setMounted(true);
@@ -62,12 +67,7 @@ export function AuthInitializer() {
 				const unsubscribe = useAuthStore.subscribe(
 					(state) => {
 						if (isDevelopment) {
-							console.log('🔄 AuthInitializer: Store state changed:', {
-								user: state.user ? `${state.user.first_name} (${state.user.email})` : null,
-								isLoading: state.isLoading,
-								hasSupabaseUser: !!state.supabaseUser,
-								hasSession: !!state.session
-							});
+							console.log(`🔄 AuthInitializer: Store state changed - user: ${state.user ? `${state.user.first_name} (${state.user.email})` : 'null'}, isLoading: ${state.isLoading}, hasSupabaseUser: ${!!state.supabaseUser}, hasSession: ${!!state.session}`);
 						}
 						setUser(state.user);
 						setIsInitialized(true);
@@ -94,22 +94,51 @@ export function AuthInitializer() {
 
 		const isPublicRoute = PUBLIC_ROUTES.some(route => pathname.startsWith(route));
 		const isAuthRoute = AUTH_ROUTES.some(route => pathname.startsWith(route));
+		const isResetPasswordRoute = pathname.startsWith('/reset-password');
+		const isAcceptInvitationRoute = pathname.startsWith('/auth/accept-invitation');
 
 		if (isDevelopment) {
-			console.log('🔄 AuthInitializer: Route protection check:', {
-				pathname,
-				user: user ? `${user.first_name} (${user.email})` : null,
-				isPublicRoute,
-				isAuthRoute,
-				mounted,
-				isInitialized
-			});
+			console.log(`🔄 AuthInitializer: Route protection check - pathname: ${pathname}, user: ${user ? `${user.first_name} (${user.email})` : 'null'}, isPublicRoute: ${isPublicRoute}, isAuthRoute: ${isAuthRoute}, isResetPasswordRoute: ${isResetPasswordRoute}, isAcceptInvitationRoute: ${isAcceptInvitationRoute}, mounted: ${mounted}, isInitialized: ${isInitialized}`);
+		}
+
+		// Special handling for reset password route - always allow it regardless of auth state
+		if (isResetPasswordRoute) {
+			if (isDevelopment) {
+				console.log('🔄 AuthInitializer: Reset password route detected, allowing access');
+			}
+			return;
+		}
+
+		// Special handling for accept invitation route - always allow it regardless of auth state
+		if (isAcceptInvitationRoute) {
+			if (isDevelopment) {
+				console.log('🔄 AuthInitializer: Accept invitation route detected, allowing access');
+			}
+			return;
+		}
+
+		// Check if user is authenticated and in a password reset flow
+		if (user && isValidResetFlow() && !isResetPasswordRoute) {
+			if (isDevelopment) {
+				console.log('🔄 AuthInitializer: User authenticated with valid reset flow, redirecting to reset password');
+			}
+			router.replace('/reset-password');
+			return;
+		}
+
+		// Check if user is authenticated and in an account setup flow
+		if (user && isValidSetupFlow() && !isAcceptInvitationRoute) {
+			if (isDevelopment) {
+				console.log('🔄 AuthInitializer: User authenticated with valid setup flow, redirecting to accept invitation');
+			}
+			router.replace('/auth/accept-invitation');
+			return;
 		}
 
 		// If user is authenticated and trying to access auth pages, redirect to dashboard
 		if (user && isAuthRoute) {
 			if (isDevelopment) {
-				console.log('User authenticated, redirecting from auth page to dashboard');
+				console.log('🔄 AuthInitializer: User authenticated, redirecting from auth page to dashboard');
 			}
 			router.replace('/dashboard');
 			return;
@@ -118,7 +147,7 @@ export function AuthInitializer() {
 		// If user is not authenticated and trying to access protected pages, redirect to login
 		if (!user && !isPublicRoute) {
 			if (isDevelopment) {
-				console.log('User not authenticated, redirecting to login');
+				console.log('🔄 AuthInitializer: User not authenticated, redirecting to login');
 			}
 			router.replace('/login');
 			return;

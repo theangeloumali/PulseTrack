@@ -41,7 +41,7 @@ export function SidebarLayout({ children }: SidebarLayoutProps) {
 	};
 
 	// Don't show sidebar on auth pages
-	const authPages = ['/login', '/signup', '/forgot-password', '/verify-email'];
+	const authPages = ['/login', '/signup', '/forgot-password', '/verify-email', '/reset-password', '/auth/accept-invitation'];
 	const isAuthPage = authPages.some((page) => pathname.startsWith(page));
 
 	if (!user || isAuthPage) {
