@@ -16,6 +16,17 @@ import { supabase } from '@/lib/supabase/client';
 import { Loader2, Database, Plus } from 'lucide-react';
 
 export default function TestDataPage() {
+  // Prevent access in production
+  if (process.env.NODE_ENV === 'production') {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">Page Not Available</h1>
+          <p className="text-gray-600">This test page is only available in development mode.</p>
+        </div>
+      </div>
+    );
+  }
   const [results, setResults] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const { user } = useAuthStore();

@@ -21,8 +21,15 @@ export default function MyWeeklySummary() {
         return <div>Error loading weekly summary.</div>;
     }
 
-    const totalHours = (summary || []).reduce((acc, entry) => acc + (entry.duration || 0), 0) / 3600;
-    const totalAmount = (summary || []).reduce((acc, entry) => acc + (entry.duration || 0) / 3600 * parseFloat(entry.user.hourly_rate || '0'), 0);
+    const totalHours = (summary || []).reduce((acc, entry) => acc + (entry.duration || 0), 0); // Duration is already in hours
+    const totalAmount = (summary || []).reduce((acc, entry) => {
+        // Use pre-calculated billing amount if available, otherwise fallback to simple calculation
+        if (entry.time_entry_billing && entry.time_entry_billing.length > 0) {
+            return acc + parseFloat(entry.time_entry_billing[0].billable_amount || '0');
+        }
+        // Fallback to simple calculation using user's hourly rate
+        return acc + (entry.duration || 0) * parseFloat(entry.user.hourly_rate || '0'); // Duration is already in hours
+    }, 0);
 
     return (
         <Card>
@@ -33,11 +40,21 @@ export default function MyWeeklySummary() {
                 <div className='text-2xl font-bold'>{totalHours.toFixed(2)} hours (${totalAmount.toFixed(2)})</div>
                 <p className='text-xs text-muted-foreground'>Total time tracked and billed this week</p>
                 <ul className='mt-4 space-y-2'>
-                    {summary && summary.map(entry => (
-                        <li key={entry.id} className='text-sm'>
-                            <span className='font-semibold'>{entry.ticket.title}:</span> {((entry.duration || 0) / 3600).toFixed(2)} hours (${((entry.duration || 0) / 3600 * parseFloat(entry.user.hourly_rate || '0')).toFixed(2)})
-                        </li>
-                    ))}
+                    {summary && summary.map(entry => {
+                        // Calculate individual entry amount
+                        let entryAmount;
+                        if (entry.time_entry_billing && entry.time_entry_billing.length > 0) {
+                            entryAmount = parseFloat(entry.time_entry_billing[0].billable_amount || '0');
+                        } else {
+                            entryAmount = (entry.duration || 0) * parseFloat(entry.user.hourly_rate || '0'); // Duration is already in hours
+                        }
+                        
+                        return (
+                            <li key={entry.id} className='text-sm'>
+                                <span className='font-semibold'>{entry.ticket.title}:</span> {(entry.duration || 0).toFixed(2)} hours (${entryAmount.toFixed(2)})
+                            </li>
+                        );
+                    })}
                 </ul>
             </CardContent>
         </Card>

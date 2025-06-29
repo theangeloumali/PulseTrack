@@ -62,7 +62,7 @@ export function SidebarLayout({ children }: SidebarLayoutProps) {
 							<div className='w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center'>
 								<Ticket className='h-5 w-5 text-white' />
 							</div>
-							<span className='text-xl font-bold text-gray-900'>TicketFlow</span>
+							<span className='text-xl font-bold text-gray-900'>PulseTrack</span>
 						</Link>
 						<Button variant='ghost' size='sm' className='lg:hidden' onClick={() => setSidebarOpen(false)}>
 							<X className='h-5 w-5' />

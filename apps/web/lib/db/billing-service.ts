@@ -3,6 +3,130 @@ import type { NewBillingPeriod, NewBillingRate, NewCompanyBillingSettings, NewTi
 import { getTimeEntriesForBilling } from './service';
 import { format } from 'date-fns';
 
+// Helper function to calculate billing for a single time entry
+export async function calculateTimeEntryBilling(timeEntryId: string, companyId: string) {
+    // Get the time entry with ticket and user information
+    const { data: timeEntry, error: entryError } = await supabase
+        .from('time_entries')
+        .select(`
+            id,
+            user_id,
+            start_time,
+            duration,
+            tickets (
+                id,
+                project_id,
+                projects (
+                    id,
+                    company_id
+                )
+            ),
+            users (
+                id,
+                hourly_rate
+            )
+        `)
+        .eq('id', timeEntryId)
+        .single();
+
+    if (entryError || !timeEntry) {
+        throw new Error(`Failed to fetch time entry: ${entryError?.message}`);
+    }
+
+    if (!timeEntry.duration || timeEntry.duration <= 0) {
+        return null; // No billing for entries without duration
+    }
+
+    // Get billing rates and company settings
+    const billingRates = await getBillingRatesByCompany(companyId);
+    const companySettings = await getCompanyBillingSettings(companyId);
+
+    // Determine applicable rate using same logic as billing report
+    let applicableRate = 0;
+    const ticket = Array.isArray(timeEntry.tickets) ? timeEntry.tickets[0] : timeEntry.tickets;
+    const projectId = ticket?.project_id;
+    const userId = timeEntry.user_id;
+    const user = Array.isArray(timeEntry.users) ? timeEntry.users[0] : timeEntry.users;
+
+    // Filter rates by effective_from and effective_to dates
+    const relevantRates = billingRates.filter(rate =>
+        new Date(timeEntry.start_time) >= new Date(rate.effective_from) &&
+        (!rate.effective_to || new Date(timeEntry.start_time) <= new Date(rate.effective_to))
+    );
+
+    const projectRate = relevantRates.find(rate => rate.project_id === projectId && !rate.user_id);
+    const userRate = relevantRates.find(rate => rate.user_id === userId && !rate.project_id);
+
+    if (projectRate) {
+        applicableRate = parseFloat(projectRate.hourly_rate);
+    } else if (userRate) {
+        applicableRate = parseFloat(userRate.hourly_rate);
+    } else if (companySettings?.default_hourly_rate) {
+        applicableRate = parseFloat(companySettings.default_hourly_rate);
+    } else if (user?.hourly_rate) {
+        applicableRate = parseFloat(user.hourly_rate);
+    }
+
+    const durationHours = timeEntry.duration || 0; // Duration is already in hours
+    const billableAmount = durationHours * applicableRate;
+
+    return {
+        time_entry_id: timeEntryId,
+        hourly_rate: applicableRate.toString(),
+        billable_amount: billableAmount.toString(),
+        is_billable: true
+    };
+}
+
+// Function to create or update billing record for a time entry
+export async function createOrUpdateTimeEntryBilling(timeEntryId: string, companyId: string) {
+    try {
+        // Calculate billing data
+        const billingData = await calculateTimeEntryBilling(timeEntryId, companyId);
+        
+        if (!billingData) {
+            return null; // No billing for entries without duration
+        }
+
+        // Check if billing record already exists
+        const { data: existingBilling } = await supabase
+            .from('time_entry_billing')
+            .select('id')
+            .eq('time_entry_id', timeEntryId)
+            .single();
+
+        if (existingBilling) {
+            // Update existing billing record
+            const { data, error } = await supabase
+                .from('time_entry_billing')
+                .update({
+                    hourly_rate: billingData.hourly_rate,
+                    billable_amount: billingData.billable_amount,
+                    is_billable: billingData.is_billable
+                })
+                .eq('time_entry_id', timeEntryId)
+                .select()
+                .single();
+            
+            if (error) throw error;
+            return data;
+        } else {
+            // Create new billing record
+            const { data, error } = await supabase
+                .from('time_entry_billing')
+                .insert(billingData)
+                .select()
+                .single();
+            
+            if (error) throw error;
+            return data;
+        }
+    } catch (error) {
+        console.error('Error creating/updating time entry billing:', error);
+        throw error;
+    }
+}
+
 // Billing Period operations
 export async function getBillingPeriodById(id: string) {
     const { data, error } = await supabase
@@ -191,7 +315,7 @@ export async function generateBillingReport(companyId: string, startDate: string
         const projectId = project.id;
         const ticketId = entry.ticket.id;
         const ticketTitle = entry.ticket.title;
-        const durationHours = entry.duration ? entry.duration / 3600 : 0;
+        const durationHours = entry.duration || 0; // Duration is already in hours
 
         let applicableRate = 0;
 

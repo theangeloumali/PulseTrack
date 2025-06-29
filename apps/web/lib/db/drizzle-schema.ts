@@ -113,6 +113,7 @@ export const tickets = pgTable('tickets', {
 	estimated_hours: integer('estimated_hours'),
 	actual_hours: integer('actual_hours'),
 	due_date: timestamp('due_date', { withTimezone: true }),
+	deleted_at: timestamp('deleted_at', { withTimezone: true }),
 	created_at: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 	updated_at: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 }, (table) => ({
@@ -125,6 +126,7 @@ export const tickets = pgTable('tickets', {
 	priorityIdx: index('tickets_priority_idx').on(table.priority),
 	dueDateIdx: index('tickets_due_date_idx').on(table.due_date),
 	titleIdx: index('tickets_title_idx').on(table.title),
+	deletedAtIdx: index('tickets_deleted_at_idx').on(table.deleted_at),
 })).enableRLS();
 
 // Time entries table
@@ -132,7 +134,7 @@ export const timeEntries = pgTable('time_entries', {
 	id: uuid('id').primaryKey().defaultRandom(),
 	ticket_id: uuid('ticket_id')
 		.notNull()
-		.references(() => tickets.id, { onDelete: 'cascade' }),
+		.references(() => tickets.id, { onDelete: 'restrict' }),
 	user_id: uuid('user_id')
 		.notNull()
 		.references(() => users.id, { onDelete: 'cascade' }),
@@ -154,7 +156,7 @@ export const comments = pgTable('comments', {
 	id: uuid('id').primaryKey().defaultRandom(),
 	ticket_id: uuid('ticket_id')
 		.notNull()
-		.references(() => tickets.id, { onDelete: 'cascade' }),
+		.references(() => tickets.id, { onDelete: 'restrict' }),
 	user_id: uuid('user_id')
 		.notNull()
 		.references(() => users.id, { onDelete: 'cascade' }),
@@ -245,7 +247,7 @@ export const timeEntryBilling = pgTable('time_entry_billing', {
 // Ticket History table for tracking changes
 export const ticketHistory = pgTable('ticket_history', {
 	id: uuid('id').primaryKey().defaultRandom(),
-	ticket_id: uuid('ticket_id').notNull().references(() => tickets.id, { onDelete: 'cascade' }),
+	ticket_id: uuid('ticket_id').notNull().references(() => tickets.id, { onDelete: 'restrict' }),
 	user_id: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
 	field_name: text('field_name').notNull(), // 'status', 'assignee', 'priority', 'title', 'description', etc.
 	old_value: text('old_value'),

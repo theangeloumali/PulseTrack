@@ -58,7 +58,8 @@ async function handler(req: NextRequest) {
           const { data: ticketStats } = await supabase
             .from('tickets')
             .select('status, projects!inner(company_id)')
-            .eq('projects.company_id', company.id);
+            .eq('projects.company_id', company.id)
+            .is('deleted_at', null);
 
           return {
             ...company,
