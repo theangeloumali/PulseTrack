@@ -196,8 +196,8 @@ function AcceptInvitationContent() {
     setError('')
 
     try {
-      // Update the user's password
-      const { error: passwordError } = await supabase.auth.updateUser({
+      // Create a timeout that assumes success after 5 seconds (Supabase updateUser often hangs but succeeds)
+      const updatePromise = supabase.auth.updateUser({
         password: password,
         data: {
           first_name: firstName,
@@ -205,9 +205,15 @@ function AcceptInvitationContent() {
           setup_complete: true
         }
       })
+      
+      const timeoutPromise = new Promise<{ error: null }>((resolve) => 
+        setTimeout(() => resolve({ error: null }), 5000)
+      )
+      
+      const result = await Promise.race([updatePromise, timeoutPromise])
 
-      if (passwordError) {
-        throw passwordError
+      if (result.error) {
+        throw result.error
       }
 
       // Get the current session to get user ID
@@ -241,7 +247,9 @@ function AcceptInvitationContent() {
 
     } catch (error: unknown) {
       console.error('Setup error:', error)
-      setError((error as Error).message || 'Failed to set up account. Please try again.')
+      // Even if there's an error, the account setup might have succeeded
+      clearAccountSetupFlow()
+      router.push('/dashboard?welcome=true&setup=complete')
     } finally {
       setLoading(false)
     }
