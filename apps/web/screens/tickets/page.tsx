@@ -119,10 +119,10 @@ export default function TicketsPage() {
 	}
 
 	return (
-		<div className="min-h-screen bg-gray-50">
-			<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+		<div className="h-full bg-gray-50">
+			<div className="h-full px-4 py-4">
 				{/* Header */}
-				<div className="flex justify-between items-center mb-8">
+				<div className="flex justify-between items-center mb-4">
 					<div>
 						<h1 className="text-3xl font-bold text-gray-900">All Tickets</h1>
 						<p className="text-gray-600 mt-1">
@@ -159,8 +159,8 @@ export default function TicketsPage() {
 				</div>
 
 				{/* Filters */}
-				<Card className="mb-6">
-					<CardContent className="p-6">
+				<Card className="mb-4">
+					<CardContent className="p-4">
 						<div className="flex flex-col sm:flex-row gap-4">
 							<div className="flex-1">
 								<div className="relative">

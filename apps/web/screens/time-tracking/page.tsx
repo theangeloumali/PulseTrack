@@ -41,8 +41,8 @@ export function TimeTrackingScreen() {
   })
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="flex items-center justify-between mb-8">
+    <div className="h-full px-4 py-4">
+      <div className="flex items-center justify-between mb-4">
         <div>
           <h1 className="text-3xl font-bold">Time Tracking</h1>
           <p className="text-muted-foreground">Track your time and manage entries</p>
@@ -53,7 +53,7 @@ export function TimeTrackingScreen() {
         </Badge>
       </div>
 
-      <div className="space-y-6">
+      <div className="space-y-4">
         {/* Tab Navigation */}
         <div className="flex border-b">
           <Button
@@ -81,7 +81,7 @@ export function TimeTrackingScreen() {
 
         {/* Tracker Tab */}
         {activeTab === 'tracker' && (
-          <div className="space-y-6">
+          <div className="space-y-4">
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">

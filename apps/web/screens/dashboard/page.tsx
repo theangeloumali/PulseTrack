@@ -35,11 +35,11 @@ export default function DashboardPage() {
 	};
 
 	return (
-		<div className='min-h-screen bg-gray-50'>
+		<div className='h-full bg-gray-50'>
 			{/* Header */}
-			<header className='bg-white shadow'>
-				<div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8'>
-					<div className='flex justify-between items-center py-6'>
+			<header className='bg-white shadow-sm'>
+				<div className='px-4'>
+					<div className='flex justify-between items-center py-4'>
 						<div>
 							<h1 className='text-3xl font-bold text-gray-900'>Dashboard</h1>
 							<p className='text-gray-600'>Welcome back, {user?.first_name || 'User'}!</p>
@@ -53,10 +53,9 @@ export default function DashboardPage() {
 				</div>
 			</header>
 
-			<main className='max-w-7xl mx-auto py-6 sm:px-6 lg:px-8'>
-				<div className='px-4 py-6 sm:px-0'>
-					{/* Quick Stats */}
-					<div className='grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4 mb-8'>
+			<main className='px-4 py-4'>
+				{/* Quick Stats */}
+				<div className='grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-6'>
 						<Card>
 							<CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
 								<CardTitle className='text-sm font-medium'>Total Projects</CardTitle>
@@ -102,13 +101,13 @@ export default function DashboardPage() {
 						</Card>
 					</div>
 
-					{/* My Weekly Summary */}
-					<div className='mb-8'>
-						<MyWeeklySummary />
-					</div>
+				{/* My Weekly Summary */}
+				<div className='mb-6'>
+					<MyWeeklySummary />
+				</div>
 
-					{/* Quick Actions */}
-					<div className='grid grid-cols-1 gap-6 lg:grid-cols-2'>
+				{/* Quick Actions */}
+				<div className='grid grid-cols-1 gap-4 lg:grid-cols-2'>
 						<Card>
 							<CardHeader>
 								<CardTitle>Quick Actions</CardTitle>
@@ -146,8 +145,8 @@ export default function DashboardPage() {
 						</Card>
 					</div>
 
-					{/* Getting Started Section */}
-					<Card className='mt-8'>
+				{/* Getting Started Section */}
+				<Card className='mt-6'>
 						<CardHeader>
 							<CardTitle>Getting Started</CardTitle>
 							<CardDescription>Follow these steps to set up your workspace</CardDescription>
@@ -204,7 +203,6 @@ export default function DashboardPage() {
 							</div>
 						</CardContent>
 					</Card>
-				</div>
 			</main>
 		</div>
 	);

@@ -405,11 +405,26 @@
         ],
         "priority": "medium",
         "subtasks": []
+      },
+      {
+        "id": 34,
+        "title": "Create Time Tracking UI with Enhanced Ticket Filtering",
+        "description": "Build comprehensive time tracking interface at /time-tracking route with timer, manual entry, and time entries list components, plus add company and project filters to tickets page.",
+        "details": "Create new time tracking page at /time-tracking route with three main components: active timer component for real-time tracking with start/stop functionality and elapsed time display, manual time entry form for adding historical time entries with date/time pickers and validation, and comprehensive time entries list with filtering, sorting, and editing capabilities. Implement time tracking state management using Zustand to handle active timers and entry data. Add company and project filter dropdowns to the existing tickets page, implementing proper filtering logic that respects user permissions and company boundaries. Ensure all components follow existing design patterns and integrate with the current time tracking system. Add proper error handling, loading states, and responsive design for mobile devices. Implement optimistic updates for better user experience.",
+        "testStrategy": "Test time tracking page navigation and route accessibility. Verify timer component start/stop functionality with accurate time calculations and persistence across page refreshes. Test manual entry form validation with various date formats and time inputs. Verify time entries list displays correctly with proper filtering and sorting options. Test company and project filters on tickets page with proper data filtering and permission handling. Test responsive design on various screen sizes. Verify integration with existing time tracking system and data consistency.",
+        "status": "done",
+        "dependencies": [
+          15,
+          14,
+          13
+        ],
+        "priority": "medium",
+        "subtasks": []
       }
     ],
     "metadata": {
       "created": "2025-06-29T02:06:57.806Z",
-      "updated": "2025-06-29T10:49:14.469Z",
+      "updated": "2025-06-29T12:00:18.388Z",
       "description": "Tasks for master context"
     }
   }
