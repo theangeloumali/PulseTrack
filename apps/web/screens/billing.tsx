@@ -29,6 +29,7 @@ const BillingPage = () => {
 	const [reportStartDate, setReportStartDate] = useState('');
 	const [reportEndDate, setReportEndDate] = useState('');
 	const [showReport, setShowReport] = useState(false);
+	const [selectedUserId, setSelectedUserId] = useState('all');
 
 	const { data: billingReport, isLoading: isReportLoading, isError: isReportError } = useBillingReport(companyId || '', reportStartDate, reportEndDate);
 
@@ -38,6 +39,22 @@ const BillingPage = () => {
 
 	const { data: users } = useCompanyUsers();
 	const { data: projects } = useProjectsQuery();
+
+	const filteredBillingReport = React.useMemo(() => {
+		if (!billingReport) return null;
+		if (selectedUserId === 'all') {
+			return billingReport;
+		}
+		const filteredReport: typeof billingReport = {};
+		for (const date in billingReport) {
+			if (billingReport[date][selectedUserId]) {
+				filteredReport[date] = {
+					[selectedUserId]: billingReport[date][selectedUserId],
+				};
+			}
+		}
+		return filteredReport;
+	}, [billingReport, selectedUserId]);
 
 	const [newRateType, setNewRateType] = useState<'company' | 'user' | 'project'>('company');
 	const [newRateValue, setNewRateValue] = useState<string>('');
@@ -201,7 +218,7 @@ const BillingPage = () => {
 			</form>
 
 			<h2 className='text-xl font-bold mb-4'>Billing Reports</h2>
-			<div className='flex space-x-4 mb-4'>
+			<div className='flex flex-wrap gap-4 mb-4 items-end'>
 				<div>
 					<Label htmlFor='reportFilter'>Report Filter</Label>
 					<Select value={reportFilter} onValueChange={setReportFilter}>
@@ -230,6 +247,22 @@ const BillingPage = () => {
 						</div>
 					</>
 				)}
+				<div>
+					<Label htmlFor='userFilter'>User</Label>
+					<Select value={selectedUserId} onValueChange={setSelectedUserId}>
+						<SelectTrigger id='userFilter'>
+							<SelectValue placeholder='Select a user' />
+						</SelectTrigger>
+						<SelectContent>
+							<SelectItem value='all'>All Users</SelectItem>
+							{users?.map((user) => (
+								<SelectItem key={user.id} value={user.id}>
+									{user.first_name} {user.last_name}
+								</SelectItem>
+							))}
+						</SelectContent>
+					</Select>
+				</div>
 				<Button onClick={handleGenerateReport} disabled={isReportLoading}>
 					{isReportLoading ? 'Generating...' : 'Generate Report'}
 				</Button>
@@ -240,9 +273,9 @@ const BillingPage = () => {
 					<div>Loading report...</div>
 				) : isReportError ? (
 					<div>Error loading report.</div>
-				) : billingReport && Object.keys(billingReport).length > 0 ? (
+				) : filteredBillingReport && Object.keys(filteredBillingReport).length > 0 ? (
 					<div className='space-y-6'>
-						{Object.entries(billingReport).map(([date, usersData]: [string, any]) => (
+						{Object.entries(filteredBillingReport).map(([date, usersData]: [string, any]) => (
 							<div key={date} className='border p-6 rounded-lg shadow-sm bg-white'>
 								<h3 className='font-bold text-xl mb-4 text-gray-800'>Report for {date}</h3>
 								{Object.entries(usersData).map(([userId, userData]: [string, any]) => (
@@ -274,7 +307,7 @@ const BillingPage = () => {
 						))}
 						<div className='border p-6 rounded-lg shadow-sm bg-white mt-6'>
 							<h3 className='font-bold text-xl mb-4 text-gray-800'>Weekly Summary</h3>
-							{Object.entries(calculateWeeklyTotal(billingReport)).map(([userId, weeklyData]: [string, any]) => (
+							{Object.entries(calculateWeeklyTotal(filteredBillingReport)).map(([userId, weeklyData]: [string, any]) => (
 								<div key={userId} className='mb-4 p-4 bg-gray-50 rounded-md border border-gray-200'>
 									<h4 className='font-semibold text-lg text-gray-700'>
 										{weeklyData.userName} (Total: {weeklyData.totalHours.toFixed(2)} hrs, {settings?.currency || ''}
@@ -390,6 +423,7 @@ const BillingPage = () => {
 };
 
 const calculateWeeklyTotal = (billingReport: any) => {
+	if (!billingReport) return {};
 	const weeklyTotals: { [userId: string]: { userName: string; totalHours: number; totalAmount: number } } = {};
 
 	Object.values(billingReport).forEach((usersData: any) => {
