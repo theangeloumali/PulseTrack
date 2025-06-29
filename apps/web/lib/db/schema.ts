@@ -135,6 +135,17 @@ export interface NewTimeEntry {
   description?: string | null
 }
 
+// Time entry with user relation
+export interface TimeEntryWithUser extends TimeEntry {
+  users?: {
+    id: string
+    first_name?: string | null
+    last_name?: string | null
+    email: string
+    avatar_url?: string | null
+  }[] | null
+}
+
 // Comment types
 export interface Comment extends BaseRecord {
   ticket_id: string

@@ -1,3 +1,119 @@
+# Claude Collaboration File
+
+This file helps Claude understand this project to provide more relevant and accurate assistance. By keeping this file updated, you can improve the AI's ability to help with development tasks.
+
+## 1. Project Overview
+
+This is a web application for a project management system that includes ticket tracking, user management, time tracking, and billing features. It's built with Next.js 15 and Supabase as a monorepo using Turbo and pnpm workspaces.
+
+## 2. Tech Stack
+
+**Frontend:**
+* Framework: Next.js 15 (React 19) with App Router
+* Styling: Tailwind CSS, shadcn/ui components
+* State Management: Zustand
+* Data Fetching: TanStack Query (React Query)
+* Forms: React Hook Form with Zod validation
+* Themes: next-themes
+* Icons: Lucide React
+
+**Backend:**
+* Framework: Next.js 15 API Routes
+* Database: Supabase (PostgreSQL)
+* ORM: Drizzle ORM
+* Authentication: Supabase Auth
+* Analytics: Vercel Analytics
+
+**Development:**
+* Monorepo: Turbo with pnpm workspaces
+* Package Manager: pnpm
+* TypeScript: 5.7.3
+* Build Tool: Turbo
+* Linting: ESLint with custom workspace config
+
+## 3. Getting Started & Setup
+
+1. **Install dependencies:**
+   ```bash
+   pnpm install
+   ```
+
+2. **Set up environment variables:**
+   Copy `.env.local.example` to `.env.local` and fill in the required Supabase values.
+   ```bash
+   cp apps/web/.env.local.example apps/web/.env.local
+   ```
+
+3. **Run database migrations:**
+   ```bash
+   cd apps/web && pnpm migration:run
+   ```
+
+## 4. Common Commands
+
+* **Run development server:**
+  ```bash
+  pnpm dev
+  ```
+
+* **Build for production:**
+  ```bash
+  pnpm build
+  ```
+
+* **Run linter:**
+  ```bash
+  pnpm lint
+  ```
+
+* **Check for type errors:**
+  ```bash
+  cd apps/web && pnpm typecheck
+  ```
+
+* **Generate database migrations:**
+  ```bash
+  cd apps/web && pnpm migration:generate
+  ```
+
+* **Run database migrations:**
+  ```bash
+  cd apps/web && pnpm migration:run
+  ```
+
+## 5. Directory Structure Overview
+
+* `apps/web/`: Main Next.js application
+* `apps/web/app/`: Next.js App Router pages and API routes
+* `apps/web/components/`: Shared React components and UI components
+* `apps/web/lib/`: Core application logic, database queries, and utility functions
+* `apps/web/lib/db/`: Drizzle ORM schema, queries, and database service logic
+* `apps/web/lib/supabase/`: Supabase client and helper configurations
+* `apps/web/screens/`: Page-specific components and screens
+* `apps/web/tests/`: Test files and debugging utilities
+* `packages/`: Shared workspace packages
+* `.taskmaster/`: Task Master AI configuration and tasks
+
+## 6. Coding Conventions & Style
+
+* Follow Next.js 15 App Router conventions
+* All database interactions should go through the service layer in `lib/db/service.ts`
+* Use named exports instead of default exports for components
+* API routes should be organized by feature under `app/api/`
+* Use Drizzle ORM for all database operations
+* Supabase Auth for authentication and authorization
+* TanStack Query for data fetching and caching
+* Zustand for client-side state management
+* **IMPORTANT**: Always run `pnpm build` after making changes to ensure the project builds without errors
+* **IMPORTANT**: Always run `pnpm typecheck` to check for TypeScript errors
+* **IMPORTANT**: Use `pnpm lint` to check for linting issues
+
+## 7. Deployment
+
+The application is deployed to Vercel. Pushes to the `main` branch trigger an automatic production deployment. Preview deployments are created for all pull requests.
+
+---
+
 # Task Master AI - Claude Code Integration Guide
 
 ## Essential Commands
@@ -415,3 +531,49 @@ These commands make AI calls and may take up to a minute:
 ---
 
 _This guide ensures Claude Code has immediate access to Task Master's essential functionality for agentic development workflows._
+
+---
+
+# Claude Development Workflow Instructions
+
+## CRITICAL: Task Master Integration Required
+
+**ALL development work MUST follow the Task Master workflow:**
+
+1. **Before starting any development task:**
+   - Run `task-master list` to see current tasks
+   - Run `task-master next` to get the next task to work on
+   - Run `task-master show <id>` to understand task requirements
+
+2. **During development:**
+   - Mark task as in-progress: `task-master set-status --id=<id> --status=in-progress`
+   - Log implementation notes: `task-master update-subtask --id=<id> --prompt="detailed implementation notes"`
+   - NEVER work on tasks that haven't been assigned or are blocked by dependencies
+
+3. **After completing work:**
+   - Mark task as complete: `task-master set-status --id=<id> --status=done`
+   - Run `task-master next` to get the next available task
+
+4. **For complex tasks:**
+   - Break down using: `task-master expand --id=<id> --research`
+   - Update multiple tasks: `task-master update --from=<id> --prompt="changes"`
+
+## Development Rules
+
+- **ALWAYS** follow the Task Master workflow - no exceptions
+- **NEVER** work on features not defined in Task Master tasks
+- **ALWAYS** reference task IDs in commit messages (e.g., "feat: implement auth system (task 11)")
+- **ALWAYS** check task dependencies before starting work
+- **ALWAYS** run `pnpm build` and `pnpm typecheck` after code changes
+- **ONLY** create new files when absolutely necessary for the assigned task
+
+## Current Project Status
+
+This project has 10 defined tasks in Task Master. Always check `task-master list` for current status and work only on the next available task from `task-master next`.
+
+## Important Reminders
+
+- Do what has been asked; nothing more, nothing less
+- NEVER create files unless they're absolutely necessary for achieving your goal
+- ALWAYS prefer editing an existing file to creating a new one
+- NEVER proactively create documentation files (*.md) or README files unless explicitly requested

@@ -30,7 +30,7 @@ async function testCompleteInvitationFlow() {
   try {
     console.log('🧪 Testing complete invitation flow...\n');
 
-    const testEmail = 'carions46@gmail.com';
+    const testEmail = 'angelo@zkidzdev.com';
     // Use proper UUIDs for testing
     const companyId = 'dd55cfcb-26b4-4a02-8337-2aba297df27c'; // real company ID
     const invitedBy = '7c071ced-d3f1-4bbd-8e70-370a91f9f42a'; // real user ID
@@ -45,9 +45,9 @@ async function testCompleteInvitationFlow() {
           company_id: companyId,
           invited_by: invitedBy,
           role: 'user',
-          first_name: 'Andrew',
-          last_name: 'Hamli',
-          hourly_rate: 5,
+          first_name: 'Angelo',
+          last_name: 'Dev',
+          hourly_rate: 25,
         },
         redirectTo: `https://pulsetrack-zkidz-web.vercel.app/auth/callback?type=invite`
       }
