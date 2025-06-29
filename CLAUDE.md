@@ -93,6 +93,7 @@ This is a web application for a project management system that includes ticket t
 * `apps/web/tests/`: Test files and debugging utilities
 * `packages/`: Shared workspace packages
 * `.taskmaster/`: Task Master AI configuration and tasks
+* `docs/`: **Comprehensive project documentation** - See [Documentation Overview](#8-project-documentation)
 
 ## 6. Coding Conventions & Style
 
@@ -111,6 +112,38 @@ This is a web application for a project management system that includes ticket t
 ## 7. Deployment
 
 The application is deployed to Vercel. Pushes to the `main` branch trigger an automatic production deployment. Preview deployments are created for all pull requests.
+
+## 8. Project Documentation
+
+**Comprehensive documentation is available in the [`docs/`](./docs/) folder:**
+
+### Core System Documentation
+- **[`docs/role-system.md`](./docs/role-system.md)** - Complete role-based access control system
+  - Role hierarchy: Super Admin → System Admin → Company Admin → Manager → User
+  - Permission matrices and access controls
+  - Implementation details and usage patterns
+  
+- **[`docs/authentication.md`](./docs/authentication.md)** - Authentication and authorization guide
+  - Supabase Auth integration
+  - User registration and invitation flows
+  - Session management and security
+
+- **[`docs/database-schema.md`](./docs/database-schema.md)** - Database structure and relationships
+  - Complete schema documentation
+  - Enum types and constraints
+  - Performance indexes and security considerations
+
+- **[`docs/api-endpoints.md`](./docs/api-endpoints.md)** - API documentation and usage
+  - Complete endpoint reference
+  - Authentication and authorization patterns
+  - Error handling and rate limiting
+
+### Quick Reference
+- **Role Permissions**: See [`docs/role-system.md`](./docs/role-system.md) for complete role hierarchy
+- **API Security**: Check [`docs/api-endpoints.md`](./docs/api-endpoints.md) for authentication patterns
+- **Database Access**: Reference [`docs/database-schema.md`](./docs/database-schema.md) for schema details
+
+**Important**: Always reference the documentation when working with roles, permissions, or database operations to ensure consistency and security.
 
 ---
 
@@ -626,7 +659,7 @@ _This guide ensures Claude Code has immediate access to Task Master's essential 
 
 ## Current Project Status
 
-This project has 23 defined tasks in Task Master (IDs 11-33), with 16 completed, 1 in progress, and 6 pending. Always check `task-master list` for current status and work only on the next available task from `task-master next`.
+This project has 34 defined tasks in Task Master (IDs 11-34), with 18 completed, 1 in progress, and 6 pending. Always check `task-master list` for current status and work only on the next available task from `task-master next`.
 
 ## Important Reminders
 

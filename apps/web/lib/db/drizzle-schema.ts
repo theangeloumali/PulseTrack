@@ -1,5 +1,5 @@
 // Drizzle schema for migrations only - not used at runtime
-import { pgTable, uuid, text, timestamp, integer, unique, decimal, foreignKey, date } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, text, timestamp, integer, unique, decimal, foreignKey, date, index, boolean } from 'drizzle-orm/pg-core';
 
 // Companies table
 export const companies = pgTable('companies', {
@@ -8,7 +8,10 @@ export const companies = pgTable('companies', {
 	slug: text('slug').notNull().unique(),
 	created_at: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 	updated_at: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
-}).enableRLS();
+}, (table) => ({
+	nameIdx: index('companies_name_idx').on(table.name),
+	slugIdx: index('companies_slug_idx').on(table.slug),
+})).enableRLS();
 
 // Users table
 export const users = pgTable(
@@ -19,7 +22,7 @@ export const users = pgTable(
 		first_name: text('first_name'),
 		last_name: text('last_name'),
 		avatar_url: text('avatar_url'),
-		role: text('role').default('user'), // 'admin' | 'manager' | 'user'
+		role: text('role').default('user'), // 'super_admin' | 'system_admin' | 'company_admin' | 'manager' | 'user'
 		company_id: uuid('company_id')
 			.notNull()
 			.references(() => companies.id, { onDelete: 'cascade' }),
@@ -38,6 +41,12 @@ export const users = pgTable(
 			foreignColumns: [table.id],
 			name: 'users_invited_by_fkey'
 		}).onDelete('set null'),
+		// Enum constraints will be added via SQL migration
+		// Performance indexes
+		emailIdx: index('users_email_idx').on(table.email),
+		companyIdIdx: index('users_company_id_idx').on(table.company_id),
+		roleIdx: index('users_role_idx').on(table.role),
+		statusIdx: index('users_status_idx').on(table.status),
 	})
 ).enableRLS();
 
@@ -55,7 +64,14 @@ export const projects = pgTable('projects', {
 		.references(() => users.id, { onDelete: 'cascade' }),
 	created_at: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 	updated_at: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
-}).enableRLS();
+}, (table) => ({
+	// Enum constraints will be added via SQL migration
+	// Performance indexes
+	companyIdIdx: index('projects_company_id_idx').on(table.company_id),
+	ownerIdIdx: index('projects_owner_id_idx').on(table.owner_id),
+	statusIdx: index('projects_status_idx').on(table.status),
+	nameIdx: index('projects_name_idx').on(table.name),
+})).enableRLS();
 
 // Project members table (many-to-many relationship between projects and users)
 export const projectMembers = pgTable(
@@ -73,6 +89,10 @@ export const projectMembers = pgTable(
 	},
 	(table) => ({
 		projectUserUnique: unique().on(table.project_id, table.user_id),
+		// Enum constraints will be added via SQL migration
+		// Performance indexes
+		projectIdIdx: index('project_members_project_id_idx').on(table.project_id),
+		userIdIdx: index('project_members_user_id_idx').on(table.user_id),
 	})
 ).enableRLS();
 
@@ -95,7 +115,17 @@ export const tickets = pgTable('tickets', {
 	due_date: timestamp('due_date', { withTimezone: true }),
 	created_at: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 	updated_at: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
-}).enableRLS();
+}, (table) => ({
+	// Enum constraints will be added via SQL migration
+	// Performance indexes
+	projectIdIdx: index('tickets_project_id_idx').on(table.project_id),
+	assigneeIdIdx: index('tickets_assignee_id_idx').on(table.assignee_id),
+	reporterIdIdx: index('tickets_reporter_id_idx').on(table.reporter_id),
+	statusIdx: index('tickets_status_idx').on(table.status),
+	priorityIdx: index('tickets_priority_idx').on(table.priority),
+	dueDateIdx: index('tickets_due_date_idx').on(table.due_date),
+	titleIdx: index('tickets_title_idx').on(table.title),
+})).enableRLS();
 
 // Time entries table
 export const timeEntries = pgTable('time_entries', {
@@ -108,10 +138,16 @@ export const timeEntries = pgTable('time_entries', {
 		.references(() => users.id, { onDelete: 'cascade' }),
 	start_time: timestamp('start_time', { withTimezone: true }).notNull(),
 	end_time: timestamp('end_time', { withTimezone: true }),
-	duration: integer('duration'), // in seconds
+	duration: decimal('duration', { precision: 8, scale: 2 }), // in hours with decimals
 	description: text('description'),
 	created_at: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
-}).enableRLS();
+}, (table) => ({
+	// Performance indexes
+	ticketIdIdx: index('time_entries_ticket_id_idx').on(table.ticket_id),
+	userIdIdx: index('time_entries_user_id_idx').on(table.user_id),
+	startTimeIdx: index('time_entries_start_time_idx').on(table.start_time),
+	createdAtIdx: index('time_entries_created_at_idx').on(table.created_at),
+})).enableRLS();
 
 // Comments table
 export const comments = pgTable('comments', {
@@ -125,7 +161,12 @@ export const comments = pgTable('comments', {
 	content: text('content').notNull(),
 	created_at: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 	updated_at: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
-}).enableRLS();
+}, (table) => ({
+	// Performance indexes
+	ticketIdIdx: index('comments_ticket_id_idx').on(table.ticket_id),
+	userIdIdx: index('comments_user_id_idx').on(table.user_id),
+	createdAtIdx: index('comments_created_at_idx').on(table.created_at),
+})).enableRLS();
 
 // Billing Periods table
 export const billingPeriods = pgTable('billing_periods', {
@@ -139,7 +180,15 @@ export const billingPeriods = pgTable('billing_periods', {
     created_by: uuid('created_by').notNull().references(() => users.id, { onDelete: 'set null' }),
     created_at: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
     updated_at: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
-}).enableRLS();
+}, (table) => ({
+	// Enum constraints will be added via SQL migration
+	// Performance indexes
+	companyIdIdx: index('billing_periods_company_id_idx').on(table.company_id),
+	statusIdx: index('billing_periods_status_idx').on(table.status),
+	frequencyIdx: index('billing_periods_frequency_idx').on(table.frequency),
+	startDateIdx: index('billing_periods_start_date_idx').on(table.start_date),
+	endDateIdx: index('billing_periods_end_date_idx').on(table.end_date),
+})).enableRLS();
 
 // Billing Rates table
 export const billingRates = pgTable('billing_rates', {
@@ -153,7 +202,14 @@ export const billingRates = pgTable('billing_rates', {
     effective_to: date('effective_to'),
     created_by: uuid('created_by').notNull().references(() => users.id, { onDelete: 'set null' }),
     created_at: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
-}).enableRLS();
+}, (table) => ({
+	// Performance indexes
+	companyIdIdx: index('billing_rates_company_id_idx').on(table.company_id),
+	userIdIdx: index('billing_rates_user_id_idx').on(table.user_id),
+	projectIdIdx: index('billing_rates_project_id_idx').on(table.project_id),
+	effectiveFromIdx: index('billing_rates_effective_from_idx').on(table.effective_from),
+	effectiveToIdx: index('billing_rates_effective_to_idx').on(table.effective_to),
+})).enableRLS();
 
 // Company Billing Settings table
 export const companyBillingSettings = pgTable('company_billing_settings', {
@@ -164,7 +220,11 @@ export const companyBillingSettings = pgTable('company_billing_settings', {
     invoice_prefix: text('invoice_prefix'),
     created_at: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
     updated_at: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
-}).enableRLS();
+}, (table) => ({
+	// Enum constraints will be added via SQL migration
+	// Performance indexes
+	companyIdIdx: index('company_billing_settings_company_id_idx').on(table.company_id),
+})).enableRLS();
 
 // Time Entry Billing table
 export const timeEntryBilling = pgTable('time_entry_billing', {
@@ -173,7 +233,28 @@ export const timeEntryBilling = pgTable('time_entry_billing', {
     billing_period_id: uuid('billing_period_id').notNull().references(() => billingPeriods.id, { onDelete: 'cascade' }),
     hourly_rate: decimal('hourly_rate', { precision: 10, scale: 2 }).notNull(),
     billable_amount: decimal('billable_amount', { precision: 10, scale: 2 }).notNull(),
-    is_billable: text('is_billable').default('true'), // Using text to avoid boolean issues
+    is_billable: boolean('is_billable').default(true),
     created_at: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
-}).enableRLS();
+}, (table) => ({
+	// Performance indexes
+	timeEntryIdIdx: index('time_entry_billing_time_entry_id_idx').on(table.time_entry_id),
+	billingPeriodIdIdx: index('time_entry_billing_billing_period_id_idx').on(table.billing_period_id),
+	isBillableIdx: index('time_entry_billing_is_billable_idx').on(table.is_billable),
+})).enableRLS();
 
+// Ticket History table for tracking changes
+export const ticketHistory = pgTable('ticket_history', {
+	id: uuid('id').primaryKey().defaultRandom(),
+	ticket_id: uuid('ticket_id').notNull().references(() => tickets.id, { onDelete: 'cascade' }),
+	user_id: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+	field_name: text('field_name').notNull(), // 'status', 'assignee', 'priority', 'title', 'description', etc.
+	old_value: text('old_value'),
+	new_value: text('new_value'),
+	created_at: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+}, (table) => ({
+	// Performance indexes
+	ticketIdIdx: index('ticket_history_ticket_id_idx').on(table.ticket_id),
+	userIdIdx: index('ticket_history_user_id_idx').on(table.user_id),
+	fieldNameIdx: index('ticket_history_field_name_idx').on(table.field_name),
+	createdAtIdx: index('ticket_history_created_at_idx').on(table.created_at),
+})).enableRLS();

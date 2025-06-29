@@ -28,14 +28,14 @@ export function TimeEntriesList({ ticketId }: TimeEntriesListProps) {
   
   const [editingEntry, setEditingEntry] = useState<EditingEntry | null>(null)
 
-  const formatDuration = (seconds: number | null) => {
-    if (!seconds) return '0:00'
+  const formatDuration = (hours: number | null) => {
+    if (!hours) return '0:00'
     
-    const hours = Math.floor(seconds / 3600)
-    const minutes = Math.floor((seconds % 3600) / 60)
+    const wholeHours = Math.floor(hours)
+    const minutes = Math.round((hours - wholeHours) * 60)
     
-    if (hours > 0) {
-      return `${hours}:${minutes.toString().padStart(2, '0')}`
+    if (wholeHours > 0) {
+      return `${wholeHours}:${minutes.toString().padStart(2, '0')}`
     }
     return `0:${minutes.toString().padStart(2, '0')}`
   }
@@ -56,8 +56,9 @@ export function TimeEntriesList({ ticketId }: TimeEntriesListProps) {
   }
 
   const startEditing = (entry: TimeEntryWithUser) => {
-    const hours = Math.floor((entry.duration || 0) / 3600)
-    const minutes = Math.floor(((entry.duration || 0) % 3600) / 60)
+    const totalHours = entry.duration || 0
+    const hours = Math.floor(totalHours)
+    const minutes = Math.round((totalHours - hours) * 60)
     
     setEditingEntry({
       id: entry.id,
@@ -72,14 +73,14 @@ export function TimeEntriesList({ ticketId }: TimeEntriesListProps) {
     
     const hours = parseInt(editingEntry.hours) || 0
     const minutes = parseInt(editingEntry.minutes) || 0
-    const totalSeconds = (hours * 3600) + (minutes * 60)
+    const totalHours = hours + (minutes / 60) // Convert to decimal hours
     
     try {
       await updateTimeEntryMutation.mutateAsync({
         id: editingEntry.id,
         data: {
           description: editingEntry.description || null,
-          duration: totalSeconds,
+          duration: totalHours,
         }
       })
       setEditingEntry(null)

@@ -19,6 +19,32 @@ export function formatDuration(seconds: number): string {
   }
 }
 
+// Format duration in hours (decimal) to human readable format
+export function formatDurationHours(hours: number): string {
+  const wholeHours = Math.floor(hours)
+  const minutes = Math.round((hours - wholeHours) * 60)
+  
+  if (wholeHours > 0 && minutes > 0) {
+    return `${wholeHours}h ${minutes}m`
+  } else if (wholeHours > 0) {
+    return `${wholeHours}h`
+  } else if (minutes > 0) {
+    return `${minutes}m`
+  } else {
+    return '0m'
+  }
+}
+
+// Convert seconds to decimal hours
+export function secondsToHours(seconds: number): number {
+  return seconds / 3600
+}
+
+// Convert decimal hours to seconds
+export function hoursToSeconds(hours: number): number {
+  return hours * 3600
+}
+
 export function formatDate(date: string | Date): string {
   return new Intl.DateTimeFormat('en-US', {
     year: 'numeric',
