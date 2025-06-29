@@ -54,10 +54,10 @@ export function SidebarLayout({ children }: SidebarLayoutProps) {
 			{sidebarOpen && <div className='fixed inset-0 z-40 bg-gray-600 bg-opacity-75 lg:hidden' onClick={() => setSidebarOpen(false)} />}
 
 			{/* Sidebar */}
-			<div className={cn('fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform transition-transform duration-200 ease-in-out lg:translate-x-0 lg:static lg:inset-0', sidebarOpen ? 'translate-x-0' : '-translate-x-full')}>
+			<div className={cn('fixed inset-y-0 left-0 z-50 w-56 bg-white shadow-lg transform transition-transform duration-200 ease-in-out lg:translate-x-0 lg:static lg:inset-0', sidebarOpen ? 'translate-x-0' : '-translate-x-full')}>
 				<div className='flex flex-col h-full'>
 					{/* Logo/Header */}
-					<div className='flex items-center justify-between h-16 px-6 border-b border-gray-200'>
+					<div className='flex items-center justify-between h-14 px-4 border-b border-gray-200'>
 						<Link href='/dashboard' className='flex items-center space-x-2'>
 							<div className='w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center'>
 								<Ticket className='h-5 w-5 text-white' />
@@ -70,7 +70,7 @@ export function SidebarLayout({ children }: SidebarLayoutProps) {
 					</div>
 
 					{/* Quick Actions */}
-					<div className='px-6 py-4 border-b border-gray-200'>
+					<div className='px-4 py-3 border-b border-gray-200'>
 						<div className='space-y-2'>
 							<Button size='sm' className='w-full justify-start' onClick={() => setShowCreateProjectModal(true)}>
 								<Plus className='h-4 w-4 mr-2' />
@@ -88,14 +88,12 @@ export function SidebarLayout({ children }: SidebarLayoutProps) {
 					</div>
 
 					{/* Navigation */}
-					<nav className='flex-1 px-4 py-4 space-y-1 overflow-y-auto'>
+					<nav className='flex-1 px-3 py-3 space-y-1 overflow-y-auto'>
 						{navigation
 							.filter((item) => item.roles.includes(user.role as string))
 							.map((item) => {
-								const isActive = pathname === item.href || 
-									(item.href === '/company/users' && pathname.startsWith('/company')) ||
-									(item.href === '/admin/users' && pathname === '/admin/users') ||
-									(item.href === '/admin/companies' && pathname === '/admin/companies');
+								const isActive =
+									pathname === item.href || (item.href === '/company/users' && pathname.startsWith('/company')) || (item.href === '/admin/users' && pathname === '/admin/users') || (item.href === '/admin/companies' && pathname === '/admin/companies');
 								return (
 									<Link
 										key={item.name}
@@ -111,7 +109,7 @@ export function SidebarLayout({ children }: SidebarLayoutProps) {
 					</nav>
 
 					{/* User Profile & Logout */}
-					<div className='px-4 py-4 border-t border-gray-200'>
+					<div className='px-3 py-3 border-t border-gray-200'>
 						<div className='flex items-center space-x-3 px-3 py-2'>
 							<div className='w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center'>
 								<span className='text-sm font-medium text-gray-700'>{user.first_name?.[0] || user.email?.[0]?.toUpperCase() || 'U'}</span>
@@ -122,18 +120,21 @@ export function SidebarLayout({ children }: SidebarLayoutProps) {
 								</p>
 								<p className='text-xs text-gray-500 truncate'>{user.email}</p>
 								<div className='flex items-center mt-1'>
-									<span className={cn(
-										'text-xs px-2 py-0.5 rounded-full font-medium',
-										user.role === 'super_admin' ? 'bg-purple-100 text-purple-800' :
-										user.role === 'system_admin' ? 'bg-red-100 text-red-800' :
-										user.role === 'company_admin' ? 'bg-blue-100 text-blue-800' :
-										user.role === 'manager' ? 'bg-green-100 text-green-800' :
-										'bg-gray-100 text-gray-800'
-									)}>
-										{user.role === 'super_admin' ? 'Super Admin' :
-										 user.role === 'system_admin' ? 'System Admin' :
-										 user.role === 'company_admin' ? 'Company Admin' :
-										 user.role === 'manager' ? 'Manager' : 'User'}
+									<span
+										className={cn(
+											'text-xs px-2 py-0.5 rounded-full font-medium',
+											user.role === 'super_admin'
+												? 'bg-purple-100 text-purple-800'
+												: user.role === 'system_admin'
+													? 'bg-red-100 text-red-800'
+													: user.role === 'company_admin'
+														? 'bg-blue-100 text-blue-800'
+														: user.role === 'manager'
+															? 'bg-green-100 text-green-800'
+															: 'bg-gray-100 text-gray-800'
+										)}
+									>
+										{user.role === 'super_admin' ? 'Super Admin' : user.role === 'system_admin' ? 'System Admin' : user.role === 'company_admin' ? 'Company Admin' : user.role === 'manager' ? 'Manager' : 'User'}
 									</span>
 								</div>
 							</div>

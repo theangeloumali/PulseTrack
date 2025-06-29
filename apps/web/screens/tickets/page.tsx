@@ -31,6 +31,8 @@ export default function TicketsPage() {
 	const [searchTerm, setSearchTerm] = useState('');
 	const [statusFilter, setStatusFilter] = useState('all');
 	const [priorityFilter, setPriorityFilter] = useState('all');
+	const [projectFilter, setProjectFilter] = useState('all');
+	const [companyFilter, setCompanyFilter] = useState('all');
 	const [viewMode, setViewMode] = useState<'board' | 'list'>('board');
 	
 	const { user } = useAuthStore();
@@ -43,6 +45,28 @@ export default function TicketsPage() {
 		isError: isTicketsError
 	} = useCompanyTicketsQuery(user?.company_id);
 
+	// Extract unique projects and companies for filter options
+	const availableProjects = Array.from(
+		new Map((tickets || []).map(ticket => {
+			const project = Array.isArray(ticket.projects) ? ticket.projects[0] : ticket.projects;
+			return [
+				project?.id,
+				{ id: project?.id, name: project?.name }
+			];
+		})).values()
+	).filter((p): p is { id: string; name: string } => p.id && p.name);
+
+	const availableCompanies = Array.from(
+		new Map((tickets || []).map(ticket => {
+			const project = Array.isArray(ticket.projects) ? ticket.projects[0] : ticket.projects;
+			const company = Array.isArray(project?.companies) ? project?.companies[0] : project?.companies;
+			return [
+				company?.id,
+				{ id: company?.id, name: company?.name }
+			];
+		})).values()
+	).filter((c): c is { id: string; name: string } => c.id && c.name);
+
 	// Filter tickets based on search and filters
 	const filteredTickets = (tickets || []).filter(ticket => {
 		const matchesSearch = !searchTerm || 
@@ -52,7 +76,13 @@ export default function TicketsPage() {
 		const matchesStatus = statusFilter === 'all' || ticket.status === statusFilter;
 		const matchesPriority = priorityFilter === 'all' || ticket.priority === priorityFilter;
 		
-		return matchesSearch && matchesStatus && matchesPriority;
+		const project = Array.isArray(ticket.projects) ? ticket.projects[0] : ticket.projects;
+		const company = Array.isArray(project?.companies) ? project?.companies[0] : project?.companies;
+		
+		const matchesProject = projectFilter === 'all' || project?.id === projectFilter;
+		const matchesCompany = companyFilter === 'all' || company?.id === companyFilter;
+		
+		return matchesSearch && matchesStatus && matchesPriority && matchesProject && matchesCompany;
 	});
 
 
@@ -89,10 +119,10 @@ export default function TicketsPage() {
 	}
 
 	return (
-		<div className="min-h-screen bg-gray-50">
-			<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+		<div className="h-full bg-gray-50">
+			<div className="h-full px-4 py-4">
 				{/* Header */}
-				<div className="flex justify-between items-center mb-8">
+				<div className="flex justify-between items-center mb-4">
 					<div>
 						<h1 className="text-3xl font-bold text-gray-900">All Tickets</h1>
 						<p className="text-gray-600 mt-1">
@@ -129,8 +159,8 @@ export default function TicketsPage() {
 				</div>
 
 				{/* Filters */}
-				<Card className="mb-6">
-					<CardContent className="p-6">
+				<Card className="mb-4">
+					<CardContent className="p-4">
 						<div className="flex flex-col sm:flex-row gap-4">
 							<div className="flex-1">
 								<div className="relative">
@@ -143,7 +173,7 @@ export default function TicketsPage() {
 									/>
 								</div>
 							</div>
-							<div className="flex gap-2">
+							<div className="flex flex-wrap gap-2">
 								<select
 									value={statusFilter}
 									onChange={(e) => setStatusFilter(e.target.value)}
@@ -166,6 +196,30 @@ export default function TicketsPage() {
 									<option value="high">High</option>
 									<option value="critical">Critical</option>
 								</select>
+								<select
+									value={projectFilter}
+									onChange={(e) => setProjectFilter(e.target.value)}
+									className="px-3 py-2 border border-gray-300 rounded-md text-sm"
+								>
+									<option value="all">All Projects</option>
+									{availableProjects.map((project) => (
+										<option key={project.id} value={project.id}>
+											{project.name}
+										</option>
+									))}
+								</select>
+								<select
+									value={companyFilter}
+									onChange={(e) => setCompanyFilter(e.target.value)}
+									className="px-3 py-2 border border-gray-300 rounded-md text-sm"
+								>
+									<option value="all">All Companies</option>
+									{availableCompanies.map((company) => (
+										<option key={company.id} value={company.id}>
+											{company.name}
+										</option>
+									))}
+								</select>
 							</div>
 						</div>
 					</CardContent>
@@ -178,7 +232,7 @@ export default function TicketsPage() {
 							<FileText className="h-12 w-12 text-gray-400 mb-4" />
 							<h3 className="text-lg font-medium text-gray-900 mb-2">No tickets found</h3>
 							<p className="text-gray-500 text-center mb-4">
-								{searchTerm || statusFilter !== 'all' || priorityFilter !== 'all'
+								{searchTerm || statusFilter !== 'all' || priorityFilter !== 'all' || projectFilter !== 'all' || companyFilter !== 'all'
 									? 'Try adjusting your search or filters.'
 									: 'Get started by creating your first ticket.'}
 							</p>

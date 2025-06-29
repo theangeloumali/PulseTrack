@@ -4,9 +4,11 @@ import { useState } from 'react';
 import { Card, CardContent } from '@workspace/ui/components/card';
 import { Badge } from '@workspace/ui/components/badge';
 import { Button } from '@workspace/ui/components/button';
-import { Ticket } from '@/lib/db/schema';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@workspace/ui/components/select';
+import { Ticket, TicketStatus } from '@/lib/db/schema';
 import { DeleteTicketModal } from '@/components/modals/delete-ticket-modal';
 import { TimeTrackingModal } from '@/components/modals/time-tracking-modal';
+import { useUpdateTicket } from '@/lib/hooks/useTickets';
 import { 
   MoreVertical, 
   Trash2, 
@@ -29,6 +31,15 @@ export function TicketList({ tickets, isLoading }: TicketListProps) {
   const [selectedTicketForDelete, setSelectedTicketForDelete] = useState<Ticket | null>(null);
   const [selectedTicketForTime, setSelectedTicketForTime] = useState<Ticket | null>(null);
   const [expandedDropdown, setExpandedDropdown] = useState<string | null>(null);
+  
+  const updateTicketMutation = useUpdateTicket();
+
+  const handleStatusChange = (ticket: Ticket, newStatus: TicketStatus) => {
+    updateTicketMutation.mutate({
+      id: ticket.id,
+      data: { status: newStatus }
+    });
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -149,10 +160,41 @@ export function TicketList({ tickets, isLoading }: TicketListProps) {
                 </div>
 
                 {/* Status */}
-                <div className="flex-shrink-0">
-                  <Badge className={`${getStatusColor(ticket.status)} text-xs`}>
-                    {ticket.status.replace('_', ' ')}
-                  </Badge>
+                <div className="flex-shrink-0 min-w-0 w-32">
+                  <Select 
+                    value={ticket.status} 
+                    onValueChange={(value: TicketStatus) => handleStatusChange(ticket, value)}
+                  >
+                    <SelectTrigger className="h-6 text-xs border-0 shadow-none p-1 focus:ring-0 bg-transparent">
+                      <SelectValue>
+                        <Badge className={`${getStatusColor(ticket.status)} text-xs border-0`}>
+                          {ticket.status.replace('_', ' ')}
+                        </Badge>
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="new">
+                        <Badge className={`${getStatusColor('new')} text-xs border-0`}>
+                          New
+                        </Badge>
+                      </SelectItem>
+                      <SelectItem value="in_progress">
+                        <Badge className={`${getStatusColor('in_progress')} text-xs border-0`}>
+                          In Progress
+                        </Badge>
+                      </SelectItem>
+                      <SelectItem value="review">
+                        <Badge className={`${getStatusColor('review')} text-xs border-0`}>
+                          Review
+                        </Badge>
+                      </SelectItem>
+                      <SelectItem value="done">
+                        <Badge className={`${getStatusColor('done')} text-xs border-0`}>
+                          Done
+                        </Badge>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 {/* Priority */}
@@ -194,26 +236,47 @@ export function TicketList({ tickets, isLoading }: TicketListProps) {
                   </Button>
                   {expandedDropdown === ticket.id && (
                     <div className="absolute right-0 top-9 bg-white border rounded-md shadow-lg z-10 py-1 min-w-[150px]">
-                      <button
-                        onClick={() => {
-                          setSelectedTicketForTime(ticket);
-                          setExpandedDropdown(null);
-                        }}
-                        className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-gray-50 w-full text-left"
-                      >
-                        <Clock className="h-4 w-4" />
-                        Time Tracking
-                      </button>
-                      <button
-                        onClick={() => {
-                          setSelectedTicketForDelete(ticket);
-                          setExpandedDropdown(null);
-                        }}
-                        className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-gray-50 w-full text-left text-red-600"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                        Delete
-                      </button>
+                      <div className="px-3 py-2 text-xs font-medium text-gray-500 border-b">
+                        Quick Status Change
+                      </div>
+                      {['new', 'in_progress', 'review', 'done'].map((status) => (
+                        <button
+                          key={status}
+                          onClick={() => {
+                            handleStatusChange(ticket, status as TicketStatus);
+                            setExpandedDropdown(null);
+                          }}
+                          className={`flex items-center gap-2 px-3 py-2 text-sm hover:bg-gray-50 w-full text-left ${
+                            ticket.status === status ? 'bg-blue-50 text-blue-700' : ''
+                          }`}
+                        >
+                          <div className={`w-2 h-2 rounded-full ${getStatusColor(status).replace('text-', 'bg-').replace('100', '500')}`} />
+                          {status.replace('_', ' ')}
+                          {ticket.status === status && <span className="ml-auto text-xs">✓</span>}
+                        </button>
+                      ))}
+                      <div className="border-t mt-1">
+                        <button
+                          onClick={() => {
+                            setSelectedTicketForTime(ticket);
+                            setExpandedDropdown(null);
+                          }}
+                          className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-gray-50 w-full text-left"
+                        >
+                          <Clock className="h-4 w-4" />
+                          Time Tracking
+                        </button>
+                        <button
+                          onClick={() => {
+                            setSelectedTicketForDelete(ticket);
+                            setExpandedDropdown(null);
+                          }}
+                          className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-gray-50 w-full text-left text-red-600"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                          Delete
+                        </button>
+                      </div>
                     </div>
                   )}
                 </div>

@@ -81,7 +81,7 @@ function ProjectsContent() {
 
 	if (isError) {
 		return (
-			<div className="min-h-screen bg-gray-50 flex items-center justify-center">
+			<div className="h-full bg-gray-50 flex items-center justify-center">
 				<Card className="w-96">
 					<CardHeader>
 						<CardTitle className="flex items-center text-red-600">
@@ -104,11 +104,11 @@ function ProjectsContent() {
 	}
 
 	return (
-		<div className="min-h-screen bg-gray-50">
+		<div className="h-full bg-gray-50">
 			{/* Header */}
-			<header className="bg-white shadow">
-				<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-					<div className="flex items-center justify-between py-6">
+			<header className="bg-white shadow-sm">
+				<div className="px-4">
+					<div className="flex items-center justify-between py-4">
 						<div>
 							<h1 className="text-3xl font-bold text-gray-900">Projects</h1>
 							<p className="text-gray-600">
@@ -125,10 +125,9 @@ function ProjectsContent() {
 				</div>
 			</header>
 
-			<main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-				<div className="px-4 py-6 sm:px-0">
-					{/* Search and Filter Controls */}
-					<div className="mb-6 flex flex-col sm:flex-row gap-4">
+			<main className="px-4 py-4">
+				{/* Search and Filter Controls */}
+				<div className="mb-4 flex flex-col sm:flex-row gap-4">
 						{/* Search */}
 						<div className="flex-1 relative">
 							<Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
@@ -240,7 +239,6 @@ function ProjectsContent() {
 							))}
 						</div>
 					)}
-				</div>
 			</main>
 			
 			{/* Create Project Modal */}
@@ -265,7 +263,7 @@ function ProjectsContent() {
 export default function ProjectsPage() {
 	return (
 		<Suspense fallback={
-			<div className="min-h-screen flex items-center justify-center">
+			<div className="h-full flex items-center justify-center">
 				<Loader2 className="h-8 w-8 animate-spin" />
 			</div>
 		}>
