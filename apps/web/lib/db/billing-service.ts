@@ -87,14 +87,22 @@ export async function updateBillingRate(id: string, updates: Partial<NewBillingR
     return data;
 }
 
+export async function deleteBillingRate(id: string) {
+    const { error } = await supabase
+        .from('billing_rates')
+        .delete()
+        .eq('id', id);
+    if (error) throw error;
+}
+
 // Company Billing Settings operations
 export async function getCompanyBillingSettings(companyId: string) {
     const { data, error } = await supabase
         .from('company_billing_settings')
         .select('*, currency')
         .eq('company_id', companyId)
-        .single();
-    if (error && error.code !== 'PGRST116') throw error;
+        .maybeSingle();
+    if (error) throw error;
     return data;
 }
 
@@ -108,7 +116,7 @@ export async function createCompanyBillingSettings(data: NewCompanyBillingSettin
             invoice_prefix: data.invoice_prefix,
         })
         .select()
-        .single();
+        .maybeSingle();
     if (error) throw error;
     return result;
 }
@@ -123,7 +131,7 @@ export async function updateCompanyBillingSettings(companyId: string, updates: P
         })
         .eq('company_id', companyId)
         .select()
-        .single();
+        .maybeSingle();
     if (error) throw error;
     return data;
 }
@@ -142,6 +150,10 @@ export async function createTimeEntryBilling(data: NewTimeEntryBilling) {
 export async function generateBillingReport(companyId: string, startDate: string, endDate: string) {
     const timeEntries = await getTimeEntriesForBilling(companyId, startDate, endDate);
     const billingRates = await getBillingRatesByCompany(companyId);
+    const companySettings = await getCompanyBillingSettings(companyId);
+    console.log('Time Entries for Billing:', timeEntries);
+    console.log('Billing Rates:', billingRates);
+    console.log('Company Settings:', companySettings);
 
     const report: { 
         [date: string]: { 
@@ -169,27 +181,39 @@ export async function generateBillingReport(companyId: string, startDate: string
     } = {};
 
     timeEntries.forEach(entry => {
-        if (!entry.user || !entry.user[0] || !entry.project || !entry.ticket) return; // Skip if essential data is missing
+        if (!entry.user || !entry.ticket || !entry.project) return; // Skip if essential data is missing
 
         const entryDate = format(new Date(entry.start_time), 'yyyy-MM-dd');
-        const userId = entry.user[0].id;
-        const projectId = entry.project?.[0]?.id;
-        const ticketId = entry.ticket?.[0]?.id;
-        const ticketTitle = entry.ticket?.[0]?.title;
+        const user = entry.user;
+        const userId = user.id;
+        const project = Array.isArray(entry.project) ? entry.project[0] : entry.project;
+        if (!project) return; // Skip if project is null
+        const projectId = project.id;
+        const ticketId = entry.ticket.id;
+        const ticketTitle = entry.ticket.title;
         const durationHours = entry.duration ? entry.duration / 3600 : 0;
 
         let applicableRate = 0;
 
         // Determine applicable rate: Project > User > Company Default
-        const projectRate = billingRates.find(rate => rate.project_id === projectId && !rate.user_id && new Date(entry.start_time) >= new Date(rate.effective_from) && (!rate.effective_to || new Date(entry.start_time) <= new Date(rate.effective_to)));
-        const userRate = billingRates.find(rate => rate.user_id === userId && !rate.project_id && new Date(entry.start_time) >= new Date(rate.effective_from) && (!rate.effective_to || new Date(entry.start_time) <= new Date(rate.effective_to)));
+        // Filter rates by effective_from and effective_to dates
+        const relevantRates = billingRates.filter(rate =>
+            new Date(entry.start_time) >= new Date(rate.effective_from) &&
+            (!rate.effective_to || new Date(entry.start_time) <= new Date(rate.effective_to))
+        );
+
+        const projectRate = relevantRates.find(rate => rate.project_id === projectId && !rate.user_id);
+        const userRate = relevantRates.find(rate => rate.user_id === userId && !rate.project_id);
 
         if (projectRate) {
             applicableRate = parseFloat(projectRate.hourly_rate);
         } else if (userRate) {
             applicableRate = parseFloat(userRate.hourly_rate);
-        } else if (entry.user[0].hourly_rate) {
-            applicableRate = parseFloat(entry.user[0].hourly_rate);
+        } else if (companySettings?.default_hourly_rate) {
+            applicableRate = parseFloat(companySettings.default_hourly_rate);
+        } else if (user.hourly_rate) {
+            // Fallback to user's default hourly_rate if no specific rate is found
+            applicableRate = parseFloat(user.hourly_rate);
         }
 
         const billableAmount = durationHours * applicableRate;
@@ -199,8 +223,8 @@ export async function generateBillingReport(companyId: string, startDate: string
         }
         if (!report[entryDate][userId]) {
             report[entryDate][userId] = {
-                userFirstName: entry.user[0].first_name || '',
-                userLastName: entry.user[0].last_name || '',
+                userFirstName: user.first_name || '',
+                userLastName: user.last_name || '',
                 totalHours: 0,
                 totalAmount: 0,
                 projects: {},
@@ -208,7 +232,7 @@ export async function generateBillingReport(companyId: string, startDate: string
         }
         if (!report[entryDate][userId].projects[projectId]) {
             report[entryDate][userId].projects[projectId] = {
-                projectName: entry.project?.[0]?.name,
+                projectName: project.name,
                 totalHours: 0,
                 totalAmount: 0,
                 tickets: [],

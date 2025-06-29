@@ -467,9 +467,11 @@ export async function getProjectsWithTicketCounts(companyId: string) {
  * Includes joins to tickets, projects, and users for comprehensive data.
  */
 export async function getTimeEntriesForBilling(companyId: string, startDate: string, endDate: string) {
+  console.log('Fetching time entries for billing:', { companyId, startDate, endDate });
   const { data, error } = await supabase
     .from('time_entries')
-    .select(`
+    .select(
+      `
       id,
       start_time,
       end_time,
@@ -478,7 +480,7 @@ export async function getTimeEntriesForBilling(companyId: string, startDate: str
       tickets (
         id,
         title,
-        projects (
+        projects!inner (
           id,
           name,
           company_id
@@ -491,21 +493,38 @@ export async function getTimeEntriesForBilling(companyId: string, startDate: str
         email,
         hourly_rate
       )
-    `)
+    `
+    )
+    .eq('tickets.projects.company_id', companyId)
     .gte('start_time', startDate)
-    .lte('start_time', endDate)
-    .eq('tickets.projects.company_id', companyId) // Ensure time entries belong to projects within the company
+    .lte('start_time', endDate + 'T23:59:59.999Z')
     .order('start_time', { ascending: true });
 
-  if (error) throw error;
+  if (error) {
+    console.error('Error fetching time entries for billing:', error);
+    throw error;
+  }
+  console.log('Supabase query for time entries completed.');
+
+  console.log('Raw time entries data:', data);
 
   // Flatten the structure for easier processing
-  const flattenedData = data.map(entry => ({
-    ...entry,
-    ticket: entry.tickets,
-    project: entry.tickets?.[0]?.projects,
-    user: entry.users,
-  })).filter(entry => entry.ticket && entry.project && entry.user);
+  const flattenedData = data
+    .map((entry) => {
+      const ticket = Array.isArray(entry.tickets) ? entry.tickets[0] : entry.tickets;
+      const project = ticket && Array.isArray(ticket.projects) ? ticket.projects[0] : ticket?.projects;
+      const user = Array.isArray(entry.users) ? entry.users[0] : entry.users;
+
+      return {
+        ...entry,
+        ticket,
+        project,
+        user,
+      };
+    })
+    .filter(entry => entry.project); // Ensure project is not null
+
+  console.log('Flattened time entries data:', flattenedData);
 
   return flattenedData;
 }

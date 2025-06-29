@@ -132,7 +132,7 @@ A ticketing system with time tracking capabilities for project management and is
 - [x] **9.1** Design billing data model and schema
 - [x] **9.2** Create billing periods table (weekly, bi-monthly, monthly)
 - [x] **9.3** Implement time entries aggregation by billing period
-- [x] **9.4** Create billing rates management (per user, per project)
+- [x] **9.4** Create billing rates management (per user, per project) → **COMPLETED**
 - [x] **9.5** Build billing report generation system
 - [x] **9.6** Implement billing period management UI
 - [x] **9.7** Create time entries report filtering by date range
@@ -147,6 +147,7 @@ A ticketing system with time tracking capabilities for project management and is
 - [x] **9.16** Replace `getSession()` with `getUser()` for security
 - [x] **9.17** Add filtering options (week, bi-monthly, monthly, yearly, overall) to billing report
 - [x] **9.18** Display computed value (total hours * hourly rate) with currency in billing report
+- [x] **9.19** Implement automatic weekly billing report generation on load
 
 ## 🗄️ Database Schema Tasks
 

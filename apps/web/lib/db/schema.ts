@@ -3,6 +3,7 @@
 
 // Define enum types
 export type UserRole = 'admin' | 'manager' | 'user'
+export type UserStatus = 'active' | 'inactive'
 export type ProjectStatus = 'active' | 'archived' | 'completed'
 export type TicketStatus = 'new' | 'in_progress' | 'review' | 'done'
 export type TicketPriority = 'low' | 'medium' | 'high' | 'critical'
