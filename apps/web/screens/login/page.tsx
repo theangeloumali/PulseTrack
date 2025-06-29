@@ -10,7 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@work
 import { useAuthStore } from '@/lib/stores/auth';
 import { Eye, EyeOff, Loader2 } from 'lucide-react';
 
-const isDev = true;
+const isDev = false;
 
 function LoginContent() {
 	const [email, setEmail] = useState(isDev ? 'christianangeloumaliofficial@gmail.com' : '');
