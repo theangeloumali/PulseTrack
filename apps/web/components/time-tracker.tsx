@@ -82,14 +82,15 @@ export function TimeTracker({ ticket, compact = false }: TimeTrackerProps) {
     
     const endTime = new Date()
     const startTime = new Date(activeEntry.start_time)
-    const duration = Math.floor((endTime.getTime() - startTime.getTime()) / 1000)
+    const durationSeconds = Math.floor((endTime.getTime() - startTime.getTime()) / 1000)
+    const durationHours = durationSeconds / 3600 // Convert to decimal hours
     
     try {
       await updateTimeEntryMutation.mutateAsync({
         id: activeEntry.id,
         data: {
           end_time: endTime.toISOString(),
-          duration,
+          duration: durationHours,
         }
       })
     } catch (error) {
@@ -102,7 +103,8 @@ export function TimeTracker({ ticket, compact = false }: TimeTrackerProps) {
     
     const hours = parseInt(manualHours) || 0
     const minutes = parseInt(manualMinutes) || 0
-    const totalSeconds = (hours * 3600) + (minutes * 60)
+    const totalHours = hours + (minutes / 60) // Convert to decimal hours
+    const totalSeconds = totalHours * 3600 // For calculating start time
     
     const now = new Date()
     const startTime = new Date(now.getTime() - (totalSeconds * 1000))
@@ -113,7 +115,7 @@ export function TimeTracker({ ticket, compact = false }: TimeTrackerProps) {
         user_id: user.id,
         start_time: startTime.toISOString(),
         end_time: now.toISOString(),
-        duration: totalSeconds,
+        duration: totalHours,
         description: description || null,
       })
       

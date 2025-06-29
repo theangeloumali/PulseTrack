@@ -1,6 +1,5 @@
 import { useAuthStore } from '@/lib/stores/auth';
-
-export type UserRole = 'admin' | 'manager' | 'user';
+import { UserRole } from '@/lib/db/schema';
 
 export function useRoleAccess() {
   const { user } = useAuthStore();
@@ -12,19 +11,24 @@ export function useRoleAccess() {
     return roles.includes(user.role as UserRole);
   };
 
-  const isAdmin = (): boolean => hasRole('admin');
-  const isManager = (): boolean => hasRole('manager');
-  const isUser = (): boolean => hasRole('user');
+  // Role hierarchy checks - super_admin has access to everything
+  const isSuperAdmin = (): boolean => hasRole('super_admin');
+  const isSystemAdmin = (): boolean => hasRole(['super_admin', 'system_admin']);
+  const isCompanyAdmin = (): boolean => hasRole(['super_admin', 'system_admin', 'company_admin']);
+  const isManager = (): boolean => hasRole(['super_admin', 'system_admin', 'company_admin', 'manager']);
+  const isUser = (): boolean => hasRole(['super_admin', 'system_admin', 'company_admin', 'manager', 'user']);
   
-  const canAccessCompany = (): boolean => hasRole(['admin', 'manager']);
-  const canAccessDiagnostics = (): boolean => hasRole(['admin', 'manager']);
-  const canManageUsers = (): boolean => hasRole(['admin', 'manager']);
-  const canCreateProjects = (): boolean => hasRole(['admin', 'manager']);
+  const canAccessCompany = (): boolean => hasRole(['super_admin', 'system_admin', 'company_admin', 'manager']);
+  const canAccessDiagnostics = (): boolean => hasRole(['super_admin', 'system_admin', 'company_admin', 'manager']);
+  const canManageUsers = (): boolean => hasRole(['super_admin', 'system_admin', 'company_admin', 'manager']);
+  const canCreateProjects = (): boolean => hasRole(['super_admin', 'system_admin', 'company_admin', 'manager']);
 
   return {
     user,
     hasRole,
-    isAdmin,
+    isSuperAdmin,
+    isSystemAdmin,
+    isCompanyAdmin,
     isManager,
     isUser,
     canAccessCompany,

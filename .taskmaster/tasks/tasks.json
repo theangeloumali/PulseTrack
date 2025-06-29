@@ -139,7 +139,7 @@
             "id": 1,
             "title": "Create Global Search Interface Component",
             "description": "Build unified search interface that combines existing project, ticket, and user searches",
-            "status": "pending",
+            "status": "in-progress",
             "dependencies": [],
             "details": "Create a global search component that can search across all entities simultaneously, display results grouped by type (projects, tickets, users), implement result ranking algorithm, add search suggestions and autocomplete",
             "testStrategy": ""
@@ -405,11 +405,62 @@
         ],
         "priority": "medium",
         "subtasks": []
+      },
+      {
+        "id": 34,
+        "title": "Fix Super Admin Role Access Control for Company and Diagnostics Pages",
+        "description": "Resolved super admin role access issues by updating the useRoleAccess hook to properly implement role hierarchy checks based on the database schema, ensuring super admin users can access restricted pages like /company and /diagnostics.",
+        "details": "Updated the useRoleAccess hook in apps/web/lib/hooks/useRoleAccess.ts to correctly implement role hierarchy validation that matches the database schema design. Fixed role comparison logic to ensure super admin users have access to all system pages including company management and diagnostics interfaces. Verified that the role hierarchy properly cascades permissions from super admin down to regular user roles. Updated any hardcoded role checks to use the centralized useRoleAccess hook for consistency. Ensured proper TypeScript typing for role enums and permission checks. Tested role-based navigation and page access controls to verify super admin users can access previously restricted areas while maintaining security boundaries for other user roles.",
+        "testStrategy": "Test super admin user login and verify access to /company and /diagnostics pages that were previously blocked. Verify that other user roles (Admin, Manager, User) still have appropriate access restrictions and cannot access super admin only pages. Test role hierarchy functionality by checking that super admin permissions cascade correctly while other roles maintain their restrictions. Verify that the useRoleAccess hook correctly identifies super admin users and grants appropriate permissions. Test navigation menu visibility for different roles to ensure proper UI state management. Validate that role checks are consistent across all protected routes and components.",
+        "status": "done",
+        "dependencies": [
+          11,
+          30,
+          31
+        ],
+        "priority": "medium",
+        "subtasks": []
+      },
+      {
+        "id": 35,
+        "title": "Create Comprehensive Project Documentation System",
+        "description": "Establish complete project documentation structure with role system, authentication, database schema, and API endpoints documentation, integrating with CLAUDE.md for AI-assisted development.",
+        "details": "Create comprehensive documentation structure in docs/ folder including: role-system.md with complete role hierarchy (Super Admin → System Admin → Company Admin → Manager → User), permission matrices, and implementation patterns; authentication.md covering Supabase Auth integration, user registration flows, session management, and security considerations; database-schema.md with complete schema documentation, enum types, constraints, indexes, and security policies; api-endpoints.md with complete endpoint reference, authentication patterns, error handling, and rate limiting. Update CLAUDE.md to reference new documentation structure with quick reference sections and integration guides. Ensure all documentation follows consistent formatting, includes code examples, and provides clear usage patterns for developers. Add cross-references between documentation files and maintain documentation versioning aligned with codebase changes.",
+        "testStrategy": "Verify all documentation files are properly structured and accessible, test that CLAUDE.md references are accurate and functional, validate code examples in documentation compile correctly, ensure documentation covers all implemented features from completed tasks, test that new developers can follow documentation to understand system architecture, verify cross-references between documentation files work correctly, confirm documentation structure supports future additions and updates.",
+        "status": "done",
+        "dependencies": [
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          18,
+          19,
+          20,
+          30
+        ],
+        "priority": "medium",
+        "subtasks": []
+      },
+      {
+        "id": 36,
+        "title": "Build Super Admin Company Details Page with Comprehensive User Management",
+        "description": "Create a detailed company information page at /admin/companies/[companyId] route for super admin users, displaying comprehensive company data, user statistics breakdown, and detailed user table with roles and status management.",
+        "details": "Implement a comprehensive company details page accessible only to super admin users that provides complete visibility into individual company operations. Create the page component at /admin/companies/[companyId]/page.tsx with proper super admin role verification and company data fetching. Build company information section displaying company name, registration date, billing status, active projects count, total users, and company settings overview. Implement user breakdown statistics showing counts by role (Company Admin, Manager, User) and status (Active, Inactive, Suspended). Create detailed user table component with columns for user name, email, role, status, last login, and action buttons for role changes and status updates. Add filtering capabilities for users by role and status, plus search functionality by name/email. Implement inline editing for user roles with proper validation and authorization checks. Build user status management controls allowing super admin to activate, deactivate, or suspend users with confirmation dialogs. Ensure all data fetching uses proper error handling and loading states. Add breadcrumb navigation showing Admin > Companies > [Company Name]. Implement responsive design for mobile and desktop viewing. Use proper TypeScript types for all components and API responses.",
+        "testStrategy": "Test super admin role verification prevents unauthorized access to company details page. Verify company data fetching displays accurate information including user counts and project statistics. Test user table functionality with proper filtering, search, and sorting capabilities. Validate user role management operations with proper authorization checks and optimistic updates. Test user status controls with confirmation dialogs and proper error handling. Verify responsive design works correctly on mobile and desktop devices. Test loading states and error handling for network failures. Validate breadcrumb navigation and page routing functionality.",
+        "status": "done",
+        "dependencies": [
+          11,
+          30
+        ],
+        "priority": "medium",
+        "subtasks": []
       }
     ],
     "metadata": {
       "created": "2025-06-29T02:06:57.806Z",
-      "updated": "2025-06-29T10:49:14.469Z",
+      "updated": "2025-06-29T11:27:17.045Z",
       "description": "Tasks for master context"
     }
   }

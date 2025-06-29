@@ -121,7 +121,7 @@ export interface TimeEntry {
   user_id: string
   start_time: string
   end_time?: string | null
-  duration?: number | null // in seconds
+  duration?: number | null // in hours (decimal)
   description?: string | null
   created_at: string
 }
@@ -131,7 +131,7 @@ export interface NewTimeEntry {
   user_id: string
   start_time: string
   end_time?: string | null
-  duration?: number | null
+  duration?: number | null // in hours (decimal)
   description?: string | null
 }
 
@@ -234,6 +234,23 @@ export interface NewTimeEntryBilling {
   is_billable?: boolean
 }
 
+// Ticket History types
+export interface TicketHistory extends BaseRecord {
+  ticket_id: string
+  user_id: string
+  field_name: string // 'status', 'assignee', 'priority', 'title', 'description', etc.
+  old_value?: string | null
+  new_value?: string | null
+}
+
+export interface NewTicketHistory {
+  ticket_id: string
+  user_id: string
+  field_name: string
+  old_value?: string | null
+  new_value?: string | null
+}
+
 // Database table names for Supabase queries
 export const TABLE_NAMES = {
   companies: 'companies',
@@ -246,4 +263,5 @@ export const TABLE_NAMES = {
   billing_rates: 'billing_rates',
   company_billing_settings: 'company_billing_settings',
   time_entry_billing: 'time_entry_billing',
+  ticket_history: 'ticket_history',
 } as const
