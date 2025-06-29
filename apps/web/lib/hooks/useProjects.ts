@@ -67,8 +67,18 @@ export function useCreateProjectMutation() {
   return useMutation({
     mutationFn: createProject,
     onSuccess: (newProject) => {
-      // Invalidate and refetch projects list
+      // Invalidate all project-related queries
       queryClient.invalidateQueries({ queryKey: projectKeys.list(user!.company_id) });
+      
+      // Invalidate projects with ticket counts
+      queryClient.invalidateQueries({ 
+        queryKey: ['projects', 'withTicketCounts', user!.company_id] 
+      });
+      
+      // Invalidate user projects
+      queryClient.invalidateQueries({ 
+        queryKey: projectKeys.userProjects(user!.id) 
+      });
       
       // Optimistically add to cache
       queryClient.setQueryData(
@@ -88,15 +98,21 @@ export function useUpdateProjectMutation() {
     mutationFn: ({ id, updates }: { id: string; updates: Partial<NewProject> }) =>
       updateProject(id, updates),
     onSuccess: (updatedProject, { id }) => {
-      // Update project in list cache
-      queryClient.setQueryData(
-        projectKeys.list(user!.company_id),
-        (old: Project[] = []) =>
-          old.map((project) => (project.id === id ? updatedProject : project))
-      );
+      // Invalidate all project-related queries
+      queryClient.invalidateQueries({ queryKey: projectKeys.list(user!.company_id) });
+      
+      // Invalidate projects with ticket counts
+      queryClient.invalidateQueries({ 
+        queryKey: ['projects', 'withTicketCounts', user!.company_id] 
+      });
       
       // Update individual project cache
       queryClient.setQueryData(projectKeys.detail(id), updatedProject);
+      
+      // Invalidate user projects if owner changed
+      queryClient.invalidateQueries({ 
+        queryKey: projectKeys.userProjects(user!.id) 
+      });
     },
   });
 }
@@ -109,14 +125,26 @@ export function useDeleteProjectMutation() {
   return useMutation({
     mutationFn: deleteProject,
     onSuccess: (_, deletedId) => {
-      // Remove from projects list
-      queryClient.setQueryData(
-        projectKeys.list(user!.company_id),
-        (old: Project[] = []) => old.filter((project) => project.id !== deletedId)
-      );
+      // Invalidate all project-related queries
+      queryClient.invalidateQueries({ queryKey: projectKeys.list(user!.company_id) });
+      
+      // Invalidate projects with ticket counts
+      queryClient.invalidateQueries({ 
+        queryKey: ['projects', 'withTicketCounts', user!.company_id] 
+      });
       
       // Remove individual project cache
       queryClient.removeQueries({ queryKey: projectKeys.detail(deletedId) });
+      
+      // Invalidate user projects
+      queryClient.invalidateQueries({ 
+        queryKey: projectKeys.userProjects(user!.id) 
+      });
+      
+      // Invalidate all ticket queries for this project
+      queryClient.invalidateQueries({ 
+        queryKey: ['tickets', 'list', deletedId] 
+      });
     },
   });
 }

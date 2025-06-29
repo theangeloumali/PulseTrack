@@ -12,6 +12,14 @@ import type {
   NewTimeEntry,
   Comment,
   NewComment,
+  BillingPeriod,
+  NewBillingPeriod,
+  BillingRate,
+  NewBillingRate,
+  CompanyBillingSettings,
+  NewCompanyBillingSettings,
+  TimeEntryBilling,
+  NewTimeEntryBilling,
 } from '@/lib/db/schema'
 
 export type {
@@ -27,6 +35,14 @@ export type {
   NewTimeEntry,
   Comment,
   NewComment,
+  BillingPeriod,
+  NewBillingPeriod,
+  BillingRate,
+  NewBillingRate,
+  CompanyBillingSettings,
+  NewCompanyBillingSettings,
+  TimeEntryBilling,
+  NewTimeEntryBilling,
 }
 
 // Legacy type aliases for backward compatibility
@@ -36,9 +52,15 @@ export type CreateProject = NewProject
 export type CreateTicket = NewTicket
 export type CreateTimeEntry = NewTimeEntry
 export type CreateComment = NewComment
+export type CreateBillingPeriod = NewBillingPeriod
+export type CreateBillingRate = NewBillingRate
+export type CreateCompanyBillingSettings = NewCompanyBillingSettings
+export type CreateTimeEntryBilling = NewTimeEntryBilling
 
 // Enum types for type safety
 export type UserRole = 'admin' | 'manager' | 'user'
 export type ProjectStatus = 'active' | 'archived' | 'completed'
 export type TicketStatus = 'new' | 'in_progress' | 'review' | 'done'
 export type TicketPriority = 'low' | 'medium' | 'high' | 'critical'
+export type BillingFrequency = 'weekly' | 'bi_monthly' | 'monthly'
+export type BillingStatus = 'draft' | 'active' | 'closed'

@@ -16,7 +16,7 @@ interface EditUserModalProps {
 
 export function EditUserModal({ isOpen, onClose, user }: EditUserModalProps) {
   const [formData, setFormData] = useState({
-    role: 'user' as 'admin' | 'manager' | 'user',
+    role: 'user' as 'super_admin' | 'system_admin' | 'company_admin' | 'manager' | 'user',
     status: 'active' as 'active' | 'inactive',
     hourlyRate: ''
   })
@@ -113,13 +113,15 @@ export function EditUserModal({ isOpen, onClose, user }: EditUserModalProps) {
             id="role"
             value={formData.role} 
             onChange={(e: React.ChangeEvent<HTMLSelectElement>) => 
-              setFormData(prev => ({ ...prev, role: e.target.value as 'admin' | 'manager' | 'user' }))
+              setFormData(prev => ({ ...prev, role: e.target.value as 'super_admin' | 'system_admin' | 'company_admin' | 'manager' | 'user' }))
             }
             className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
           >
             <option value="user">User</option>
             <option value="manager">Manager</option>
-            <option value="admin">Admin</option>
+            <option value="company_admin">Company Admin</option>
+            <option value="system_admin">System Admin</option>
+            <option value="super_admin">Super Admin</option>
           </select>
         </div>
 

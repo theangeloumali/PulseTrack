@@ -8,7 +8,7 @@ import { Input } from '@workspace/ui/components/input'
 import { Label } from '@workspace/ui/components/label'
 import { Textarea } from '@workspace/ui/components/textarea'
 import { useTimeEntriesByTicket, useUpdateTimeEntry, useDeleteTimeEntry } from '@/lib/hooks/useTimeTracking'
-import type { TimeEntry } from '@/lib/db/schema'
+import type { TimeEntryWithUser } from '@/lib/db/schema'
 
 interface TimeEntriesListProps {
   ticketId: string
@@ -55,7 +55,7 @@ export function TimeEntriesList({ ticketId }: TimeEntriesListProps) {
     return timeEntries.reduce((total, entry) => total + (entry.duration || 0), 0)
   }
 
-  const startEditing = (entry: TimeEntry) => {
+  const startEditing = (entry: TimeEntryWithUser) => {
     const hours = Math.floor((entry.duration || 0) / 3600)
     const minutes = Math.floor(((entry.duration || 0) % 3600) / 60)
     
@@ -115,7 +115,6 @@ export function TimeEntriesList({ ticketId }: TimeEntriesListProps) {
       </Card>
     )
   }
-
   return (
     <Card className="p-4">
       <div className="space-y-4">

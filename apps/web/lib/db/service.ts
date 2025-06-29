@@ -281,11 +281,20 @@ export async function updateTicket(id: string, data: Partial<NewTicket>) {
     .from('tickets')
     .update(data)
     .eq('id', id)
-    .select(ticketWithProjectFields)
+    .select()
     .single()
   
   if (error) throw error
   return result
+}
+
+export async function deleteTicket(id: string) {
+  const { error } = await supabase
+    .from('tickets')
+    .delete()
+    .eq('id', id)
+  
+  if (error) throw error
 }
 
 // Get ticket count by project
@@ -462,6 +471,73 @@ export async function getProjectsWithTicketCounts(companyId: string) {
   return transformedData;
 }
 
+/**
+ * Get time entries for billing within a company and date range.
+ * Includes joins to tickets, projects, and users for comprehensive data.
+ */
+export async function getTimeEntriesForBilling(companyId: string, startDate: string, endDate: string) {
+  console.log('Fetching time entries for billing:', { companyId, startDate, endDate });
+  const { data, error } = await supabase
+    .from('time_entries')
+    .select(
+      `
+      id,
+      start_time,
+      end_time,
+      duration,
+      description,
+      tickets (
+        id,
+        title,
+        projects!inner (
+          id,
+          name,
+          company_id
+        )
+      ),
+      users (
+        id,
+        first_name,
+        last_name,
+        email,
+        hourly_rate
+      )
+    `
+    )
+    .eq('tickets.projects.company_id', companyId)
+    .gte('start_time', startDate)
+    .lte('start_time', endDate + 'T23:59:59.999Z')
+    .order('start_time', { ascending: true });
+
+  if (error) {
+    console.error('Error fetching time entries for billing:', error);
+    throw error;
+  }
+  console.log('Supabase query for time entries completed.');
+
+  console.log('Raw time entries data:', data);
+
+  // Flatten the structure for easier processing
+  const flattenedData = data
+    .map((entry) => {
+      const ticket = Array.isArray(entry.tickets) ? entry.tickets[0] : entry.tickets;
+      const project = ticket && Array.isArray(ticket.projects) ? ticket.projects[0] : ticket?.projects;
+      const user = Array.isArray(entry.users) ? entry.users[0] : entry.users;
+
+      return {
+        ...entry,
+        ticket,
+        project,
+        user,
+      };
+    })
+    .filter(entry => entry.project); // Ensure project is not null
+
+  console.log('Flattened time entries data:', flattenedData);
+
+  return flattenedData;
+}
+
 // Company User Management Operations
 
 /**
@@ -500,7 +576,7 @@ export async function getCompanyUsers(companyId: string) {
 /**
  * Update user role and status
  */
-export async function updateUserRole(userId: string, role: 'admin' | 'manager' | 'user') {
+export async function updateUserRole(userId: string, role: 'super_admin' | 'system_admin' | 'company_admin' | 'manager' | 'user') {
   const { data, error } = await supabase
     .from('users')
     .update({ role, updated_at: new Date().toISOString() })
@@ -587,7 +663,7 @@ export async function getAssignableUsers(companyId: string) {
  */
 export async function inviteUserToCompany(data: {
   email: string
-  role: 'admin' | 'manager' | 'user'
+  role: 'super_admin' | 'system_admin' | 'company_admin' | 'manager' | 'user'
   companyId: string
   invitedBy: string
   firstName?: string
@@ -613,4 +689,20 @@ export async function inviteUserToCompany(data: {
   } catch (error) {
     throw error
   }
+}
+
+
+/**
+ * Update user details (first name, last name, etc.)
+ */
+export async function updateUser(userId: string, updates: Partial<NewUser>) {
+  const { data, error } = await supabase
+    .from('users')
+    .update({ ...updates, updated_at: new Date().toISOString() })
+    .eq('id', userId)
+    .select()
+    .single()
+  
+  if (error) throw error
+  return data
 }

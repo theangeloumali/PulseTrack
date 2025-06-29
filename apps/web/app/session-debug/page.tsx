@@ -27,8 +27,8 @@ export default function SessionDebugPage() {
               user_metadata: session.user.user_metadata,
               app_metadata: session.user.app_metadata
             },
-            access_token: session.access_token ? 'Present' : 'Missing',
-            refresh_token: session.refresh_token ? 'Present' : 'Missing',
+            access_token: session.access_token,
+            refresh_token: session.refresh_token,
             expires_at: session.expires_at
           } : null,
           error: error?.message || null,

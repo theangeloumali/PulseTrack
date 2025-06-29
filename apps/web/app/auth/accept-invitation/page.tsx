@@ -1,20 +1,27 @@
 'use client'
 
 import { useState, useEffect, Suspense } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import { createBrowserClient } from '@supabase/ssr'
 import { updateUserStatus } from '@/lib/db/service'
 
+interface UserInfo {
+  email: string;
+  firstName: string;
+  lastName: string;
+  role: string;
+  companyId: string;
+}
+
 function AcceptInvitationContent() {
   const router = useRouter()
-  const searchParams = useSearchParams()
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const [userInfo, setUserInfo] = useState<any>(null)
+  const [userInfo, setUserInfo] = useState<UserInfo | null>(null)
   const [hasRefreshed, setHasRefreshed] = useState(false)
 
   const supabase = createBrowserClient(
@@ -47,20 +54,20 @@ function AcceptInvitationContent() {
         }
         
         // Get user metadata from the session
-        const metadata = session.user.user_metadata
+        const metadata = session.user.user_metadata as UserInfo
         console.log('AcceptInvitation - User metadata:', metadata)
         
         setUserInfo({
-          email: session.user.email,
-          firstName: metadata?.first_name || '',
-          lastName: metadata?.last_name || '',
+          email: session.user.email || '',
+          firstName: metadata?.firstName || '',
+          lastName: metadata?.lastName || '',
           role: metadata?.role || 'user',
-          companyId: metadata?.company_id
+          companyId: metadata?.companyId
         })
 
         // Pre-fill the form if we have the data
-        if (metadata?.first_name) setFirstName(metadata.first_name)
-        if (metadata?.last_name) setLastName(metadata.last_name)
+        if (metadata?.firstName) setFirstName(metadata.firstName)
+        if (metadata?.lastName) setLastName(metadata.lastName)
 
         console.log('AcceptInvitation - User info set successfully')
         
@@ -78,15 +85,15 @@ function AcceptInvitationContent() {
       
       try {
         console.log('AcceptInvitation - Checking current session...')
-        const { data: { session }, error } = await supabase.auth.getSession()
+        const { data: { user: session }, error } = await supabase.auth.getUser()
         
         if (error) {
           console.error('AcceptInvitation - Session error:', error)
           return
         }
         
-        if (session?.user) {
-          console.log('AcceptInvitation - Found existing session:', session.user.id)
+        if (session) {
+          console.log('AcceptInvitation - Found existing session:', session.id)
           
           // Clear any pending auto-refresh
           if (autoRefreshTimeout) {
@@ -94,15 +101,15 @@ function AcceptInvitationContent() {
           }
           
           // Get user metadata from the session
-          const metadata = session.user.user_metadata
+          const metadata = session.user_metadata
           console.log('AcceptInvitation - User metadata:', metadata)
           
           setUserInfo({
-            email: session.user.email,
+            email: session.email || '',
             firstName: metadata?.first_name || '',
             lastName: metadata?.last_name || '',
             role: metadata?.role || 'user',
-            companyId: metadata?.company_id
+            companyId: metadata?.companyId
           })
 
           // Pre-fill the form if we have the data
@@ -161,7 +168,7 @@ function AcceptInvitationContent() {
       }
       subscription.unsubscribe()
     }
-  }, [router, supabase])
+  }, [router, supabase, firstName, hasRefreshed, lastName])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -195,11 +202,11 @@ function AcceptInvitationContent() {
       }
 
       // Get the current session to get user ID
-      const { data: { session } } = await supabase.auth.getSession()
+      const { data: { user: session } } = await supabase.auth.getUser()
       
-      if (session?.user) {
+      if (session) {
         // Activate the user account and update their details
-        await updateUserStatus(session.user.id, 'active')
+        await updateUserStatus(session.id, 'active')
 
         // Update user details in our database
         const { error: updateError } = await supabase
@@ -210,7 +217,7 @@ function AcceptInvitationContent() {
             status: 'active',
             updated_at: new Date().toISOString()
           })
-          .eq('id', session.user.id)
+          .eq('id', session.id)
 
         if (updateError) {
           console.error('Failed to update user details:', updateError)
@@ -220,9 +227,9 @@ function AcceptInvitationContent() {
       // Redirect to dashboard with welcome message
       router.push('/dashboard?welcome=true&setup=complete')
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Setup error:', error)
-      setError(error.message || 'Failed to set up account. Please try again.')
+      setError((error as Error).message || 'Failed to set up account. Please try again.')
     } finally {
       setLoading(false)
     }
@@ -234,7 +241,7 @@ function AcceptInvitationContent() {
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
           <p className="mt-4 text-gray-600">Setting up your invitation...</p>
-          <p className="mt-2 text-sm text-gray-500">If this takes more than a few seconds, we'll automatically refresh</p>
+          <p className="mt-2 text-sm text-gray-500">If this takes more than a few seconds, we&apos;ll automatically refresh</p>
         </div>
       </div>
     )

@@ -1,0 +1,431 @@
+{
+  "master": {
+    "tasks": [
+      {
+        "id": 11,
+        "title": "Setup Company Management System",
+        "description": "Implement multi-tenant company management with data isolation, company creation, and user invitation system",
+        "details": "Create companies table with proper schema, implement Row Level Security (RLS) policies for data isolation, build company registration flow for first user, create admin interface for company management, implement user invitation system with email verification, ensure all subsequent features respect company-level data scoping. Use Supabase RLS policies to automatically filter all queries by company_id.",
+        "testStrategy": "Unit tests for company CRUD operations, integration tests for RLS policies, test user invitation flow, verify complete data isolation between companies, test company admin permissions",
+        "priority": "high",
+        "dependencies": [],
+        "status": "done",
+        "subtasks": []
+      },
+      {
+        "id": 12,
+        "title": "Implement User Authentication and Role Management",
+        "description": "Build secure authentication system with Supabase Auth and implement role-based access control (Admin, Manager, User)",
+        "details": "Configure Supabase Auth with email/password authentication, implement password reset functionality, create user registration flow that requires company association, build user profile management with avatar upload to Supabase storage, implement RBAC with three roles (Admin, Manager, User), create RLS policies for role-based data access, build role assignment interface for admins, implement session management and logout functionality.",
+        "testStrategy": "Authentication flow tests, password reset tests, role permission tests, RLS policy tests, session persistence tests, profile update tests",
+        "priority": "high",
+        "dependencies": [
+          11
+        ],
+        "status": "done",
+        "subtasks": []
+      },
+      {
+        "id": 13,
+        "title": "Create Project Management System",
+        "description": "Build project creation, listing, and management functionality with company-scoped data access",
+        "details": "Create projects table with company_id foreign key, implement project CRUD operations with real-time updates, build project creation form with name, description, and status fields, create project listing page with search and filtering, implement project status management (active, archived, completed), add project assignment to users, ensure all project operations respect company boundaries and user roles, implement optimistic updates for better UX.",
+        "testStrategy": "Project CRUD tests, real-time update tests, role-based access tests, search and filter tests, company isolation tests",
+        "priority": "high",
+        "dependencies": [
+          12
+        ],
+        "status": "done",
+        "subtasks": []
+      },
+      {
+        "id": 14,
+        "title": "Implement Ticket Management System",
+        "description": "Build comprehensive ticket system with workflow management, assignment, and status tracking",
+        "details": "Create tickets table with project_id foreign key, implement ticket CRUD operations, build ticket creation form with title, description, priority, and assignment fields, implement status workflow (new → in_progress → review → done), create ticket listing with filtering by status, priority, and assignee, add ticket search functionality with full-text search, implement ticket comments system, build ticket history tracking, ensure real-time updates across all ticket operations.",
+        "testStrategy": "Ticket CRUD tests, workflow validation tests, assignment tests, search functionality tests, real-time update tests, comment system tests",
+        "priority": "high",
+        "dependencies": [
+          13
+        ],
+        "status": "done",
+        "subtasks": []
+      },
+      {
+        "id": 15,
+        "title": "Build Time Tracking System",
+        "description": "Create timer functionality with time entry management for accurate time tracking on tickets",
+        "details": "Create time_entries table with ticket_id and user_id foreign keys, implement start/stop timer functionality using Zustand for state management, build real-time timer display with elapsed time updates, ensure only one active timer per user, implement automatic time entry creation on timer stop, build time entry management interface for viewing, editing, and deleting entries, add duration calculations and formatting, implement browser storage for timer persistence across page refreshes.",
+        "testStrategy": "Timer functionality tests, time entry CRUD tests, duration calculation tests, browser persistence tests, single active timer enforcement tests",
+        "priority": "high",
+        "dependencies": [
+          14
+        ],
+        "status": "done",
+        "subtasks": []
+      },
+      {
+        "id": 16,
+        "title": "Create Dashboard and Analytics",
+        "description": "Integrate real data into existing dashboard layout - connect stats cards, weekly summary, and recent activity feed to actual database data",
+        "status": "done",
+        "dependencies": [
+          15
+        ],
+        "priority": "medium",
+        "details": "The dashboard layout and basic components already exist but currently show placeholder/hardcoded data. Need to integrate real data by connecting stats cards to actual project/ticket/time tracking data from database, implement weekly summary calculations with real time tracking data, build recent activity feed with actual user activities (project updates, ticket changes, time entries), ensure efficient data aggregation for dashboard performance, implement real-time updates for live metrics, and maintain the existing responsive design.",
+        "testStrategy": "Data integration tests, metric calculation accuracy tests, activity feed functionality tests, dashboard performance with real data tests, real-time update tests",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Connect stats cards to real database data",
+            "description": "Replace hardcoded 0 values in dashboard stats cards with actual data from projects, tickets, and time tracking tables",
+            "status": "done",
+            "dependencies": [],
+            "details": "",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "Implement weekly summary data integration",
+            "description": "Connect weekly summary component to real time tracking data and calculate actual weekly totals, trends, and progress",
+            "status": "done",
+            "dependencies": [],
+            "details": "",
+            "testStrategy": ""
+          },
+          {
+            "id": 3,
+            "title": "Build recent activity feed with real data",
+            "description": "Replace placeholder recent activity feed with actual user activities from database - track project updates, ticket changes, time entries, and other user actions",
+            "status": "done",
+            "dependencies": [],
+            "details": "",
+            "testStrategy": ""
+          },
+          {
+            "id": 4,
+            "title": "Implement real-time dashboard updates",
+            "description": "Add real-time update functionality to refresh dashboard metrics and activity feed as data changes without requiring page refresh",
+            "status": "done",
+            "dependencies": [],
+            "details": "",
+            "testStrategy": ""
+          },
+          {
+            "id": 5,
+            "title": "Optimize dashboard data loading performance",
+            "description": "Implement efficient data aggregation and caching to ensure dashboard loads quickly with real data and maintains sub-2 second load times",
+            "status": "done",
+            "dependencies": [],
+            "details": "",
+            "testStrategy": ""
+          }
+        ]
+      },
+      {
+        "id": 17,
+        "title": "Implement Search and Navigation System",
+        "description": "Build global search functionality combining existing entity searches and add intuitive navigation with breadcrumbs and quick access",
+        "status": "in-progress",
+        "dependencies": [
+          16
+        ],
+        "priority": "medium",
+        "details": "Current state: Individual search exists for projects (name/description), tickets (title/description), and users (name/email). Need to implement unified global search interface that combines all entity searches with result ranking, add search history functionality, create responsive navigation using Next.js App Router, implement breadcrumb navigation for all pages, add quick access to recent items, implement advanced filtering combinations across entities, ensure search responds within 500ms, implement keyboard navigation support, create mobile-responsive navigation menu with proper accessibility.",
+        "testStrategy": "Global search integration tests, individual entity search validation, advanced filtering tests, search performance tests, navigation tests, breadcrumb tests, mobile responsiveness tests, keyboard navigation tests, accessibility tests",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Create Global Search Interface Component",
+            "description": "Build unified search interface that combines existing project, ticket, and user searches",
+            "status": "pending",
+            "dependencies": [],
+            "details": "Create a global search component that can search across all entities simultaneously, display results grouped by type (projects, tickets, users), implement result ranking algorithm, add search suggestions and autocomplete",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "Implement Advanced Filtering System",
+            "description": "Add advanced filtering combinations across different entity types",
+            "status": "pending",
+            "dependencies": [],
+            "details": "Create filter interface for combining searches (e.g., projects by user + status, tickets by project + priority), implement filter persistence, add filter presets for common combinations",
+            "testStrategy": ""
+          },
+          {
+            "id": 3,
+            "title": "Add Search History and Recent Items",
+            "description": "Implement search history tracking and quick access to recent items",
+            "status": "pending",
+            "dependencies": [],
+            "details": "Store search history in local storage, provide recent searches dropdown, implement recent projects/tickets quick access, add clear history functionality",
+            "testStrategy": ""
+          },
+          {
+            "id": 4,
+            "title": "Build Breadcrumb Navigation System",
+            "description": "Implement breadcrumb navigation for all pages using Next.js App Router",
+            "status": "pending",
+            "dependencies": [],
+            "details": "Create breadcrumb component that automatically generates navigation paths, integrate with Next.js routing, ensure proper hierarchy display for nested pages",
+            "testStrategy": ""
+          },
+          {
+            "id": 5,
+            "title": "Create Mobile-Responsive Navigation Menu",
+            "description": "Build responsive navigation with keyboard support and accessibility",
+            "status": "pending",
+            "dependencies": [],
+            "details": "Implement mobile hamburger menu, add keyboard navigation support, ensure ARIA compliance, test with screen readers, optimize touch targets for mobile",
+            "testStrategy": ""
+          }
+        ]
+      },
+      {
+        "id": 18,
+        "title": "Build Billing Periods Management",
+        "description": "Create billing period system for organizing time entries into weekly, bi-monthly, and monthly periods",
+        "details": "Create billing_periods table with company_id foreign key, implement billing period CRUD operations for admins, build period creation interface with frequency selection (weekly, bi-monthly, monthly), implement automatic time entry association with active billing periods, add period status management (draft, active, closed), create period overlap validation, build billing period listing and management interface, ensure efficient querying for large time entry datasets.",
+        "testStrategy": "Billing period CRUD tests, overlap validation tests, time entry association tests, admin permission tests, performance tests with large datasets",
+        "priority": "medium",
+        "dependencies": [
+          15
+        ],
+        "status": "done",
+        "subtasks": []
+      },
+      {
+        "id": 19,
+        "title": "Implement Billing Rates and Calculations",
+        "description": "Create flexible billing rate system with company defaults, user overrides, and project-specific rates",
+        "details": "Create billing_rates and company_billing_settings tables, implement rate hierarchy system (Project > User > Company Default), build rate management interface for admins, implement historical rate tracking with effective dates, create billing calculations for time entries, add currency support (MVP: USD), build time_entry_billing association table, implement automatic billing amount calculations, ensure rate changes don't affect historical calculations.",
+        "testStrategy": "Rate hierarchy tests, historical rate tests, billing calculation tests, currency handling tests, rate override tests",
+        "priority": "medium",
+        "dependencies": [
+          18
+        ],
+        "status": "done",
+        "subtasks": []
+      },
+      {
+        "id": 20,
+        "title": "Create Time Reports and Export System",
+        "description": "Build comprehensive reporting system with multiple export formats for billing and analysis",
+        "details": "Build time report generation interface with filtering by period, user, project, and date range, implement efficient aggregation queries for large datasets, create PDF export with company branding using a PDF generation library, implement CSV and Excel export with proper formatting, build report caching system for performance, create billing dashboard with current period overview, add detailed time entry descriptions in reports, implement different aggregation levels (daily, weekly, monthly), ensure reports load within 5 seconds for up to 1000 entries.",
+        "testStrategy": "Report generation tests, export format tests, performance tests with large datasets, filtering tests, caching tests, billing dashboard tests",
+        "priority": "medium",
+        "dependencies": [
+          19
+        ],
+        "status": "done",
+        "subtasks": []
+      },
+      {
+        "id": 21,
+        "title": "Implement Missing Core Collaboration Features",
+        "description": "Implement ticket comments system UI, file upload attachments for tickets and projects, and notification system for user assignments and mentions to complete core collaboration functionality.",
+        "details": "Build ticket comments UI components since database schema exists - create comment creation form with rich text editor, comment listing with user avatars and timestamps, comment editing and deletion capabilities, and real-time comment updates. Implement file upload system using Supabase storage for both tickets and projects - create drag-and-drop upload interface, file preview functionality, attachment listing with download links, file type validation, and size limits. Build comprehensive notification system - create notifications table with user_id, type, and metadata fields, implement real-time notifications for ticket assignments and @mentions in comments, build notification center UI with mark as read functionality, add email notifications for critical events, implement notification preferences, and ensure proper RLS policies for notification access.",
+        "testStrategy": "Comment system tests including CRUD operations, real-time updates, and permissions. File upload tests covering drag-drop functionality, storage integration, file validation, and download capabilities. Notification system tests including real-time delivery, email notifications, mention detection, assignment notifications, and notification preferences. Integration tests ensuring comments, attachments, and notifications work together seamlessly across tickets and projects.",
+        "status": "pending",
+        "dependencies": [
+          14,
+          13
+        ],
+        "priority": "medium",
+        "subtasks": []
+      },
+      {
+        "id": 22,
+        "title": "Implement User Profile Management Features",
+        "description": "Build comprehensive user profile management including profile editing, password reset functionality, and user preferences system to enhance user experience and account security.",
+        "details": "Implement user profile management by creating profile editing interface allowing users to update name, email, and profile information with proper validation. Build secure password reset functionality using Supabase Auth reset password flow with email verification and password strength requirements. Create user preferences system with settings for notifications, theme preferences, timezone, and language options. Add profile picture upload using Supabase storage with image resize and validation. Implement account security features like password change, two-factor authentication setup, and session management. Build user settings dashboard with tabbed interface for profile, security, and preferences. Ensure all profile operations respect company boundaries and user roles. Add audit logging for profile changes and security events. Implement proper form validation using React Hook Form and Zod schemas. Create responsive mobile-friendly interface for all profile management features.",
+        "testStrategy": "Profile editing tests including form validation, field updates, and error handling. Password reset flow tests covering email sending, token validation, and password update. User preferences tests for all settings categories with persistence validation. Profile picture upload tests including file validation, storage integration, and image processing. Security feature tests for password changes, 2FA setup, and session management. Cross-browser compatibility tests for profile interface. Integration tests with Supabase Auth and storage. Accessibility tests for all profile management forms.",
+        "status": "pending",
+        "dependencies": [
+          11
+        ],
+        "priority": "medium",
+        "subtasks": []
+      },
+      {
+        "id": 23,
+        "title": "Implement Time Entry Management CRUD Operations",
+        "description": "Build comprehensive time entry management system with editing, deletion, and dashboard functionality to complete the CRUD operations for time tracking.",
+        "details": "Implement time entry editing functionality by creating edit forms with validation for time, date, description, and project fields, ensuring proper authorization checks and optimistic updates. Build time entry deletion with confirmation modal to prevent accidental deletions, implementing soft delete with audit trail preservation. Create time tracking dashboard with current week/month overview, recent entries display, total hours summary, and quick entry creation. Add time entry search and filtering capabilities by date range, project, and description. Implement time entry duplication feature for recurring tasks. Ensure all operations maintain billing period associations and update billing calculations automatically. Add bulk operations for multiple entry management. Implement time entry templates for common tasks to improve user efficiency.",
+        "testStrategy": "Time entry editing tests including form validation, field updates, authorization checks, and optimistic UI updates. Deletion tests with confirmation flow, soft delete verification, and audit trail preservation. Dashboard tests covering data aggregation, date range filtering, and real-time updates. Search and filter functionality tests with various criteria combinations. Bulk operations tests for multiple entry management. Template system tests for creation and usage. Performance tests with large datasets and concurrent user operations.",
+        "status": "pending",
+        "dependencies": [
+          15,
+          19,
+          20
+        ],
+        "priority": "medium",
+        "subtasks": []
+      },
+      {
+        "id": 24,
+        "title": "Enhanced Time Reports with Export Functionality",
+        "description": "Implement comprehensive time reporting system with daily, weekly, and monthly reports, plus CSV and PDF export capabilities for both time tracking and billing data.",
+        "details": "Build enhanced time reporting system by creating daily, weekly, and monthly time report views with improved filtering and aggregation capabilities beyond basic reports. Implement CSV export functionality for time entries with customizable column selection, date range filtering, and proper formatting for external analysis tools. Create PDF export system for professional client reports with company branding, summary statistics, and detailed breakdowns. Build billing export functionality with PDF invoices containing time entry details, rate calculations, and totals, plus CSV export for accounting systems integration. Enhance existing time reports with better date range selectors, project/user filtering, and visual improvements. Implement export job queue system for large datasets to prevent timeout issues. Add export history tracking and download management interface. Ensure all exports respect company data isolation and user permissions. Create export templates that can be customized per company for branding consistency.",
+        "testStrategy": "Test daily, weekly, and monthly report generation with various date ranges and filters. Validate CSV export formatting and data accuracy across different scenarios. Test PDF generation with proper styling, branding, and content layout. Verify billing export calculations match time entry data and rates. Test export functionality with large datasets and verify performance. Validate permission-based export access and company data isolation. Test export download and history management features. Perform cross-browser compatibility tests for export functionality.",
+        "status": "pending",
+        "dependencies": [
+          20,
+          19
+        ],
+        "priority": "medium",
+        "subtasks": []
+      },
+      {
+        "id": 25,
+        "title": "Implement Company Settings Management and System Configuration",
+        "description": "Build comprehensive company settings management with application configuration, system administration features, and enhanced UI states including theme support and loading/error handling.",
+        "details": "Implement company settings page (0.4) allowing administrators to manage company profile, billing information, user permissions, and organizational preferences with proper validation and authorization checks. Build application settings page (8.1) for system-wide configuration including email templates, notification preferences, integration settings, and feature toggles with role-based access control. Create system configuration interface (8.3) for technical settings like database maintenance, backup schedules, security policies, and performance monitoring accessible only to system administrators. Implement dark/light theme support (UI.3) using next-themes with proper CSS variables, component theming, and user preference persistence across sessions. Add comprehensive loading states (UI.4) with skeleton loaders, progress indicators, and spinners for all async operations. Implement robust error state handling (UI.5) with user-friendly error messages, retry mechanisms, fallback UI, and proper error logging. Ensure all settings are properly validated, cached for performance, and respect company-level data isolation through RLS policies. Create responsive design that works across all device sizes with proper accessibility support.",
+        "testStrategy": "Test company settings CRUD operations with proper authorization checks and data validation. Verify application settings persistence and role-based access restrictions. Test system configuration changes with proper admin-only access controls. Validate theme switching functionality across all components and pages with proper persistence. Test loading states for all async operations including network delays and slow connections. Verify error handling with network failures, validation errors, and server errors including proper user feedback and recovery options. Test responsive design across different screen sizes and accessibility compliance with screen readers and keyboard navigation.",
+        "status": "pending",
+        "dependencies": [
+          11
+        ],
+        "priority": "medium",
+        "subtasks": []
+      },
+      {
+        "id": 26,
+        "title": "Implement Missing Database Tables and API Endpoints for Attachments and Notifications",
+        "description": "Create attachments and notifications database tables with their corresponding API endpoints, plus file upload and notification management endpoints to support collaboration features.",
+        "details": "Create attachments table with fields for file_name, file_path, file_size, mime_type, uploaded_by, ticket_id, project_id, and timestamps to support file attachments on both tickets and projects. Implement notifications table with fields for user_id, type, title, message, read_status, related_entity_type, related_entity_id, and timestamps to support user notifications for assignments and mentions. Build API endpoints for attachments including POST /api/attachments for file uploads with multipart/form-data support, GET /api/attachments for listing attachments by ticket/project, DELETE /api/attachments/:id for file deletion with proper authorization. Create notification API endpoints including GET /api/notifications for user notifications with pagination, PUT /api/notifications/:id/read for marking as read, POST /api/notifications for creating notifications (internal use), and DELETE /api/notifications/:id for notification cleanup. Implement file upload handling with Supabase Storage integration, file type validation (documents, images), size limits (10MB max), and proper error handling. Add notification creation triggers for ticket assignments, mentions in comments, and project updates. Ensure proper RLS policies for both tables to respect company-level data isolation and user permissions.",
+        "testStrategy": "Test attachments table creation and constraints, verify file upload API with various file types and sizes, test attachment listing and deletion with proper authorization. Test notifications table schema and RLS policies, verify notification creation for different trigger events, test notification API endpoints including pagination and read status updates. Validate file storage integration with Supabase, test file type and size validation, verify proper cleanup of orphaned files. Test notification delivery for assignments and mentions, validate real-time notification updates, ensure notifications respect user permissions and company isolation.",
+        "status": "pending",
+        "dependencies": [
+          11,
+          12,
+          14
+        ],
+        "priority": "medium",
+        "subtasks": []
+      },
+      {
+        "id": 27,
+        "title": "Fix Billing Report API Endpoint Access Control",
+        "description": "Implement comprehensive role-based access control for billing report endpoints, allowing all authenticated users to access their own billing data while maintaining security boundaries and proper authorization checks.",
+        "details": "Analyze current billing report API endpoints in apps/web/app/api/billing/report/route.ts and identify access control gaps. Implement role-based middleware that allows all authenticated users (Admin, Manager, User) to access their own billing data while preventing unauthorized access to other users' data. Update API endpoints to include proper user context filtering, ensuring users can only view billing reports for their own time entries and projects they have access to. Implement proper error handling for unauthorized access attempts with appropriate HTTP status codes. Add request validation to ensure billing report queries are scoped to the authenticated user's company and accessible projects. Update the billing report service layer to include user-specific filtering and ensure RLS policies are properly enforced. Add comprehensive logging for billing data access attempts for security auditing. Test with different user roles to ensure proper access boundaries are maintained while allowing legitimate access to personal billing data.",
+        "testStrategy": "Test billing report API access with Admin, Manager, and User roles to verify each can access their own billing data. Verify unauthorized access attempts return proper 403/404 errors. Test cross-company data isolation to ensure users cannot access billing data from other companies. Validate that users can only see billing reports for projects they have access to. Test API endpoint security with malformed requests and unauthorized tokens. Verify proper error handling and logging for failed access attempts. Test performance impact of additional authorization checks on billing report generation.",
+        "status": "done",
+        "dependencies": [
+          19,
+          11,
+          12
+        ],
+        "priority": "medium",
+        "subtasks": []
+      },
+      {
+        "id": 28,
+        "title": "Implement Comprehensive Role Management System with Hierarchy",
+        "description": "Build a sophisticated role hierarchy system with Super Admin, System Admin, Company Admin, Manager, and User roles, implementing permission-based elevation capabilities and strict role hierarchy enforcement across all application features.",
+        "details": "Extend the existing role system by creating a hierarchical role structure with five distinct levels: Super Admin (system-wide access), System Admin (cross-company technical access), Company Admin (full company access), Manager (team/project access), and User (basic access). Implement role hierarchy table with parent-child relationships and permission inheritance. Create permission system with granular capabilities (create, read, update, delete, manage) for each resource type (users, projects, tickets, billing, settings). Build role elevation system allowing temporary permission escalation with approval workflows and audit logging. Implement role-based middleware that checks hierarchy permissions before resource access. Create admin interfaces for role assignment, permission management, and elevation request handling. Update all existing RLS policies to incorporate the new role hierarchy. Build role delegation system allowing higher-level roles to temporarily grant permissions to subordinates. Implement comprehensive audit logging for all role changes and permission escalations. Ensure backward compatibility with existing Admin/Manager/User roles by mapping them to the new hierarchy.",
+        "testStrategy": "Test role hierarchy enforcement across all application features ensuring users can only access resources appropriate to their role level. Verify permission inheritance works correctly from parent to child roles. Test role elevation workflows including request submission, approval process, and automatic expiration. Validate that role changes are properly audited and logged. Test cross-role scenarios ensuring Super Admins can manage all companies while Company Admins are restricted to their own company. Verify RLS policies correctly filter data based on role hierarchy. Test role delegation functionality with proper authorization checks. Ensure all existing functionality continues to work with legacy role mappings. Test permission escalation scenarios and verify they expire correctly. Validate that role hierarchy cannot be bypassed through API manipulation.",
+        "status": "done",
+        "dependencies": [
+          11,
+          12
+        ],
+        "priority": "medium",
+        "subtasks": []
+      },
+      {
+        "id": 29,
+        "title": "Fix React Query Cache Invalidation Across Application",
+        "description": "Implement comprehensive query invalidation patterns to ensure real-time data updates across ticket creation, time tracking, user management, and billing operations with proper cache synchronization.",
+        "details": "Audit all existing React Query implementations across the application to identify cache invalidation gaps. Implement comprehensive invalidation patterns including: 1) Ticket operations - invalidate tickets list, project tickets, and user assignments on create/update/delete operations; 2) Time tracking - invalidate time entries, project totals, user totals, and billing calculations on time entry changes; 3) User management - invalidate user lists, company users, project assignments, and role-based queries on user updates; 4) Billing operations - invalidate billing reports, rate calculations, project billing, and invoice data on rate or time entry changes. Create utility functions for batch invalidation of related queries, implement optimistic updates with proper rollback mechanisms, add query prefetching for anticipated user actions, ensure proper error boundaries for failed invalidations, and implement selective invalidation to avoid unnecessary re-fetches. Add debugging tools to track cache state and invalidation events during development.",
+        "testStrategy": "Test cache invalidation for each feature area ensuring data consistency across components. Verify optimistic updates rollback correctly on API failures. Test concurrent operations to ensure proper cache synchronization. Validate that related queries are properly invalidated (e.g., creating a ticket invalidates project ticket list, user assignment queries, etc.). Test performance impact of invalidation patterns under high load. Verify cache debugging tools provide accurate state information. Test offline/online scenarios with proper cache reconciliation.",
+        "status": "done",
+        "dependencies": [
+          14,
+          19,
+          12,
+          21,
+          23
+        ],
+        "priority": "medium",
+        "subtasks": []
+      },
+      {
+        "id": 30,
+        "title": "Create Super Admin User Management Interface",
+        "description": "Build comprehensive cross-company user administration UI with role management, status controls, and user filtering capabilities for super admin users.",
+        "details": "Create super admin user management system that allows administration across all companies in the system. Implement useSuperAdminUsers hook for fetching users across companies with proper filtering and pagination. Build comprehensive user management interface with advanced filtering (by company, role, status, registration date), user status controls (active, inactive, suspended), role management capabilities (standard user, admin, super admin), and bulk operations for efficient administration. Add user search functionality across all companies with company context display. Implement user detail modal for viewing and editing user information including company assignment changes. Create audit logging for all super admin actions. Ensure proper authorization checks that only super admin users can access this interface. Add export functionality for user data across companies. Implement real-time updates for user status changes and role modifications.",
+        "testStrategy": "Test super admin authorization checks, verify cross-company user fetching with proper permissions, test filtering and search functionality across all companies, validate role management operations, test user status controls and bulk operations, verify audit logging for admin actions, test user detail editing and company reassignment, validate export functionality, test real-time updates for user changes, ensure proper error handling for unauthorized access attempts.",
+        "status": "done",
+        "dependencies": [
+          11,
+          12
+        ],
+        "priority": "medium",
+        "subtasks": []
+      },
+      {
+        "id": 31,
+        "title": "Fix Sidebar Role Visibility and Implement Super Admin Companies Management Interface",
+        "description": "Fix sidebar navigation role filtering issues and create a comprehensive super admin companies management interface with statistics, user management, and company overview functionality.",
+        "details": "Fix sidebar role visibility by implementing proper role checking in sidebar-layout.tsx to ensure navigation items are correctly filtered based on user permissions. Create super admin companies management interface by building a comprehensive companies overview page with statistics dashboard showing total companies, active users, and system metrics. Implement company listing with search, filtering, and sorting capabilities including company name, user count, creation date, and status. Build detailed company view showing company profile, user list, billing information, and activity logs. Add company management actions for super admins including company suspension, user management across companies, and system-wide statistics. Create user management interface allowing super admins to view all users across companies, manage user roles, and handle user-related issues. Implement proper authorization checks ensuring only super admin users can access these interfaces. Update navigation structure to include super admin specific routes and ensure proper role-based rendering of navigation items.",
+        "testStrategy": "Test sidebar role filtering by verifying navigation items are correctly shown/hidden for different user roles including Super Admin, Company Admin, Manager, and User roles. Test companies management interface with proper data loading, search functionality, filtering, and sorting capabilities. Verify company statistics are accurate and updated in real-time. Test company detail views with correct data display and proper authorization checks. Test super admin user management functionality including cross-company user access and role management. Verify all super admin interfaces are properly restricted to super admin users only. Test navigation updates with role-based rendering and proper route access controls.",
+        "status": "done",
+        "dependencies": [
+          28,
+          11,
+          12
+        ],
+        "priority": "medium",
+        "subtasks": []
+      },
+      {
+        "id": 32,
+        "title": "Enhanced CLAUDE.md with Mandatory Build Verification Steps",
+        "description": "Update project documentation to include mandatory TypeScript compilation and build verification steps in the development workflow, ensuring all tasks pass compilation and build checks before completion.",
+        "details": "Update CLAUDE.md file to add comprehensive build verification requirements to the development workflow section. Add mandatory steps requiring developers to run 'pnpm typecheck' to verify TypeScript compilation without errors and 'pnpm build' to ensure successful production build before marking any task as complete. Include specific instructions for handling build failures and TypeScript errors, with clear guidance that tasks cannot be considered complete until both checks pass. Update the Task Master integration workflow to include these verification steps as non-negotiable requirements. Add examples of proper build verification commands and error handling procedures. Include instructions for updating Task Master with build verification status and logging any build-related issues encountered during development.",
+        "testStrategy": "Verify the updated CLAUDE.md file includes clear mandatory build verification steps in the development workflow section. Test that the instructions are comprehensive and include both TypeScript compilation checks and build verification requirements. Validate that the documentation provides clear guidance on handling build failures and includes proper Task Master integration steps. Ensure the updated workflow prevents task completion without successful build verification.",
+        "status": "done",
+        "dependencies": [],
+        "priority": "medium",
+        "subtasks": []
+      },
+      {
+        "id": 33,
+        "title": "Implement Comprehensive Ticket Management UI Enhancements",
+        "description": "Build advanced ticket management UI including deletion with confirmation, time tracking interface, Trello-style board view with drag-and-drop, compact list view, and view toggle functionality.",
+        "details": "Implement ticket deletion functionality with confirmation modal to prevent accidental deletions, including soft delete with audit trail preservation. Build comprehensive time tracking UI with timer functionality for active tracking and manual entry modes for historical time logging, integrating with existing time entry system. Create Trello-style board view with dynamic columns based on ticket status, implementing drag-and-drop functionality using react-dnd or similar library to move tickets between status columns with optimistic updates. Build compact list view component for tickets with essential information display and efficient rendering for large ticket lists. Implement view toggle mechanism allowing users to switch between board and list views with preference persistence. Ensure all drag-and-drop operations update ticket status through existing API endpoints and maintain real-time synchronization across multiple users. Integrate with existing TanStack Query system for data fetching, caching, and optimistic updates.",
+        "testStrategy": "Test ticket deletion flow including confirmation modal interaction, soft delete verification, and audit trail preservation. Verify time tracking UI functionality with timer start/stop operations, manual entry validation, and integration with backend time entry APIs. Test drag-and-drop functionality across all status columns ensuring proper status updates, optimistic UI responses, and error handling for failed operations. Validate board view rendering with various ticket quantities and status distributions. Test list view performance with large datasets and verify efficient rendering. Test view toggle functionality including preference persistence and smooth transitions between views. Perform real-time synchronization tests with multiple users to ensure consistent state across sessions.",
+        "status": "done",
+        "dependencies": [
+          14,
+          19,
+          23
+        ],
+        "priority": "medium",
+        "subtasks": []
+      },
+      {
+        "id": 34,
+        "title": "Create Time Tracking UI with Enhanced Ticket Filtering",
+        "description": "Build comprehensive time tracking interface at /time-tracking route with timer, manual entry, and time entries list components, plus add company and project filters to tickets page.",
+        "details": "Create new time tracking page at /time-tracking route with three main components: active timer component for real-time tracking with start/stop functionality and elapsed time display, manual time entry form for adding historical time entries with date/time pickers and validation, and comprehensive time entries list with filtering, sorting, and editing capabilities. Implement time tracking state management using Zustand to handle active timers and entry data. Add company and project filter dropdowns to the existing tickets page, implementing proper filtering logic that respects user permissions and company boundaries. Ensure all components follow existing design patterns and integrate with the current time tracking system. Add proper error handling, loading states, and responsive design for mobile devices. Implement optimistic updates for better user experience.",
+        "testStrategy": "Test time tracking page navigation and route accessibility. Verify timer component start/stop functionality with accurate time calculations and persistence across page refreshes. Test manual entry form validation with various date formats and time inputs. Verify time entries list displays correctly with proper filtering and sorting options. Test company and project filters on tickets page with proper data filtering and permission handling. Test responsive design on various screen sizes. Verify integration with existing time tracking system and data consistency.",
+        "status": "done",
+        "dependencies": [
+          15,
+          14,
+          13
+        ],
+        "priority": "medium",
+        "subtasks": []
+      }
+    ],
+    "metadata": {
+      "created": "2025-06-29T02:06:57.806Z",
+      "updated": "2025-06-29T12:00:18.388Z",
+      "description": "Tasks for master context"
+    }
+  }
+}

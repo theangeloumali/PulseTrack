@@ -11,6 +11,8 @@ import {
   inviteUserToCompany,
   getAssignableUsers
 } from '@/lib/db/service'
+import { canElevateRole } from '@/lib/auth-utils'
+import type { UserRole } from '@/lib/db/schema'
 import { useAuthStore } from '@/lib/stores/auth'
 import { useCompanyStore } from '@/lib/stores/company'
 
@@ -93,7 +95,7 @@ export function useUpdateUserRole() {
   const { user } = useAuthStore();
 
   return useMutation({
-    mutationFn: ({ userId, role }: { userId: string; role: 'admin' | 'manager' | 'user' }) =>
+    mutationFn: ({ userId, role }: { userId: string; role: 'super_admin' | 'system_admin' | 'company_admin' | 'manager' | 'user' }) =>
       updateUserRole(userId, role),
     onSuccess: () => {
       // Invalidate and refetch company users
@@ -136,6 +138,9 @@ export function useUpdateUserHourlyRate() {
     onSuccess: () => {
       // Invalidate and refetch company users
       queryClient.invalidateQueries({ queryKey: userKeys.companyUsers(user?.company_id || '') });
+      
+      // Invalidate billing reports since hourly rates affect billing calculations
+      queryClient.invalidateQueries({ queryKey: ['billing-report'] });
     },
   });
 }
@@ -168,7 +173,7 @@ export function useInviteUser() {
   return useMutation({
     mutationFn: (data: {
       email: string;
-      role: 'admin' | 'manager' | 'user';
+      role: 'super_admin' | 'system_admin' | 'company_admin' | 'manager' | 'user';
       firstName?: string;
       lastName?: string;
       hourlyRate?: number;
@@ -187,5 +192,59 @@ export function useInviteUser() {
       // Invalidate and refetch company users
       queryClient.invalidateQueries({ queryKey: userKeys.companyUsers(user?.company_id || '') });
     },
+  });
+}
+
+/**
+ * Hook to elevate user role with permission checks
+ */
+export function useElevateUserRole() {
+  const queryClient = useQueryClient();
+  const { user } = useAuthStore();
+
+  return useMutation({
+    mutationFn: ({ userId, newRole }: { userId: string; newRole: UserRole }) => {
+      if (!user?.role) {
+        throw new Error('Current user role not available');
+      }
+      
+      if (!canElevateRole(user.role as UserRole, newRole)) {
+        throw new Error(`You don't have permission to elevate users to ${newRole} role`);
+      }
+      
+      return updateUserRole(userId, newRole);
+    },
+    onSuccess: () => {
+      // Invalidate and refetch company users
+      queryClient.invalidateQueries({ queryKey: userKeys.companyUsers(user?.company_id || '') });
+      queryClient.invalidateQueries({ queryKey: userKeys.assignableUsers(user?.company_id || '') });
+      queryClient.invalidateQueries({ queryKey: userKeys.byCompany(user?.company_id || '') });
+    },
+  });
+}
+
+/**
+ * Hook to check if current user can elevate another user to a specific role
+ */
+export function useCanElevateRole() {
+  const { user } = useAuthStore();
+  
+  return (targetRole: UserRole): boolean => {
+    if (!user?.role) return false;
+    return canElevateRole(user.role as UserRole, targetRole);
+  };
+}
+
+/**
+ * Hook to get available roles that the current user can assign
+ */
+export function useAvailableRoles() {
+  const { user } = useAuthStore();
+  
+  const allRoles: UserRole[] = ['super_admin', 'system_admin', 'company_admin', 'manager', 'user'];
+  
+  return allRoles.filter(role => {
+    if (!user?.role) return false;
+    return canElevateRole(user.role as UserRole, role);
   });
 }

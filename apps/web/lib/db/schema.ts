@@ -2,10 +2,13 @@
 // This file provides type safety without runtime dependencies
 
 // Define enum types
-export type UserRole = 'admin' | 'manager' | 'user'
+export type UserRole = 'super_admin' | 'system_admin' | 'company_admin' | 'manager' | 'user'
+export type UserStatus = 'active' | 'inactive'
 export type ProjectStatus = 'active' | 'archived' | 'completed'
 export type TicketStatus = 'new' | 'in_progress' | 'review' | 'done'
 export type TicketPriority = 'low' | 'medium' | 'high' | 'critical'
+export type BillingFrequency = 'weekly' | 'bi_monthly' | 'monthly'
+export type BillingStatus = 'draft' | 'active' | 'closed'
 
 // Base database types
 export interface BaseRecord {
@@ -132,6 +135,17 @@ export interface NewTimeEntry {
   description?: string | null
 }
 
+// Time entry with user relation
+export interface TimeEntryWithUser extends TimeEntry {
+  users?: {
+    id: string
+    first_name?: string | null
+    last_name?: string | null
+    email: string
+    avatar_url?: string | null
+  }[] | null
+}
+
 // Comment types
 export interface Comment extends BaseRecord {
   ticket_id: string
@@ -145,6 +159,81 @@ export interface NewComment {
   content: string
 }
 
+// Billing Period types
+export interface BillingPeriod extends BaseRecord {
+  company_id: string
+  name: string
+  start_date: string
+  end_date: string
+  frequency: BillingFrequency
+  status: BillingStatus
+  created_by: string
+}
+
+export interface NewBillingPeriod {
+  company_id: string
+  name: string
+  start_date: string
+  end_date: string
+  frequency: BillingFrequency
+  status?: BillingStatus
+  created_by: string
+}
+
+// Billing Rate types
+export interface BillingRate extends BaseRecord {
+  company_id: string
+  user_id?: string | null
+  project_id?: string | null
+  hourly_rate: number
+  currency: string
+  effective_from: string
+  effective_to?: string | null
+  created_by: string
+}
+
+export interface NewBillingRate {
+  company_id: string
+  user_id?: string | null
+  project_id?: string | null
+  hourly_rate: number
+  currency?: string
+  effective_from: string
+  effective_to?: string | null
+  created_by: string
+}
+
+// Company Billing Settings types
+export interface CompanyBillingSettings extends BaseRecord {
+  currency?: string | null
+  billing_frequency?: BillingFrequency | null
+  invoice_prefix?: string | null
+}
+
+export interface NewCompanyBillingSettings {
+  company_id?: string
+  currency?: string | null
+  billing_frequency?: BillingFrequency | null
+  invoice_prefix?: string | null
+}
+
+// Time Entry Billing types
+export interface TimeEntryBilling extends BaseRecord {
+  time_entry_id: string
+  billing_period_id: string
+  hourly_rate: number
+  billable_amount: number
+  is_billable: boolean
+}
+
+export interface NewTimeEntryBilling {
+  time_entry_id: string
+  billing_period_id: string
+  hourly_rate: number
+  billable_amount: number
+  is_billable?: boolean
+}
+
 // Database table names for Supabase queries
 export const TABLE_NAMES = {
   companies: 'companies',
@@ -153,4 +242,8 @@ export const TABLE_NAMES = {
   tickets: 'tickets',
   time_entries: 'time_entries',
   comments: 'comments',
+  billing_periods: 'billing_periods',
+  billing_rates: 'billing_rates',
+  company_billing_settings: 'company_billing_settings',
+  time_entry_billing: 'time_entry_billing',
 } as const

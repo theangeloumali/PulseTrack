@@ -95,6 +95,9 @@ export function useCreateTimeEntry() {
       queryClient.invalidateQueries({ queryKey: timeEntryKeys.active(user?.id || '') })
       queryClient.invalidateQueries({ queryKey: timeEntryKeys.totalByTicket(data.ticket_id) })
       queryClient.invalidateQueries({ queryKey: timeEntryKeys.totalByUser(user?.id || '') })
+      
+      // Invalidate billing reports to update dashboard stats
+      queryClient.invalidateQueries({ queryKey: ['billing-report'] })
     },
   })
 }
@@ -114,6 +117,9 @@ export function useUpdateTimeEntry() {
       queryClient.invalidateQueries({ queryKey: timeEntryKeys.active(user?.id || '') })
       queryClient.invalidateQueries({ queryKey: timeEntryKeys.totalByTicket(data.ticket_id) })
       queryClient.invalidateQueries({ queryKey: timeEntryKeys.totalByUser(user?.id || '') })
+      
+      // Invalidate billing reports to update dashboard stats
+      queryClient.invalidateQueries({ queryKey: ['billing-report'] })
     },
   })
 }
@@ -128,6 +134,9 @@ export function useDeleteTimeEntry() {
     onSuccess: () => {
       // Invalidate all time entry queries
       queryClient.invalidateQueries({ queryKey: timeEntryKeys.all })
+      
+      // Invalidate billing reports to update dashboard stats
+      queryClient.invalidateQueries({ queryKey: ['billing-report'] })
     },
   })
 }

@@ -59,8 +59,8 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Check if user has permission to invite (admin or manager)
-    if (!['admin', 'manager'].includes(requestingUser.role)) {
+    // Check if user has permission to invite (company_admin or higher)
+    if (!['super_admin', 'system_admin', 'company_admin', 'manager'].includes(requestingUser.role)) {
       return NextResponse.json(
         { error: 'Insufficient permissions to invite users' },
         { status: 403 }

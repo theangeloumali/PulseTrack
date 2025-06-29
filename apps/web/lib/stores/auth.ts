@@ -274,21 +274,21 @@ console.log('Starting email verification with params:', { token, email, tokenHas
 					
 					// First, check if we have a valid session
 					const {
-						data: { session },
+						data: { user },
 						error,
-					} = await supabase.auth.getSession();
+					} = await supabase.auth.getUser();
 
-					console.log('🔄 Auth Store: Got session:', { 
-						sessionExists: !!session, 
-						userExists: !!session?.user,
-						userId: session?.user?.id,
+					console.log('🔄 Auth Store: Got user:', { 
+						userExists: !!user,
+						userId: user?.id,
+						userEmail: user?.email,
 						error: error?.message 
 					});
 
 					// If there's an error getting the session (e.g., invalid refresh token), 
 					// clear everything and let the user sign in again
 					if (error) {
-						console.error('❌ Auth Store: Error getting session, clearing auth state:', error);
+						console.error('❌ Auth Store: Error getting user, clearing auth state:', error);
 						
 						// Check if it's a refresh token error and clear corrupted state
 						if (isRefreshTokenError(error)) {
@@ -301,92 +301,90 @@ console.log('Starting email verification with params:', { token, email, tokenHas
 						return;
 					}
 
-					if (session?.user) {
-						console.log('🔄 Auth Store: Session found, setting session and supabaseUser...');
-						set({
-							session,
-							supabaseUser: session.user,
-						});
-
-						console.log('🔄 Auth Store: Fetching user from database...');
-						// Get user from database
-						try {
-							const dbUser = await getUserById(session.user.id);
-							if (dbUser) {
-								console.log('✅ Auth Store: Database user found:', { 
-									id: dbUser.id, 
-									email: dbUser.email, 
-									companyId: dbUser.company_id,
-									firstName: dbUser.first_name 
-								});
-								set({ user: dbUser, isLoading: false });
-							} else {
-								console.log('❌ Auth Store: No database user found for:', session.user.id);
-								// Clear the invalid session since we don't have a complete user profile
-								await supabase.auth.signOut();
-								set({ session: null, supabaseUser: null, user: null, isLoading: false });
-							}
-						} catch (dbError) {
-							console.error('❌ Auth Store: Error fetching user from database:', dbError);
-							// Clear the invalid session since we couldn't get the user profile
-							await supabase.auth.signOut();
-							set({ session: null, supabaseUser: null, user: null, isLoading: false });
-						}
-					} else {
-						console.log('🔄 Auth Store: No session found');
-						set({ session: null, supabaseUser: null, user: null, isLoading: false });
-					}
-
-					console.log('🔄 Auth Store: Setting up auth state change listener...');
-					const {
-						data: { subscription },
-					} = supabase.auth.onAuthStateChange(async (event, session) => {
-						console.log('🔄 Auth Store: Auth state changed:', event, session?.user?.id);
-
-						// Handle specific auth events
-						if (event === 'TOKEN_REFRESHED') {
-							console.log('🔄 Auth Store: Token refreshed successfully');
-						} else if (event === 'SIGNED_OUT') {
-							console.log('🔄 Auth Store: User signed out');
-							set({ session: null, supabaseUser: null, user: null, isLoading: false });
-							return;
-						}
-
-						if (session?.user) {
-							console.log('🔄 Auth Store: Setting session from auth change...');
+					if (user) {
+							console.log('🔄 Auth Store: User found, setting supabaseUser...');
 							set({
-								session,
-								supabaseUser: session.user,
+								supabaseUser: user,
 							});
 
+							console.log('🔄 Auth Store: Fetching user from database...');
+							// Get user from database
 							try {
-								const dbUser = await getUserById(session.user.id);
+								const dbUser = await getUserById(user.id);
 								if (dbUser) {
-									console.log('🔄 Auth Store: User updated from auth change:', dbUser.email);
+									console.log('✅ Auth Store: Database user found:', { 
+										id: dbUser.id, 
+										email: dbUser.email, 
+										companyId: dbUser.company_id,
+										firstName: dbUser.first_name 
+									});
 									set({ user: dbUser, isLoading: false });
 								} else {
-									console.log('❌ Auth Store: No user found on auth change');
-									set({ user: null, isLoading: false });
-								}
-							} catch (error) {
-								console.error('❌ Auth Store: Error fetching user on auth change:', error);
-								
-								// If it's a refresh token error, clear state
-								if (isRefreshTokenError(error)) {
-									console.log('🧹 Auth Store: Refresh token error in auth change, clearing state');
-									clearAuthState();
+									console.log('❌ Auth Store: No database user found for:', user.id);
+									// Clear the invalid session since we don't have a complete user profile
 									await supabase.auth.signOut();
 									set({ session: null, supabaseUser: null, user: null, isLoading: false });
-									return;
 								}
-								
-								set({ user: null, isLoading: false });
+							} catch (dbError) {
+								console.error('❌ Auth Store: Error fetching user from database:', dbError);
+								// Clear the invalid session since we couldn't get the user profile
+								set({ session: null, supabaseUser: null, user: null, isLoading: false });
 							}
 						} else {
-							console.log('🔄 Auth Store: Session cleared from auth change');
+							console.log('🔄 Auth Store: No user found');
 							set({ session: null, supabaseUser: null, user: null, isLoading: false });
 						}
-					});
+
+						console.log('🔄 Auth Store: Setting up auth state change listener...');
+						const {
+							data: { subscription },
+						} = supabase.auth.onAuthStateChange(async (event, session) => {
+							console.log('🔄 Auth Store: Auth state changed:', event, session?.user?.id);
+
+							// Handle specific auth events
+							if (event === 'TOKEN_REFRESHED') {
+								console.log('🔄 Auth Store: Token refreshed successfully');
+							} else if (event === 'SIGNED_OUT') {
+								console.log('🔄 Auth Store: User signed out');
+								set({ session: null, supabaseUser: null, user: null, isLoading: false });
+								return;
+							}
+
+							if (session?.user) {
+								console.log('🔄 Auth Store: Setting session from auth change...');
+								set({
+									session,
+									supabaseUser: session.user,
+								});
+
+								try {
+									const dbUser = await getUserById(session.user.id);
+									if (dbUser) {
+										console.log('🔄 Auth Store: User updated from auth change:', dbUser.email);
+										set({ user: dbUser, isLoading: false });
+									} else {
+										console.log('❌ Auth Store: No user found on auth change');
+										set({ user: null, isLoading: false });
+									}
+								} catch (error) {
+									console.error('❌ Auth Store: Error fetching user on auth change:', error);
+									
+									// If it's a refresh token error, clear state
+									if (isRefreshTokenError(error)) {
+										console.log('🧹 Auth Store: Refresh token error in auth change, clearing state');
+										clearAuthState();
+										await supabase.auth.signOut();
+										set({ session: null, supabaseUser: null, user: null, isLoading: false });
+										return;
+									}
+									
+									set({ user: null, isLoading: false });
+								}
+							} else {
+								console.log('🔄 Auth Store: Session cleared from auth change');
+								set({ session: null, supabaseUser: null, user: null, isLoading: false });
+							}
+						});
 
 					console.log('✅ Auth Store: Initialization complete');
 				} catch (error) {

@@ -128,7 +128,7 @@ export async function createUserFromSignup(authUser: any, userData: {
     email: authUser.email,
     first_name: userData.firstName || null,
     last_name: userData.lastName || null,
-    role: userData.role || 'user',
+    role: (userData.role && ['super_admin', 'system_admin', 'company_admin', 'manager', 'user'].includes(userData.role)) ? userData.role as 'super_admin' | 'system_admin' | 'company_admin' | 'manager' | 'user' : 'user',
     company_id: companyId,
   }
 
