@@ -6,6 +6,7 @@ import { AuthInitializer } from "./auth-initializer"
 import { QueryProvider } from "./query-provider"
 import { SidebarLayout } from "./sidebar-layout"
 import { ThemeProvider } from "./theme-provider"
+import { SessionInitializer } from "./session-initializer"
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
@@ -19,6 +20,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
       >
         <ThemeProvider />
         <AuthInitializer />
+        <SessionInitializer />
         <SidebarLayout>
           {children}
         </SidebarLayout>

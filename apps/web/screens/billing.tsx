@@ -49,7 +49,7 @@ const BillingPage = () => {
 	// Set default user selection based on role
 	const [selectedUserId, setSelectedUserId] = useState(isAdmin ? 'all' : user?.id || '');
 
-	const { data: billingReport, isLoading: isReportLoading, isError: isReportError } = useBillingReport(companyId || '', reportStartDate, reportEndDate);
+	const { data: billingReport, isLoading: isReportLoading, isError: isReportError, error: reportError } = useBillingReport(companyId || '', reportStartDate, reportEndDate);
 
 	const { data: billingRates, isLoading: isRatesLoading, isError: isRatesError } = useBillingRates(companyId || '');
 	const { mutate: createRate, isPending: isCreatingRate } = useCreateBillingRate(companyId || '');
@@ -391,6 +391,19 @@ console.log('filteredBillingReport:', filteredBillingReport);
 							) : isReportError ? (
 								<div className="text-center py-8">
 									<p className="text-sm text-red-600">Error loading timesheet data.</p>
+									{reportError && (
+										<p className="text-xs text-gray-500 mt-2">
+											{(reportError as Error).message || 'Unknown error occurred'}
+										</p>
+									)}
+									<Button 
+										onClick={handleGenerateReport} 
+										className="mt-4"
+										variant="outline"
+										size="sm"
+									>
+										Retry
+									</Button>
 								</div>
 							) : filteredBillingReport && Object.keys(filteredBillingReport).length > 0 ? (
 								<div className="space-y-6">
