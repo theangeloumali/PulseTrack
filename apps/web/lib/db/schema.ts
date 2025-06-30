@@ -9,6 +9,8 @@ export type TicketStatus = 'new' | 'in_progress' | 'review' | 'done'
 export type TicketPriority = 'low' | 'medium' | 'high' | 'critical'
 export type BillingFrequency = 'weekly' | 'bi_monthly' | 'monthly'
 export type BillingStatus = 'draft' | 'active' | 'closed'
+export type ActivityType = 'project_created' | 'project_updated' | 'project_archived' | 'ticket_created' | 'ticket_updated' | 'ticket_deleted' | 'ticket_assigned' | 'comment_created' | 'user_added_to_project' | 'user_removed_from_project' | 'time_entry_created' | 'time_entry_updated'
+export type ProjectVisibility = 'public' | 'company' | 'private'
 
 // Base database types
 export interface BaseRecord {
@@ -59,6 +61,8 @@ export interface Project extends BaseRecord {
   status: ProjectStatus
   company_id: string
   owner_id: string
+  visibility: ProjectVisibility
+  allow_external_activities: boolean
 }
 
 export interface NewProject {
@@ -67,6 +71,8 @@ export interface NewProject {
   status?: ProjectStatus
   company_id: string
   owner_id: string
+  visibility?: ProjectVisibility
+  allow_external_activities?: boolean
 }
 
 // Project member types (many-to-many relationship)
@@ -251,11 +257,43 @@ export interface NewTicketHistory {
   new_value?: string | null
 }
 
+// Activity types
+export interface Activity extends BaseRecord {
+  type: ActivityType
+  project_id?: string | null
+  ticket_id?: string | null
+  user_id: string
+  target_user_id?: string | null // For activities involving other users
+  title: string
+  description?: string | null
+  metadata?: Record<string, any> | null // JSON field for additional data
+}
+
+export interface NewActivity {
+  type: ActivityType
+  project_id?: string | null
+  ticket_id?: string | null
+  user_id: string
+  target_user_id?: string | null
+  title: string
+  description?: string | null
+  metadata?: Record<string, any> | null
+}
+
+// Activity with user relation
+export interface ActivityWithUser extends Activity {
+  user: Pick<User, 'id' | 'first_name' | 'last_name' | 'avatar_url' | 'email'>
+  target_user?: Pick<User, 'id' | 'first_name' | 'last_name' | 'avatar_url' | 'email'> | null
+  project?: Pick<Project, 'id' | 'name'> | null
+  ticket?: Pick<Ticket, 'id' | 'title'> | null
+}
+
 // Database table names for Supabase queries
 export const TABLE_NAMES = {
   companies: 'companies',
   users: 'users',
   projects: 'projects',
+  project_members: 'project_members',
   tickets: 'tickets',
   time_entries: 'time_entries',
   comments: 'comments',
@@ -264,4 +302,5 @@ export const TABLE_NAMES = {
   company_billing_settings: 'company_billing_settings',
   time_entry_billing: 'time_entry_billing',
   ticket_history: 'ticket_history',
+  activities: 'activities',
 } as const

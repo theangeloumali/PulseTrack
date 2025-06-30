@@ -7,7 +7,7 @@ import { Button } from '@workspace/ui/components/button';
 import { useAuthStore } from '@/lib/stores/auth';
 import { CreateTicketModal } from '@/components/modals/create-ticket-modal';
 import { CreateProjectModal } from '@/components/modals/create-project-modal';
-import { LayoutDashboard, FolderOpen, Ticket, Clock, Settings, LogOut, Menu, X, Plus, Search, Bug, Users, CreditCard, Shield, Building2 } from 'lucide-react';
+import { LayoutDashboard, FolderOpen, Ticket, Clock, Settings, LogOut, Menu, X, Plus, Search, Bug, Users, CreditCard, Shield, Building2, Activity } from 'lucide-react';
 import { cn } from '@workspace/ui/lib/utils';
 import { ThemeToggle } from './theme-toggle';
 
@@ -19,6 +19,7 @@ const navigation = [
 	{ name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, roles: ['super_admin', 'system_admin', 'company_admin', 'manager', 'user'] },
 	{ name: 'Projects', href: '/projects', icon: FolderOpen, roles: ['super_admin', 'system_admin', 'company_admin', 'manager', 'user'] },
 	{ name: 'Tickets', href: '/tickets', icon: Ticket, roles: ['super_admin', 'system_admin', 'company_admin', 'manager', 'user'] },
+	{ name: 'Activity', href: '/activity', icon: Activity, roles: ['super_admin', 'system_admin', 'company_admin', 'manager', 'user'] },
 	{ name: 'Time Tracking', href: '/time-tracking', icon: Clock, roles: ['super_admin', 'system_admin', 'company_admin', 'manager', 'user'] },
 	{ name: 'Company', href: '/company/users', icon: Users, roles: ['super_admin', 'system_admin', 'company_admin', 'manager'] },
 	{ name: 'Billing', href: '/billing', icon: CreditCard, roles: ['super_admin', 'system_admin', 'company_admin', 'manager', 'user'] },

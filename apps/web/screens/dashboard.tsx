@@ -6,6 +6,7 @@ import { Button } from '@workspace/ui/components/button';
 import { Plus, Users, FolderOpen, Timer, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
 import MyWeeklySummary from '@/components/dashboard/my-weekly-summary';
+import { ActivityFeed } from '@/components/activity/activity-feed';
 
 export default function DashboardPage() {
 	const { user, signOut } = useAuthStore();
@@ -110,19 +111,13 @@ export default function DashboardPage() {
 							</CardContent>
 						</Card>
 
-						<Card>
-							<CardHeader>
-								<CardTitle>Recent Activity</CardTitle>
-								<CardDescription>Your latest project and ticket updates</CardDescription>
-							</CardHeader>
-							<CardContent>
-								<div className='text-center py-8 text-muted-foreground'>
-									<AlertCircle className='mx-auto h-12 w-12 mb-4 opacity-50' />
-									<p>No recent activity</p>
-									<p className='text-sm'>Start by creating your first project</p>
-								</div>
-							</CardContent>
-						</Card>
+						<div className='lg:col-span-1'>
+							<ActivityFeed 
+								limit={10} 
+								title="Recent Activity"
+								showFilters={false}
+							/>
+						</div>
 					</div>
 
 				{/* Getting Started Section */}
