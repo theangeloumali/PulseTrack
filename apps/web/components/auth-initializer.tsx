@@ -157,10 +157,11 @@ export function AuthInitializer() {
 	// Show loading spinner while initializing authentication
 	if (!isInitialized || !mounted) {
 		return (
-			<div className="fixed inset-0 bg-white bg-opacity-75 flex items-center justify-center z-50">
+			<div className="fixed inset-0 bg-gray-50 flex items-center justify-center z-50">
 				<div className="text-center">
 					<Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-blue-600" />
-					<p className="text-gray-600">Initializing PulseTrack...</p>
+					<p className="text-gray-900 font-medium">Setting up your workspace...</p>
+					<p className="text-sm text-gray-500 mt-2">This will only take a moment</p>
 				</div>
 			</div>
 		);
