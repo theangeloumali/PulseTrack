@@ -58,7 +58,19 @@ export async function updateSession(request: NextRequest) {
 			console.log('Middleware - Redirecting to login, no user found for path:', request.nextUrl.pathname);
 			// no user, redirect to login page
 			const url = request.nextUrl.clone();
-			url.pathname = '/login';
+			
+			// Check if we're being accessed through a proxy (like from zkidzdev.com/admin)
+			const isProxiedRequest = request.headers.get('x-forwarded-host') || 
+									request.headers.get('x-vercel-forwarded-for') ||
+									!request.url.includes('pulsetrack-zkidz-web.vercel.app');
+			
+			if (isProxiedRequest) {
+				// Maintain the /pulse prefix for proxied requests
+				url.pathname = '/pulse/login';
+			} else {
+				url.pathname = '/login';
+			}
+			
 			return NextResponse.redirect(url);
 		}
 	} catch (error) {
