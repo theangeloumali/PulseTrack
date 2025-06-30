@@ -143,6 +143,9 @@ export async function createProject(data: NewProject) {
 }
 
 export async function updateProject(id: string, updates: Partial<NewProject>) {
+  // Get current project data to compare changes
+  const currentProject = await getProjectById(id)
+  
   const { data, error } = await supabase
     .from('projects')
     .update(updates)
@@ -151,6 +154,16 @@ export async function updateProject(id: string, updates: Partial<NewProject>) {
     .single()
   
   if (error) throw error
+  
+  // Log project update activity
+  if (currentProject && data) {
+    try {
+      await logProjectUpdated(id, data.owner_id, data.name, updates)
+    } catch (activityError) {
+      console.error('Failed to log project update activity:', activityError)
+    }
+  }
+  
   return data
 }
 
@@ -192,7 +205,7 @@ export async function addProjectMember(projectId: string, userId: string, role: 
   return data
 }
 
-export async function removeProjectMember(projectId: string, userId: string) {
+export async function removeProjectMember(projectId: string, userId: string, removedByUserId?: string) {
   const { error } = await supabase
     .from('project_members')
     .delete()
@@ -200,6 +213,18 @@ export async function removeProjectMember(projectId: string, userId: string) {
     .eq('user_id', userId)
   
   if (error) throw error
+  
+  // Log user removed from project activity
+  if (removedByUserId) {
+    try {
+      const project = await getProjectById(projectId)
+      if (project) {
+        await logUserRemovedFromProject(projectId, removedByUserId, userId, project.name)
+      }
+    } catch (activityError) {
+      console.error('Failed to log user removed from project activity:', activityError)
+    }
+  }
 }
 
 export async function getProjectMembers(projectId: string) {
@@ -309,7 +334,10 @@ export async function createTicket(data: NewTicket) {
   return result
 }
 
-export async function updateTicket(id: string, data: Partial<NewTicket>) {
+export async function updateTicket(id: string, data: Partial<NewTicket>, updatedBy?: string) {
+  // Get current ticket data to compare changes
+  const currentTicket = await getTicketById(id)
+  
   const { data: result, error } = await supabase
     .from('tickets')
     .update(data)
@@ -318,6 +346,21 @@ export async function updateTicket(id: string, data: Partial<NewTicket>) {
     .single()
   
   if (error) throw error
+  
+  // Log ticket update activity
+  if (currentTicket && result && updatedBy) {
+    try {
+      await logTicketUpdated(id, result.project_id, updatedBy, result.title, data)
+      
+      // Special handling for ticket assignment
+      if (data.assignee_id && data.assignee_id !== currentTicket.assignee_id) {
+        await logTicketAssigned(id, result.project_id, updatedBy, data.assignee_id, result.title)
+      }
+    } catch (activityError) {
+      console.error('Failed to log ticket update activity:', activityError)
+    }
+  }
+  
   return result
 }
 
@@ -398,24 +441,37 @@ export async function createTimeEntry(data: NewTimeEntry) {
   
   if (error) throw error
 
-  // Automatically calculate billing if the entry has duration
+  // Log time entry creation activity
   if (result && result.duration && result.duration > 0) {
     try {
-      // Get company_id from the ticket's project
+      // Get ticket and project info for activity logging
       const { data: ticketData } = await supabase
         .from('tickets')
-        .select('projects(company_id)')
+        .select('title, project_id, projects(company_id)')
         .eq('id', result.ticket_id)
         .single()
       
       const projects = Array.isArray(ticketData?.projects) ? ticketData.projects[0] : ticketData?.projects
       const companyId = projects?.company_id
+      
+      // Log activity
+      if (ticketData?.project_id && ticketData?.title) {
+        await logTimeEntryCreated(
+          ticketData.project_id, 
+          result.ticket_id, 
+          result.user_id, 
+          result.duration, 
+          ticketData.title
+        )
+      }
+      
+      // Create billing record
       if (companyId) {
         await createOrUpdateTimeEntryBilling(result.id, companyId)
       }
     } catch (billingError) {
       // Log error but don't fail the time entry creation
-      console.error('Failed to create billing record for time entry:', billingError)
+      console.error('Failed to create billing record or log activity for time entry:', billingError)
     }
   }
   
