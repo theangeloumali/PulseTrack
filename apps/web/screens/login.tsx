@@ -98,29 +98,29 @@ function LoginContent() {
 	};
 
 	return (
-		<div className='min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8'>
+		<div className='min-h-screen flex items-center justify-center bg-background py-12 px-4 sm:px-6 lg:px-8'>
 			<div className='max-w-md w-full space-y-8'>
 				<div className='text-center'>
-					<h2 className='mt-6 text-3xl font-extrabold text-gray-900'>Sign in to your account</h2>
-					<p className='mt-2 text-sm text-gray-600'>
+					<h2 className='mt-6 text-3xl font-extrabold text-foreground'>Sign in to your account</h2>
+					<p className='mt-2 text-sm text-muted-foreground'>
 						Or{' '}
-						<Link href='/signup' className='font-medium text-indigo-600 hover:text-indigo-500'>
+						<Link href='/signup' className='font-medium text-primary hover:text-primary/80'>
 							create a new account
 						</Link>
 					</p>
 				</div>
 
-				<Card className='bg-white border border-gray-200 shadow-sm'>
-					<CardHeader className='bg-white'>
-						<CardTitle className='text-gray-900'>Welcome back</CardTitle>
-						<CardDescription className='text-gray-600'>Enter your credentials to access your workspace</CardDescription>
+				<Card className='shadow-sm'>
+					<CardHeader>
+						<CardTitle>Welcome back</CardTitle>
+						<CardDescription>Enter your credentials to access your workspace</CardDescription>
 					</CardHeader>
-					<CardContent className='bg-white'>
+					<CardContent>
 						<form onSubmit={handleSubmit} className='space-y-6'>
-							{error && <div className='bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md text-sm'>{error}</div>}
+							{error && <div className='bg-destructive/10 border border-destructive/20 text-destructive px-4 py-3 rounded-md text-sm'>{error}</div>}
 
 							<div className='space-y-2'>
-								<Label htmlFor='email' className='text-gray-700'>
+								<Label htmlFor='email'>
 									Email address
 								</Label>
 								<Input
@@ -132,7 +132,6 @@ function LoginContent() {
 									value={email}
 									onChange={(e) => setEmail(e.target.value)}
 									placeholder='Enter your email'
-									className='bg-white border-gray-300 text-gray-900 placeholder-gray-500'
 								/>
 							</div>
 
@@ -150,17 +149,17 @@ function LoginContent() {
 										value={password}
 										onChange={(e) => setPassword(e.target.value)}
 										placeholder='Enter your password'
-										className='bg-white border-gray-300 text-gray-900 placeholder-gray-500'
+										className='pr-10'
 									/>
 									<button type='button' className='absolute inset-y-0 right-0 pr-3 flex items-center' onClick={() => setShowPassword(!showPassword)}>
-										{showPassword ? <EyeOff className='h-4 w-4 text-gray-400' /> : <Eye className='h-4 w-4 text-gray-400' />}
+										{showPassword ? <EyeOff className='h-4 w-4 text-muted-foreground' /> : <Eye className='h-4 w-4 text-muted-foreground' />}
 									</button>
 								</div>
 							</div>
 
 							<div className='flex items-center justify-between'>
 								<div className='text-sm'>
-									<Link href='/forgot-password' className='font-medium text-indigo-600 hover:text-indigo-500'>
+									<Link href='/forgot-password' className='font-medium text-primary hover:text-primary/80'>
 										Forgot your password?
 									</Link>
 								</div>

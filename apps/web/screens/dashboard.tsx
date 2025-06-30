@@ -15,14 +15,14 @@ export default function DashboardPage() {
 	};
 
 	return (
-		<div className='h-full bg-gray-50'>
+		<div className='h-full bg-background'>
 			{/* Header */}
-			<header className='bg-white shadow-sm'>
+			<header className='bg-card shadow-sm border-b border-border'>
 				<div className='px-4'>
 					<div className='flex justify-between items-center py-4'>
 						<div>
-							<h1 className='text-3xl font-bold text-gray-900'>Dashboard</h1>
-							<p className='text-gray-600'>Welcome back, {user?.first_name || 'User'}!</p>
+							<h1 className='text-3xl font-bold text-foreground'>Dashboard</h1>
+							<p className='text-muted-foreground'>Welcome back, {user?.first_name || 'User'}!</p>
 						</div>
 						<div className='flex items-center space-x-4'>
 							<Button variant='outline' onClick={handleSignOut}>

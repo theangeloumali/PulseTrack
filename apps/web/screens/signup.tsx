@@ -79,13 +79,13 @@ export default function SignUpPage() {
 	};
 
 	return (
-		<div className='min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8'>
+		<div className='min-h-screen flex items-center justify-center bg-background py-12 px-4 sm:px-6 lg:px-8'>
 			<div className='max-w-md w-full space-y-8'>
 				<div className='text-center'>
-					<h2 className='mt-6 text-3xl font-extrabold text-gray-900'>Create your account</h2>
-					<p className='mt-2 text-sm text-gray-600'>
+					<h2 className='mt-6 text-3xl font-extrabold text-foreground'>Create your account</h2>
+					<p className='mt-2 text-sm text-muted-foreground'>
 						Already have an account?{' '}
-						<Link href='/login' className='font-medium text-indigo-600 hover:text-indigo-500'>
+						<Link href='/login' className='font-medium text-primary hover:text-primary/80'>
 							Sign in
 						</Link>
 					</p>
@@ -98,7 +98,7 @@ export default function SignUpPage() {
 					</CardHeader>
 					<CardContent>
 						<form onSubmit={handleSubmit} className='space-y-6'>
-							{error && <div className='bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md text-sm'>{error}</div>}
+							{error && <div className='bg-destructive/10 border border-destructive/20 text-destructive px-4 py-3 rounded-md text-sm'>{error}</div>}
 
 							<div className='grid grid-cols-2 gap-4'>
 								<div className='space-y-2'>
