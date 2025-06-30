@@ -59,10 +59,9 @@ export async function updateSession(request: NextRequest) {
 			// no user, redirect to login page
 			const url = request.nextUrl.clone();
 			
-			// Check if we're being accessed through a proxy (like from zkidzdev.com/admin)
-			const isProxiedRequest = request.headers.get('x-forwarded-host') || 
-									request.headers.get('x-vercel-forwarded-for') ||
-									!request.url.includes('pulsetrack-zkidz-web.vercel.app');
+			// Check if we're being accessed through a proxy (zkidzdev.com/pulse)
+			const isProxiedRequest = request.headers.get('x-forwarded-host') === 'zkidzdev.com' ||
+									request.headers.get('host') === 'zkidzdev.com';
 			
 			if (isProxiedRequest) {
 				// Maintain the /pulse prefix for proxied requests
