@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/db'
-import type { NewCompany, NewUser, NewProject, NewProjectMember, NewTicket, NewTimeEntry, NewComment } from '@/lib/db/schema'
+import type { NewCompany, NewUser, NewProject, NewProjectMember, NewTicket, NewTimeEntry, NewComment, NewActivity, ActivityWithUser } from '@/lib/db/schema'
 import { createOrUpdateTimeEntryBilling } from './billing-service'
 import { getApiPath } from '@/lib/utils'
 import {
@@ -132,6 +132,13 @@ export async function createProject(data: NewProject) {
     throw error;
   }
   
+  // Log project creation activity
+  try {
+    await logProjectCreated(result.id, data.owner_id, data.name)
+  } catch (activityError) {
+    console.error('Failed to log project creation activity:', activityError)
+  }
+  
   return result;
 }
 
@@ -157,7 +164,7 @@ export async function deleteProject(id: string) {
 }
 
 // Project member operations
-export async function addProjectMember(projectId: string, userId: string, role: 'lead' | 'member' = 'member') {
+export async function addProjectMember(projectId: string, userId: string, role: 'lead' | 'member' = 'member', addedByUserId?: string) {
   const { data, error } = await supabase
     .from('project_members')
     .insert({
@@ -169,6 +176,19 @@ export async function addProjectMember(projectId: string, userId: string, role: 
     .single()
   
   if (error) throw error
+  
+  // Log user added to project activity
+  if (addedByUserId) {
+    try {
+      const project = await getProjectById(projectId)
+      if (project) {
+        await logUserAddedToProject(projectId, addedByUserId, userId, project.name, role)
+      }
+    } catch (activityError) {
+      console.error('Failed to log user added to project activity:', activityError)
+    }
+  }
+  
   return data
 }
 
@@ -278,6 +298,14 @@ export async function createTicket(data: NewTicket) {
     .single()
   
   if (error) throw error
+  
+  // Log ticket creation activity
+  try {
+    await logTicketCreated(result.id, result.project_id, result.reporter_id, result.title)
+  } catch (activityError) {
+    console.error('Failed to log ticket creation activity:', activityError)
+  }
+  
   return result
 }
 
@@ -797,4 +825,358 @@ export async function updateUser(userId: string, updates: Partial<NewUser>) {
   
   if (error) throw error
   return data
+}
+
+// ==============================================
+// ACTIVITY LOGGING OPERATIONS
+// ==============================================
+
+/**
+ * Create a new activity log entry
+ */
+export async function createActivity(data: NewActivity) {
+  const { data: result, error } = await supabase
+    .from('activities')
+    .insert(data)
+    .select()
+    .single()
+  
+  if (error) throw error
+  return result
+}
+
+/**
+ * Get activities for a specific project with user details
+ */
+export async function getProjectActivities(projectId: string, limit: number = 50) {
+  const { data, error } = await supabase
+    .from('activities')
+    .select(`
+      id,
+      type,
+      title,
+      description,
+      metadata,
+      created_at,
+      updated_at,
+      user_id,
+      target_user_id,
+      project_id,
+      ticket_id,
+      user:users!activities_user_id_users_id_fk (
+        id,
+        first_name,
+        last_name,
+        email,
+        avatar_url
+      ),
+      target_user:users!activities_target_user_id_users_id_fk (
+        id,
+        first_name,
+        last_name,
+        email,
+        avatar_url
+      ),
+      project:projects (
+        id,
+        name
+      ),
+      ticket:tickets (
+        id,
+        title
+      )
+    `)
+    .eq('project_id', projectId)
+    .order('created_at', { ascending: false })
+    .limit(limit)
+  
+  if (error) throw error
+  return data || []
+}
+
+/**
+ * Get activities for a specific user
+ */
+export async function getUserActivities(userId: string, limit: number = 50) {
+  const { data, error } = await supabase
+    .from('activities')
+    .select(`
+      id,
+      type,
+      title,
+      description,
+      metadata,
+      created_at,
+      updated_at,
+      user_id,
+      target_user_id,
+      project_id,
+      ticket_id,
+      user:users!activities_user_id_users_id_fk (
+        id,
+        first_name,
+        last_name,
+        email,
+        avatar_url
+      ),
+      target_user:users!activities_target_user_id_users_id_fk (
+        id,
+        first_name,
+        last_name,
+        email,
+        avatar_url
+      ),
+      project:projects (
+        id,
+        name
+      ),
+      ticket:tickets (
+        id,
+        title
+      )
+    `)
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false })
+    .limit(limit)
+  
+  if (error) throw error
+  return data || []
+}
+
+/**
+ * Get recent activities across accessible projects for a user
+ * This respects project visibility and membership
+ */
+export async function getRecentActivitiesForUser(userId: string, limit: number = 20) {
+  // First get user's accessible projects
+  const { data: userProjects, error: projectError } = await supabase
+    .from('project_members')
+    .select('project_id')
+    .eq('user_id', userId)
+  
+  if (projectError) throw projectError
+  
+  const projectIds = userProjects?.map(p => p.project_id) || []
+  
+  if (projectIds.length === 0) {
+    return []
+  }
+  
+  const { data, error } = await supabase
+    .from('activities')
+    .select(`
+      id,
+      type,
+      title,
+      description,
+      metadata,
+      created_at,
+      updated_at,
+      user_id,
+      target_user_id,
+      project_id,
+      ticket_id,
+      user:users!activities_user_id_users_id_fk (
+        id,
+        first_name,
+        last_name,
+        email,
+        avatar_url
+      ),
+      target_user:users!activities_target_user_id_users_id_fk (
+        id,
+        first_name,
+        last_name,
+        email,
+        avatar_url
+      ),
+      project:projects (
+        id,
+        name
+      ),
+      ticket:tickets (
+        id,
+        title
+      )
+    `)
+    .in('project_id', projectIds)
+    .order('created_at', { ascending: false })
+    .limit(limit)
+  
+  if (error) throw error
+  return data || []
+}
+
+/**
+ * Get company-wide activities (only for admins)
+ */
+export async function getCompanyActivities(companyId: string, limit: number = 50) {
+  const { data, error } = await supabase
+    .from('activities')
+    .select(`
+      id,
+      type,
+      title,
+      description,
+      metadata,
+      created_at,
+      updated_at,
+      user_id,
+      target_user_id,
+      project_id,
+      ticket_id,
+      user:users!activities_user_id_users_id_fk (
+        id,
+        first_name,
+        last_name,
+        email,
+        avatar_url
+      ),
+      target_user:users!activities_target_user_id_users_id_fk (
+        id,
+        first_name,
+        last_name,
+        email,
+        avatar_url
+      ),
+      project:projects!inner (
+        id,
+        name,
+        company_id
+      ),
+      ticket:tickets (
+        id,
+        title
+      )
+    `)
+    .eq('project.company_id', companyId)
+    .order('created_at', { ascending: false })
+    .limit(limit)
+  
+  if (error) throw error
+  return data || []
+}
+
+// ==============================================
+// ACTIVITY HELPER FUNCTIONS
+// ==============================================
+
+/**
+ * Log project creation activity
+ */
+export async function logProjectCreated(projectId: string, userId: string, projectName: string) {
+  return await createActivity({
+    type: 'project_created',
+    project_id: projectId,
+    user_id: userId,
+    title: `Created project "${projectName}"`,
+    description: `Project "${projectName}" was created`,
+    metadata: { projectName }
+  })
+}
+
+/**
+ * Log project update activity
+ */
+export async function logProjectUpdated(projectId: string, userId: string, projectName: string, changes: Record<string, any>) {
+  return await createActivity({
+    type: 'project_updated',
+    project_id: projectId,
+    user_id: userId,
+    title: `Updated project "${projectName}"`,
+    description: `Project "${projectName}" was updated`,
+    metadata: { projectName, changes }
+  })
+}
+
+/**
+ * Log ticket creation activity
+ */
+export async function logTicketCreated(ticketId: string, projectId: string, userId: string, ticketTitle: string) {
+  return await createActivity({
+    type: 'ticket_created',
+    project_id: projectId,
+    ticket_id: ticketId,
+    user_id: userId,
+    title: `Created ticket "${ticketTitle}"`,
+    description: `New ticket "${ticketTitle}" was created`,
+    metadata: { ticketTitle }
+  })
+}
+
+/**
+ * Log ticket update activity
+ */
+export async function logTicketUpdated(ticketId: string, projectId: string, userId: string, ticketTitle: string, changes: Record<string, any>) {
+  return await createActivity({
+    type: 'ticket_updated',
+    project_id: projectId,
+    ticket_id: ticketId,
+    user_id: userId,
+    title: `Updated ticket "${ticketTitle}"`,
+    description: `Ticket "${ticketTitle}" was updated`,
+    metadata: { ticketTitle, changes }
+  })
+}
+
+/**
+ * Log ticket assignment activity
+ */
+export async function logTicketAssigned(ticketId: string, projectId: string, userId: string, assigneeId: string, ticketTitle: string) {
+  return await createActivity({
+    type: 'ticket_assigned',
+    project_id: projectId,
+    ticket_id: ticketId,
+    user_id: userId,
+    target_user_id: assigneeId,
+    title: `Assigned ticket "${ticketTitle}"`,
+    description: `Ticket "${ticketTitle}" was assigned`,
+    metadata: { ticketTitle }
+  })
+}
+
+/**
+ * Log user added to project activity
+ */
+export async function logUserAddedToProject(projectId: string, userId: string, targetUserId: string, projectName: string, role: string) {
+  return await createActivity({
+    type: 'user_added_to_project',
+    project_id: projectId,
+    user_id: userId,
+    target_user_id: targetUserId,
+    title: `Added user to project "${projectName}"`,
+    description: `User was added to project "${projectName}" as ${role}`,
+    metadata: { projectName, role }
+  })
+}
+
+/**
+ * Log user removed from project activity
+ */
+export async function logUserRemovedFromProject(projectId: string, userId: string, targetUserId: string, projectName: string) {
+  return await createActivity({
+    type: 'user_removed_from_project',
+    project_id: projectId,
+    user_id: userId,
+    target_user_id: targetUserId,
+    title: `Removed user from project "${projectName}"`,
+    description: `User was removed from project "${projectName}"`,
+    metadata: { projectName }
+  })
+}
+
+/**
+ * Log time entry creation activity
+ */
+export async function logTimeEntryCreated(projectId: string, ticketId: string, userId: string, duration: number, ticketTitle: string) {
+  const hours = Math.round((duration / 3600) * 100) / 100 // Convert seconds to hours with 2 decimal places
+  return await createActivity({
+    type: 'time_entry_created',
+    project_id: projectId,
+    ticket_id: ticketId,
+    user_id: userId,
+    title: `Logged ${hours}h on "${ticketTitle}"`,
+    description: `${hours} hours logged on ticket "${ticketTitle}"`,
+    metadata: { ticketTitle, duration, hours }
+  })
 }
