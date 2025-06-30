@@ -59,9 +59,9 @@ export async function updateSession(request: NextRequest) {
 			// no user, redirect to login page
 			const url = request.nextUrl.clone();
 			
-			// Check if we're being accessed through a proxy (zkidzdev.com/pulse)
-			const isProxiedRequest = request.headers.get('x-forwarded-host') === 'zkidzdev.com' ||
-									request.headers.get('host') === 'zkidzdev.com';
+			// Check if we're being accessed through a proxy (zkidzdev.com/pulse or www.zkidzdev.com/pulse)
+			const host = request.headers.get('x-forwarded-host') || request.headers.get('host');
+			const isProxiedRequest = host === 'zkidzdev.com' || host === 'www.zkidzdev.com';
 			
 			if (isProxiedRequest) {
 				// Maintain the /pulse prefix for proxied requests
