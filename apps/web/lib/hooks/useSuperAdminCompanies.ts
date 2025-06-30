@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { useAuthStore } from '@/lib/stores/auth'
+import { getApiPath } from '@/lib/utils'
 
 export interface CompanyStats {
   users: {
@@ -40,7 +41,7 @@ export function useSuperAdminCompanies() {
   return useQuery({
     queryKey: superAdminCompanyKeys.list(),
     queryFn: async (): Promise<SuperAdminCompany[]> => {
-      const response = await fetch('/api/admin/companies')
+      const response = await fetch(getApiPath('admin/companies'))
       if (!response.ok) {
         throw new Error('Failed to fetch companies')
       }

@@ -9,6 +9,7 @@ import {
   deleteBillingRate
 } from '@/lib/db/billing-service';
 import type { CompanyBillingSettings, NewCompanyBillingSettings, BillingRate, NewBillingRate } from '@/lib/db/schema';
+import { getApiPath } from '@/lib/utils';
 
 export function useBillingSettings(companyId: string) {
     return useQuery<CompanyBillingSettings | null, Error>({
@@ -39,9 +40,13 @@ export function useBillingReport(companyId: string, startDate: string, endDate: 
     return useQuery<any, Error>({
         queryKey: ['billing-report', companyId, startDate, endDate],
         queryFn: async () => {
-            const response = await fetch(`/api/billing/report?companyId=${companyId}&startDate=${startDate}&endDate=${endDate}`);
+            const apiPath = getApiPath(`billing/report?companyId=${companyId}&startDate=${startDate}&endDate=${endDate}`);
+            console.log('🔍 Fetching billing report from:', apiPath);
+            const response = await fetch(apiPath);
             if (!response.ok) {
-                throw new Error('Failed to fetch billing report');
+                const errorText = await response.text();
+                console.error('❌ Billing report API error:', response.status, errorText);
+                throw new Error(`Failed to fetch billing report: ${response.status} ${errorText}`);
             }
             return response.json();
         },

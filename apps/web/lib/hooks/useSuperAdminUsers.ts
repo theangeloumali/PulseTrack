@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuthStore } from '@/lib/stores/auth'
 import type { UserRole, UserStatus } from '@/lib/db/schema'
+import { getApiPath } from '@/lib/utils'
 
 export interface SuperAdminUser {
   id: string
@@ -34,7 +35,7 @@ export function useSuperAdminUsers() {
   return useQuery({
     queryKey: superAdminUserKeys.list(),
     queryFn: async (): Promise<SuperAdminUser[]> => {
-      const response = await fetch('/api/admin/users')
+      const response = await fetch(getApiPath('admin/users'))
       if (!response.ok) {
         throw new Error('Failed to fetch users')
       }
@@ -61,7 +62,7 @@ export function useSuperAdminUpdateUser() {
         hourlyRate?: number | null
       }
     }): Promise<SuperAdminUser> => {
-      const response = await fetch(`/api/admin/users/${userId}`, {
+      const response = await fetch(getApiPath(`admin/users/${userId}`), {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -99,7 +100,7 @@ export function useSuperAdminDeactivateUser() {
   
   return useMutation({
     mutationFn: async (userId: string): Promise<{ message: string; user: SuperAdminUser }> => {
-      const response = await fetch(`/api/admin/users/${userId}`, {
+      const response = await fetch(getApiPath(`admin/users/${userId}`), {
         method: 'DELETE',
       })
       

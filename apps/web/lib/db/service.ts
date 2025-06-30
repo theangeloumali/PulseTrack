@@ -1,6 +1,7 @@
 import { supabase } from '@/lib/db'
 import type { NewCompany, NewUser, NewProject, NewProjectMember, NewTicket, NewTimeEntry, NewComment } from '@/lib/db/schema'
 import { createOrUpdateTimeEntryBilling } from './billing-service'
+import { getApiPath } from '@/lib/utils'
 import {
   userBasicFields,
   userWithCompanyFields,
@@ -532,7 +533,13 @@ export async function getProjectsWithTicketCounts(companyId: string) {
  * to preserve billing integrity and historical data for invoicing purposes.
  */
 export async function getTimeEntriesForBilling(companyId: string, startDate: string, endDate: string) {
-  console.log('Fetching time entries for billing:', { companyId, startDate, endDate });
+  console.log('🔍 Fetching time entries for billing:', { companyId, startDate, endDate });
+  
+  // Create proper end date timestamp
+  const endDateTime = new Date(endDate);
+  endDateTime.setHours(23, 59, 59, 999);
+  const endDateString = endDateTime.toISOString();
+  
   const { data, error } = await supabase
     .from('time_entries')
     .select(
@@ -542,17 +549,20 @@ export async function getTimeEntriesForBilling(companyId: string, startDate: str
       end_time,
       duration,
       description,
-      tickets (
+      user_id,
+      ticket_id,
+      tickets!inner (
         id,
         title,
         deleted_at,
+        project_id,
         projects!inner (
           id,
           name,
           company_id
         )
       ),
-      users (
+      users!inner (
         id,
         first_name,
         last_name,
@@ -563,34 +573,59 @@ export async function getTimeEntriesForBilling(companyId: string, startDate: str
     )
     .eq('tickets.projects.company_id', companyId)
     .gte('start_time', startDate)
-    .lte('start_time', endDate + 'T23:59:59.999Z')
+    .lte('start_time', endDateString)
+    .not('duration', 'is', null)
+    .gt('duration', 0)
     .order('start_time', { ascending: true });
 
   if (error) {
-    console.error('Error fetching time entries for billing:', error);
-    throw error;
+    console.error('❌ Error fetching time entries for billing:', error);
+    throw new Error(`Failed to fetch time entries: ${error.message}`);
   }
-  console.log('Supabase query for time entries completed.');
 
-  console.log('Raw time entries data:', data);
+  console.log(`✅ Supabase query completed. Found ${data?.length || 0} time entries`);
 
-  // Flatten the structure for easier processing
+  if (!data || data.length === 0) {
+    console.log('⚠️ No time entries found for the given criteria');
+    return [];
+  }
+
+  // Flatten the structure for easier processing with better error handling
   const flattenedData = data
-    .map((entry) => {
-      const ticket = Array.isArray(entry.tickets) ? entry.tickets[0] : entry.tickets;
-      const project = ticket && Array.isArray(ticket.projects) ? ticket.projects[0] : ticket?.projects;
-      const user = Array.isArray(entry.users) ? entry.users[0] : entry.users;
+    .map((entry, index) => {
+      try {
+        const ticket = Array.isArray(entry.tickets) ? entry.tickets[0] : entry.tickets;
+        const project = ticket && Array.isArray(ticket.projects) ? ticket.projects[0] : ticket?.projects;
+        const user = Array.isArray(entry.users) ? entry.users[0] : entry.users;
 
-      return {
-        ...entry,
-        ticket,
-        project,
-        user,
-      };
+        if (!ticket) {
+          console.warn(`⚠️ Entry ${index} missing ticket data:`, entry.id);
+          return null;
+        }
+        if (!project) {
+          console.warn(`⚠️ Entry ${index} missing project data:`, entry.id, ticket);
+          return null;
+        }
+        if (!user) {
+          console.warn(`⚠️ Entry ${index} missing user data:`, entry.id);
+          return null;
+        }
+
+        return {
+          ...entry,
+          ticket,
+          project,
+          user,
+        };
+      } catch (flattenError) {
+        console.error(`❌ Error flattening entry ${index}:`, flattenError, entry);
+        return null;
+      }
     })
-    .filter(entry => entry.project); // Ensure project is not null
+    .filter(entry => entry !== null);
 
-  console.log('Flattened time entries data:', flattenedData);
+  console.log(`✅ Successfully flattened ${flattenedData.length} time entries`);
+  console.log('📋 Sample flattened entry:', flattenedData[0]);
 
   return flattenedData;
 }
@@ -728,7 +763,7 @@ export async function inviteUserToCompany(data: {
   hourlyRate?: number
 }) {
   try {
-    const response = await fetch('/api/invite-user', {
+    const response = await fetch(getApiPath('invite-user'), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

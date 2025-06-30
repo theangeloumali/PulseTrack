@@ -272,109 +272,177 @@ export async function createTimeEntryBilling(data: NewTimeEntryBilling) {
 }
 
 export async function generateBillingReport(companyId: string, startDate: string, endDate: string) {
-    const timeEntries = await getTimeEntriesForBilling(companyId, startDate, endDate);
-    const billingRates = await getBillingRatesByCompany(companyId);
-    const companySettings = await getCompanyBillingSettings(companyId);
-    console.log('Time Entries for Billing:', timeEntries);
-    console.log('Billing Rates:', billingRates);
-    console.log('Company Settings:', companySettings);
+    console.log('📊 Starting billing report generation:', { companyId, startDate, endDate });
+    
+    try {
+        // Fetch all required data
+        const timeEntries = await getTimeEntriesForBilling(companyId, startDate, endDate);
+        const billingRates = await getBillingRatesByCompany(companyId);
+        const companySettings = await getCompanyBillingSettings(companyId);
+        
+        console.log('📋 Data fetched:');
+        console.log(`  - Time Entries: ${timeEntries?.length || 0}`);
+        console.log(`  - Billing Rates: ${billingRates?.length || 0}`);
+        console.log(`  - Company Settings: ${companySettings ? 'Found' : 'Not found'}`);
 
-    const report: { 
-        [date: string]: { 
-            [userId: string]: { 
-                userFirstName: string; 
-                userLastName: string; 
-                totalHours: number; 
-                totalAmount: number; 
-                projects: { 
-                    [projectId: string]: { 
-                        projectName: string; 
-                        totalHours: number; 
-                        totalAmount: number; 
-                        tickets: { 
-                            ticketId: string; 
-                            ticketTitle: string; 
-                            hours: number; 
-                            amount: number; 
-                            description?: string; 
-                        }[]; 
+        if (!timeEntries || timeEntries.length === 0) {
+            console.log('⚠️ No time entries found, returning empty report');
+            return {};
+        }
+
+        const report: { 
+            [date: string]: { 
+                [userId: string]: { 
+                    userFirstName: string; 
+                    userLastName: string; 
+                    totalHours: number; 
+                    totalAmount: number; 
+                    projects: { 
+                        [projectId: string]: { 
+                            projectName: string; 
+                            totalHours: number; 
+                            totalAmount: number; 
+                            tickets: { 
+                                ticketId: string; 
+                                ticketTitle: string; 
+                                hours: number; 
+                                amount: number; 
+                                description?: string; 
+                            }[]; 
+                        }; 
                     }; 
                 }; 
             }; 
-        }; 
-    } = {};
+        } = {};
 
-    timeEntries.forEach(entry => {
-        if (!entry.user || !entry.ticket || !entry.project) return; // Skip if essential data is missing
+        let processedEntries = 0;
+        let skippedEntries = 0;
 
-        const entryDate = format(new Date(entry.start_time), 'yyyy-MM-dd');
-        const user = entry.user;
-        const userId = user.id;
-        const project = Array.isArray(entry.project) ? entry.project[0] : entry.project;
-        if (!project) return; // Skip if project is null
-        const projectId = project.id;
-        const ticketId = entry.ticket.id;
-        const ticketTitle = entry.ticket.title;
-        const durationHours = entry.duration || 0; // Duration is already in hours
+        timeEntries.forEach((entry, index) => {
+            try {
+                if (!entry.user || !entry.ticket || !entry.project) {
+                    console.warn(`⚠️ Skipping entry ${index} due to missing data:`, {
+                        id: entry.id,
+                        hasUser: !!entry.user,
+                        hasTicket: !!entry.ticket,
+                        hasProject: !!entry.project
+                    });
+                    skippedEntries++;
+                    return;
+                }
 
-        let applicableRate = 0;
+                const entryDate = format(new Date(entry.start_time), 'yyyy-MM-dd');
+                const user = entry.user;
+                const userId = user.id;
+                const project = Array.isArray(entry.project) ? entry.project[0] : entry.project;
+                if (!project) {
+                    console.warn(`⚠️ Skipping entry ${index} due to missing project:`, entry.id);
+                    skippedEntries++;
+                    return;
+                }
+                const projectId = project.id;
+                const ticketId = entry.ticket.id;
+                const ticketTitle = entry.ticket.title;
+                const durationHours = entry.duration || 0;
 
-        // Determine applicable rate: Project > User > Company Default
-        // Filter rates by effective_from and effective_to dates
-        const relevantRates = billingRates.filter(rate =>
-            new Date(entry.start_time) >= new Date(rate.effective_from) &&
-            (!rate.effective_to || new Date(entry.start_time) <= new Date(rate.effective_to))
-        );
+                if (durationHours <= 0) {
+                    console.warn(`⚠️ Skipping entry ${index} due to zero duration:`, entry.id);
+                    skippedEntries++;
+                    return;
+                }
 
-        const projectRate = relevantRates.find(rate => rate.project_id === projectId && !rate.user_id);
-        const userRate = relevantRates.find(rate => rate.user_id === userId && !rate.project_id);
+                let applicableRate = 0;
+                let rateSource = 'none';
 
-        if (projectRate) {
-            applicableRate = parseFloat(projectRate.hourly_rate);
-        } else if (userRate) {
-            applicableRate = parseFloat(userRate.hourly_rate);
-        } else if (companySettings?.default_hourly_rate) {
-            applicableRate = parseFloat(companySettings.default_hourly_rate);
-        } else if (user.hourly_rate) {
-            // Fallback to user's default hourly_rate if no specific rate is found
-            applicableRate = parseFloat(user.hourly_rate);
-        }
+                // Determine applicable rate: Project > User > Company Default
+                const entryDateTime = new Date(entry.start_time);
+                const relevantRates = billingRates.filter(rate => {
+                    const effectiveFrom = new Date(rate.effective_from);
+                    const effectiveTo = rate.effective_to ? new Date(rate.effective_to) : null;
+                    return entryDateTime >= effectiveFrom && (!effectiveTo || entryDateTime <= effectiveTo);
+                });
 
-        const billableAmount = durationHours * applicableRate;
+                const projectRate = relevantRates.find(rate => rate.project_id === projectId && !rate.user_id);
+                const userRate = relevantRates.find(rate => rate.user_id === userId && !rate.project_id);
 
-        if (!report[entryDate]) {
-            report[entryDate] = {};
-        }
-        if (!report[entryDate][userId]) {
-            report[entryDate][userId] = {
-                userFirstName: user.first_name || '',
-                userLastName: user.last_name || '',
-                totalHours: 0,
-                totalAmount: 0,
-                projects: {},
-            };
-        }
-        if (!report[entryDate][userId].projects[projectId]) {
-            report[entryDate][userId].projects[projectId] = {
-                projectName: project.name,
-                totalHours: 0,
-                totalAmount: 0,
-                tickets: [],
-            };
-        }
+                if (projectRate) {
+                    applicableRate = parseFloat(projectRate.hourly_rate);
+                    rateSource = 'project';
+                } else if (userRate) {
+                    applicableRate = parseFloat(userRate.hourly_rate);
+                    rateSource = 'user';
+                } else if (companySettings?.default_hourly_rate) {
+                    applicableRate = parseFloat(companySettings.default_hourly_rate);
+                    rateSource = 'company_default';
+                } else if (user.hourly_rate) {
+                    applicableRate = parseFloat(user.hourly_rate);
+                    rateSource = 'user_fallback';
+                }
 
-        report[entryDate][userId].totalHours += durationHours;
-        report[entryDate][userId].totalAmount += billableAmount;
-        report[entryDate][userId].projects[projectId].totalHours += durationHours;
-        report[entryDate][userId].projects[projectId].totalAmount += billableAmount;
-        report[entryDate][userId].projects[projectId].tickets.push({
-            ticketId,
-            ticketTitle,
-            hours: durationHours,
-            amount: billableAmount,
-            description: entry.description || undefined,
+                if (applicableRate <= 0) {
+                    console.warn(`⚠️ No valid rate found for entry ${index}:`, {
+                        id: entry.id,
+                        userId,
+                        projectId,
+                        rateSource,
+                        relevantRatesCount: relevantRates.length
+                    });
+                }
+
+                const billableAmount = durationHours * applicableRate;
+
+                // Build report structure
+                if (!report[entryDate]) {
+                    report[entryDate] = {};
+                }
+                if (!report[entryDate][userId]) {
+                    report[entryDate][userId] = {
+                        userFirstName: user.first_name || '',
+                        userLastName: user.last_name || '',
+                        totalHours: 0,
+                        totalAmount: 0,
+                        projects: {},
+                    };
+                }
+                if (!report[entryDate][userId].projects[projectId]) {
+                    report[entryDate][userId].projects[projectId] = {
+                        projectName: project.name || 'Unknown Project',
+                        totalHours: 0,
+                        totalAmount: 0,
+                        tickets: [],
+                    };
+                }
+
+                // Add to totals
+                report[entryDate][userId].totalHours += durationHours;
+                report[entryDate][userId].totalAmount += billableAmount;
+                report[entryDate][userId].projects[projectId].totalHours += durationHours;
+                report[entryDate][userId].projects[projectId].totalAmount += billableAmount;
+                report[entryDate][userId].projects[projectId].tickets.push({
+                    ticketId,
+                    ticketTitle: ticketTitle || 'Untitled Ticket',
+                    hours: durationHours,
+                    amount: billableAmount,
+                    description: entry.description || undefined,
+                });
+
+                processedEntries++;
+            } catch (entryError) {
+                console.error(`❌ Error processing entry ${index}:`, entryError, entry);
+                skippedEntries++;
+            }
         });
-    });
 
-    return report;
+        console.log(`✅ Billing report generated:`, {
+            totalDates: Object.keys(report).length,
+            processedEntries,
+            skippedEntries,
+            sampleDate: Object.keys(report)[0]
+        });
+
+        return report;
+    } catch (error) {
+        console.error('❌ Error generating billing report:', error);
+        throw new Error(`Failed to generate billing report: ${(error as Error).message}`);
+    }
 }

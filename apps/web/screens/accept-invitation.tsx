@@ -242,6 +242,15 @@ function AcceptInvitationContent() {
       // Clear the account setup flow
       clearAccountSetupFlow()
 
+      // Refresh the session to ensure it's synced before redirect
+      await supabase.auth.refreshSession()
+      
+      // Use router.refresh() to ensure the server-side session is updated
+      router.refresh()
+      
+      // Small delay to ensure session is fully synced
+      await new Promise(resolve => setTimeout(resolve, 500))
+
       // Redirect to dashboard with welcome message
       router.push('/dashboard?welcome=true&setup=complete')
 
@@ -249,6 +258,16 @@ function AcceptInvitationContent() {
       console.error('Setup error:', error)
       // Even if there's an error, the account setup might have succeeded
       clearAccountSetupFlow()
+      
+      // Refresh session even in error case
+      try {
+        await supabase.auth.refreshSession()
+        router.refresh()
+        await new Promise(resolve => setTimeout(resolve, 500))
+      } catch (refreshError) {
+        console.error('Failed to refresh session in error case:', refreshError)
+      }
+      
       router.push('/dashboard?welcome=true&setup=complete')
     } finally {
       setLoading(false)
