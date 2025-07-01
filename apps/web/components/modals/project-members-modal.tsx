@@ -13,6 +13,7 @@ import {
 } from '@/lib/hooks/useProjects'
 import { useAssignableUsers } from '@/lib/hooks/useUsers'
 import { useAuthStore } from '@/lib/stores/auth'
+import { useRoleAccess } from '@/lib/hooks/useRoleAccess'
 
 // Define the type for member data returned from query
 interface ProjectMemberWithUser {
@@ -41,8 +42,12 @@ export function ProjectMembersModal({ isOpen, onClose, projectId, projectName }:
   const [selectedRole, setSelectedRole] = useState<'lead' | 'member'>('member')
 
   const { user: currentUser } = useAuthStore()
+  const { canManageUsers } = useRoleAccess()
   const { data: members = [], isLoading: membersLoading } = useProjectMembersQuery(projectId)
   const { data: availableUsers = [] } = useAssignableUsers()
+  
+  // Check if current user can manage project members
+  const canManageMembers = canManageUsers() // Only admins can manage users/project members
   
   const addMemberMutation = useAddProjectMember()
   const removeMemberMutation = useRemoveProjectMember()
@@ -117,7 +122,7 @@ export function ProjectMembersModal({ isOpen, onClose, projectId, projectName }:
                 {members.length} {members.length === 1 ? 'member' : 'members'}
               </span>
             </div>
-            {nonMembers.length > 0 && (
+            {canManageMembers && nonMembers.length > 0 && (
               <Button
                 variant="outline"
                 size="sm"
@@ -129,7 +134,7 @@ export function ProjectMembersModal({ isOpen, onClose, projectId, projectName }:
               </Button>
             )}
           </div>
-        ) : (
+        ) : canManageMembers ? (
           <div className="border rounded-lg p-4 bg-gray-50">
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-medium">Add New Member</h3>
@@ -191,7 +196,7 @@ export function ProjectMembersModal({ isOpen, onClose, projectId, projectName }:
               </div>
             </div>
           </div>
-        )}
+        ) : null}
 
         {/* Members List */}
         <div className="space-y-3">
@@ -227,31 +232,35 @@ export function ProjectMembersModal({ isOpen, onClose, projectId, projectName }:
                 </div>
 
                 <div className="flex items-center space-x-2">
-                  <select
-                    value={member.role}
-                    onChange={(e) => handleRoleChange(member.user!.id, e.target.value as 'lead' | 'member')}
-                    className="text-xs px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-                    disabled={updateRoleMutation.isPending}
-                  >
-                    <option value="member">Member</option>
-                    <option value="lead">Lead</option>
-                  </select>
-
-                  <Badge className={`${getRoleColor(member.role)} flex items-center space-x-1`}>
-                    {getRoleIcon(member.role)}
-                    <span className="capitalize">{member.role}</span>
-                  </Badge>
-
-                  {member.user?.id !== currentUser?.id && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleRemoveMember(member.user!.id)}
-                      disabled={removeMemberMutation.isPending}
-                      className="text-red-600 hover:text-red-800 hover:bg-red-50"
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
+                  {canManageMembers ? (
+                    <>
+                      <select
+                        value={member.role}
+                        onChange={(e) => handleRoleChange(member.user!.id, e.target.value as 'lead' | 'member')}
+                        className="text-xs px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                        disabled={updateRoleMutation.isPending}
+                      >
+                        <option value="member">Member</option>
+                        <option value="lead">Lead</option>
+                      </select>
+                      
+                      {member.user?.id !== currentUser?.id && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleRemoveMember(member.user!.id)}
+                          disabled={removeMemberMutation.isPending}
+                          className="text-red-600 hover:text-red-800 hover:bg-red-50"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </>
+                  ) : (
+                    <Badge className={`${getRoleColor(member.role)} flex items-center space-x-1`}>
+                      {getRoleIcon(member.role)}
+                      <span className="capitalize">{member.role}</span>
+                    </Badge>
                   )}
                 </div>
               </div>

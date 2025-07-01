@@ -8,8 +8,8 @@ import { Badge } from '@workspace/ui/components/badge';
 import { Input } from '@workspace/ui/components/input';
 import { useAuthStore } from '@/lib/stores/auth';
 import { useRoleAccess } from '@/lib/hooks/useRoleAccess';
-import { useProjectsQuery, useProjectsWithTicketCountsQuery } from '@/lib/hooks/useProjects';
-import { useCompanyTicketsQuery } from '@/lib/hooks/useTickets';
+import { useAllCompanyProjectsQuery, useAllCompanyProjectsWithTicketCountsQuery } from '@/lib/hooks/useProjects';
+import { useAllCompanyTicketsQuery } from '@/lib/hooks/useTickets';
 import { createProject, createTicket, getProjectsByCompany, getTicketsByCompany, getProjectsWithTicketCounts, getTicketCountByProject, getTicketsByProject } from '@/lib/db/service';
 import { supabase } from '@/lib/supabase/client';
 import { Activity, Database, Users, FolderOpen, FileText, AlertCircle, CheckCircle2, Loader2, Bug, Eye, TestTube, ExternalLink } from 'lucide-react';
@@ -25,9 +25,9 @@ export default function DiagnosticsPage() {
 
 	const { user } = useAuthStore();
 	const { canAccessDiagnostics } = useRoleAccess();
-	const { data: projects = [], isLoading: projectsLoading, error: projectsError } = useProjectsQuery();
-	const { data: projectsWithCounts = [], isLoading: projectsWithCountsLoading, error: projectsWithCountsError } = useProjectsWithTicketCountsQuery();
-	const { data: tickets = [], isLoading: ticketsLoading, error: ticketsError } = useCompanyTicketsQuery(user?.company_id);
+	const { data: projects = [], isLoading: projectsLoading, error: projectsError } = useAllCompanyProjectsQuery();
+	const { data: projectsWithCounts = [], isLoading: projectsWithCountsLoading, error: projectsWithCountsError } = useAllCompanyProjectsWithTicketCountsQuery();
+	const { data: tickets = [], isLoading: ticketsLoading, error: ticketsError } = useAllCompanyTicketsQuery(user?.company_id);
 
 	// Redirect users without diagnostics access
 	useEffect(() => {
