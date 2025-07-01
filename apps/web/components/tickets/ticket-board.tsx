@@ -9,6 +9,7 @@ import { Ticket, TicketStatus } from '@/lib/db/schema';
 import { DeleteTicketModal } from '@/components/modals/delete-ticket-modal';
 import { TimeTrackingModal } from '@/components/modals/time-tracking-modal';
 import { useUpdateTicket } from '@/lib/hooks/useTickets';
+import { useAssignableUsers } from '@/lib/hooks/useUsers';
 import {
   DndContext,
   DragEndEvent,
@@ -32,7 +33,11 @@ import {
   CheckCircle2,
   FileText,
   X,
-  GripVertical
+  GripVertical,
+  UserPlus,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -41,6 +46,9 @@ interface Column {
   title: string;
   color: string;
 }
+
+type SortOption = 'priority' | 'created_at' | 'due_date' | 'assignee' | 'title';
+type SortDirection = 'asc' | 'desc';
 
 const defaultColumns: Column[] = [
   { id: 'new', title: 'To Do', color: 'bg-gray-50 border-gray-200' },
@@ -55,6 +63,12 @@ interface DraggableTicketCardProps {
   onTimeTrack: (ticket: Ticket) => void;
   onExpandDropdown: (ticketId: string | null) => void;
   expandedDropdown: string | null;
+  onAssign: (ticket: Ticket, userId: string | null) => void;
+  onExpandAssignment: (ticketId: string | null) => void;
+  expandedAssignment: string | null;
+  onUpdatePriority: (ticket: Ticket, priority: string) => void;
+  onExpandPriority: (ticketId: string | null) => void;
+  expandedPriority: string | null;
 }
 
 interface DroppableColumnProps {
@@ -62,12 +76,39 @@ interface DroppableColumnProps {
   children: React.ReactNode;
   onRemoveColumn: (columnId: TicketStatus) => void;
   ticketCount: number;
+  sortOption: SortOption;
+  sortDirection: SortDirection;
+  onSort: (columnId: TicketStatus, option: SortOption) => void;
 }
 
-function DroppableColumn({ column, children, onRemoveColumn, ticketCount }: DroppableColumnProps) {
+function DroppableColumn({ 
+  column, 
+  children, 
+  onRemoveColumn, 
+  ticketCount, 
+  sortOption, 
+  sortDirection, 
+  onSort 
+}: DroppableColumnProps) {
   const { isOver, setNodeRef } = useDroppable({
     id: column.id,
   });
+
+  const [showSortMenu, setShowSortMenu] = useState(false);
+
+  const getSortIcon = () => {
+    if (sortDirection === 'asc') return <ArrowUp className="h-3 w-3" />;
+    if (sortDirection === 'desc') return <ArrowDown className="h-3 w-3" />;
+    return <ArrowUpDown className="h-3 w-3" />;
+  };
+
+  const sortOptions: { value: SortOption; label: string }[] = [
+    { value: 'priority', label: 'Priority' },
+    { value: 'created_at', label: 'Created Date' },
+    { value: 'due_date', label: 'Due Date' },
+    { value: 'assignee', label: 'Assignee' },
+    { value: 'title', label: 'Title' },
+  ];
 
   return (
     <div ref={setNodeRef} className="flex-shrink-0 w-80">
@@ -80,16 +121,53 @@ function DroppableColumn({ column, children, onRemoveColumn, ticketCount }: Drop
                 {ticketCount}
               </Badge>
             </CardTitle>
-            {!defaultColumns.some(col => col.id === column.id) && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => onRemoveColumn(column.id)}
-                className="h-6 w-6 p-0 text-gray-400 hover:text-red-500"
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            )}
+            <div className="flex items-center gap-1">
+              {/* Sort Button */}
+              <div className="relative">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowSortMenu(!showSortMenu)}
+                  className={`h-6 w-6 p-0 hover:text-gray-600 border border-dashed hover:border-solid transition-all ${
+                    sortOption !== 'created_at' ? 'text-blue-600 border-blue-200' : 'text-gray-400 border-gray-200'
+                  }`}
+                  title={`Sort by ${sortOption} (${sortDirection}) - Click to change`}
+                >
+                  {getSortIcon()}
+                </Button>
+                {showSortMenu && (
+                  <div className="absolute right-0 top-7 bg-white border rounded-md shadow-lg z-20 py-1 min-w-[140px]">
+                    {sortOptions.map((option) => (
+                      <button
+                        key={option.value}
+                        onClick={() => {
+                          onSort(column.id, option.value);
+                          setShowSortMenu(false);
+                        }}
+                        className={`flex items-center justify-between px-3 py-2 text-sm hover:bg-gray-50 w-full text-left ${
+                          sortOption === option.value ? 'bg-blue-50 text-blue-600' : ''
+                        }`}
+                      >
+                        <span>{option.label}</span>
+                        {sortOption === option.value && getSortIcon()}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+              
+              {/* Remove Column Button */}
+              {!defaultColumns.some(col => col.id === column.id) && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => onRemoveColumn(column.id)}
+                  className="h-6 w-6 p-0 text-gray-400 hover:text-red-500"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
           </div>
         </CardHeader>
         <CardContent className="space-y-3 min-h-[200px]">
@@ -100,7 +178,20 @@ function DroppableColumn({ column, children, onRemoveColumn, ticketCount }: Drop
   );
 }
 
-function DraggableTicketCard({ ticket, onDelete, onTimeTrack, onExpandDropdown, expandedDropdown }: DraggableTicketCardProps) {
+function DraggableTicketCard({ 
+  ticket, 
+  onDelete, 
+  onTimeTrack, 
+  onExpandDropdown, 
+  expandedDropdown, 
+  onAssign, 
+  onExpandAssignment, 
+  expandedAssignment,
+  onUpdatePriority,
+  onExpandPriority,
+  expandedPriority
+}: DraggableTicketCardProps) {
+  const { data: users = [], isLoading: usersLoading } = useAssignableUsers();
   const {
     attributes,
     listeners,
@@ -145,6 +236,15 @@ function DraggableTicketCard({ ticket, onDelete, onTimeTrack, onExpandDropdown, 
     }
   };
 
+  const priorityOptions = [
+    { value: 'low', label: 'Low', color: 'bg-green-100 text-green-800' },
+    { value: 'medium', label: 'Medium', color: 'bg-yellow-100 text-yellow-800' },
+    { value: 'high', label: 'High', color: 'bg-orange-100 text-orange-800' },
+    { value: 'critical', label: 'Critical', color: 'bg-red-100 text-red-800' },
+  ];
+
+  const assignedUser = users.find(user => user.id === ticket.assignee_id);
+
   return (
     <Card 
       ref={setNodeRef}
@@ -182,7 +282,30 @@ function DraggableTicketCard({ ticket, onDelete, onTimeTrack, onExpandDropdown, 
               <MoreVertical className="h-4 w-4" />
             </Button>
             {expandedDropdown === ticket.id && (
-              <div className="absolute right-0 top-7 bg-white border rounded-md shadow-lg z-10 py-1 min-w-[150px]">
+              <div className="absolute right-0 top-7 bg-white border rounded-md shadow-lg z-10 py-1 min-w-[180px]">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onExpandAssignment(expandedAssignment === ticket.id ? null : ticket.id);
+                    onExpandDropdown(null);
+                  }}
+                  className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-gray-50 w-full text-left"
+                >
+                  <UserPlus className="h-4 w-4" />
+                  Assign to User
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onExpandPriority(expandedPriority === ticket.id ? null : ticket.id);
+                    onExpandDropdown(null);
+                  }}
+                  className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-gray-50 w-full text-left"
+                >
+                  <AlertCircle className="h-4 w-4" />
+                  Set Priority
+                </button>
+                <hr className="my-1" />
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
@@ -216,20 +339,106 @@ function DraggableTicketCard({ ticket, onDelete, onTimeTrack, onExpandDropdown, 
           </p>
         )}
         
-        <div className="flex items-center gap-1 mb-2">
-          <Badge className={`${getPriorityColor(ticket.priority)} text-xs flex items-center gap-1`}>
-            {getPriorityIcon(ticket.priority)}
-            {ticket.priority}
-          </Badge>
+        <div className="flex items-center gap-2 mb-2">
+          {/* Priority Badge with Dropdown - More obvious styling */}
+          <div className="relative">
+            <Badge 
+              className={`${getPriorityColor(ticket.priority)} text-xs flex items-center gap-1 cursor-pointer hover:opacity-80 border border-dashed hover:border-solid transition-all`}
+              onClick={(e) => {
+                e.stopPropagation();
+                onExpandPriority(expandedPriority === ticket.id ? null : ticket.id);
+              }}
+              title="Click to change priority"
+            >
+              {getPriorityIcon(ticket.priority)}
+              {ticket.priority}
+              <ArrowUpDown className="h-2 w-2 opacity-60" />
+            </Badge>
+            {expandedPriority === ticket.id && (
+              <div className="absolute left-0 top-7 bg-white border rounded-md shadow-lg z-30 py-1 min-w-[120px]">
+                {priorityOptions.map((priority) => (
+                  <button
+                    key={priority.value}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onUpdatePriority(ticket, priority.value);
+                      onExpandPriority(null);
+                    }}
+                    className={`flex items-center gap-2 px-3 py-2 text-sm hover:bg-gray-50 w-full text-left ${
+                      ticket.priority === priority.value ? 'bg-blue-50' : ''
+                    }`}
+                  >
+                    <Badge className={`${priority.color} text-xs`}>
+                      {priority.label}
+                    </Badge>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="flex items-center justify-between text-xs text-gray-500">
-          <div className="flex items-center gap-1">
-            <User className="h-3 w-3" />
-            <span className="truncate max-w-[100px]">
-              {(ticket as any).assignee?.first_name || 'Unassigned'}
-            </span>
+          {/* Assignee with Dropdown */}
+          <div className="relative">
+            <div 
+              className="flex items-center gap-1 cursor-pointer hover:bg-gray-100 rounded px-2 py-1 border border-dashed border-gray-300 hover:border-solid transition-all"
+              onClick={(e) => {
+                e.stopPropagation();
+                onExpandAssignment(expandedAssignment === ticket.id ? null : ticket.id);
+              }}
+              title="Click to assign user"
+            >
+              <User className="h-3 w-3" />
+              <span className="truncate max-w-[100px] text-xs">
+                {assignedUser ? `${assignedUser.first_name} ${assignedUser.last_name}` : 'Unassigned'}
+              </span>
+              <UserPlus className="h-3 w-3 opacity-50" />
+            </div>
+            {expandedAssignment === ticket.id && (
+              <div className="absolute left-0 top-7 bg-white border rounded-md shadow-lg z-30 py-1 min-w-[180px] max-h-40 overflow-y-auto">
+                {/* Unassign option */}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onAssign(ticket, null);
+                    onExpandAssignment(null);
+                  }}
+                  className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-gray-50 w-full text-left"
+                >
+                  <div className="w-5 h-5 rounded-full bg-gray-200 flex items-center justify-center">
+                    <User className="w-3 h-3 text-gray-500" />
+                  </div>
+                  <span>Unassigned</span>
+                </button>
+                
+                {/* User options */}
+                {usersLoading ? (
+                  <div className="px-3 py-2 text-sm text-gray-500">Loading...</div>
+                ) : (
+                  users.map((user) => (
+                    <button
+                      key={user.id}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onAssign(ticket, user.id);
+                        onExpandAssignment(null);
+                      }}
+                      className={`flex items-center gap-2 px-3 py-2 text-sm hover:bg-gray-50 w-full text-left ${
+                        user.id === ticket.assignee_id ? 'bg-blue-50' : ''
+                      }`}
+                    >
+                      <div className="w-5 h-5 rounded-full bg-blue-100 flex items-center justify-center">
+                        <User className="w-3 h-3 text-blue-600" />
+                      </div>
+                      <span className="truncate">{user.first_name} {user.last_name}</span>
+                    </button>
+                  ))
+                )}
+              </div>
+            )}
           </div>
+          
           <div className="flex items-center gap-1">
             <Calendar className="h-3 w-3" />
             <span>{new Date(ticket.created_at).toLocaleDateString()}</span>
@@ -252,9 +461,18 @@ export function TicketBoard({ tickets, isLoading }: TicketBoardProps) {
   const [selectedTicketForDelete, setSelectedTicketForDelete] = useState<Ticket | null>(null);
   const [selectedTicketForTime, setSelectedTicketForTime] = useState<Ticket | null>(null);
   const [expandedDropdown, setExpandedDropdown] = useState<string | null>(null);
+  const [expandedAssignment, setExpandedAssignment] = useState<string | null>(null);
+  const [expandedPriority, setExpandedPriority] = useState<string | null>(null);
   const [activeTicket, setActiveTicket] = useState<Ticket | null>(null);
+  const [columnSorts, setColumnSorts] = useState<Record<TicketStatus, { option: SortOption; direction: SortDirection }>>({
+    new: { option: 'created_at', direction: 'desc' },
+    in_progress: { option: 'created_at', direction: 'desc' },
+    review: { option: 'created_at', direction: 'desc' },
+    done: { option: 'created_at', direction: 'desc' },
+  });
 
   const updateTicketMutation = useUpdateTicket();
+  const { data: users = [], isLoading: usersLoading } = useAssignableUsers();
   
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -264,8 +482,52 @@ export function TicketBoard({ tickets, isLoading }: TicketBoardProps) {
     })
   );
 
+  const sortTickets = (tickets: Ticket[], sortOption: SortOption, direction: SortDirection) => {
+    return [...tickets].sort((a, b) => {
+      let aValue: any;
+      let bValue: any;
+
+      switch (sortOption) {
+        case 'priority':
+          const priorityOrder = { low: 1, medium: 2, high: 3, critical: 4 };
+          aValue = priorityOrder[a.priority as keyof typeof priorityOrder] || 0;
+          bValue = priorityOrder[b.priority as keyof typeof priorityOrder] || 0;
+          break;
+        case 'created_at':
+          aValue = new Date(a.created_at).getTime();
+          bValue = new Date(b.created_at).getTime();
+          break;
+        case 'due_date':
+          aValue = a.due_date ? new Date(a.due_date).getTime() : 0;
+          bValue = b.due_date ? new Date(b.due_date).getTime() : 0;
+          break;
+        case 'assignee':
+          // Get user data from the users list for sorting
+          const aUser = users.find(u => u.id === a.assignee_id);
+          const bUser = users.find(u => u.id === b.assignee_id);
+          aValue = aUser ? `${aUser.first_name} ${aUser.last_name}` : 'ZZZ'; // Unassigned goes to bottom
+          bValue = bUser ? `${bUser.first_name} ${bUser.last_name}` : 'ZZZ';
+          break;
+        case 'title':
+          aValue = a.title.toLowerCase();
+          bValue = b.title.toLowerCase();
+          break;
+        default:
+          return 0;
+      }
+
+      if (direction === 'asc') {
+        return aValue > bValue ? 1 : aValue < bValue ? -1 : 0;
+      } else {
+        return aValue < bValue ? 1 : aValue > bValue ? -1 : 0;
+      }
+    });
+  };
+
   const getTicketsForColumn = (columnId: TicketStatus) => {
-    return tickets.filter(ticket => ticket.status === columnId);
+    const columnTickets = tickets.filter(ticket => ticket.status === columnId);
+    const sort = columnSorts[columnId] || { option: 'created_at', direction: 'desc' };
+    return sortTickets(columnTickets, sort.option, sort.direction);
   };
 
   const handleDragStart = (event: DragStartEvent) => {
@@ -325,6 +587,32 @@ export function TicketBoard({ tickets, isLoading }: TicketBoardProps) {
     setColumns(columns.filter(col => col.id !== columnId));
   };
 
+  const handleAssignTicket = (ticket: Ticket, userId: string | null) => {
+    updateTicketMutation.mutate({
+      id: ticket.id,
+      data: { assignee_id: userId }
+    });
+  };
+
+  const handleUpdatePriority = (ticket: Ticket, priority: string) => {
+    updateTicketMutation.mutate({
+      id: ticket.id,
+      data: { priority: priority as any }
+    });
+  };
+
+  const handleSort = (columnId: TicketStatus, option: SortOption) => {
+    setColumnSorts(prev => {
+      const currentSort = prev[columnId];
+      const newDirection = currentSort?.option === option && currentSort?.direction === 'asc' ? 'desc' : 'asc';
+      
+      return {
+        ...prev,
+        [columnId]: { option, direction: newDirection }
+      };
+    });
+  };
+
   if (isLoading) {
     return (
       <div className="flex gap-6 overflow-x-auto pb-6">
@@ -356,12 +644,16 @@ export function TicketBoard({ tickets, isLoading }: TicketBoardProps) {
         <div className="flex gap-6 overflow-x-auto pb-6">
           {columns.map((column) => {
             const columnTickets = getTicketsForColumn(column.id);
+            const sort = columnSorts[column.id] || { option: 'created_at', direction: 'desc' };
             return (
               <DroppableColumn
                 key={column.id}
                 column={column}
                 onRemoveColumn={handleRemoveColumn}
                 ticketCount={columnTickets.length}
+                sortOption={sort.option}
+                sortDirection={sort.direction}
+                onSort={handleSort}
               >
                 {columnTickets.map((ticket) => (
                   <DraggableTicketCard
@@ -371,6 +663,12 @@ export function TicketBoard({ tickets, isLoading }: TicketBoardProps) {
                     onTimeTrack={setSelectedTicketForTime}
                     onExpandDropdown={setExpandedDropdown}
                     expandedDropdown={expandedDropdown}
+                    onAssign={handleAssignTicket}
+                    onExpandAssignment={setExpandedAssignment}
+                    expandedAssignment={expandedAssignment}
+                    onUpdatePriority={handleUpdatePriority}
+                    onExpandPriority={setExpandedPriority}
+                    expandedPriority={expandedPriority}
                   />
                 ))}
                 

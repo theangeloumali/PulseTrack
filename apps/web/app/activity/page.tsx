@@ -1,12 +1,12 @@
 'use client'
 
-import { useEffect } from 'react'
+import React, { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { ActivityFeed } from '@/components/activity/activity-feed'
 import { useAuth } from '@/lib/hooks/useAuth'
 import { Card, CardContent, CardHeader, CardTitle } from '@workspace/ui/components/card'
 
-export default function ActivityPage() {
+export default function ActivityPage(): React.JSX.Element {
   const { user, isLoading } = useAuth()
   const router = useRouter()
 
