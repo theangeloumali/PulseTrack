@@ -44,7 +44,7 @@ export function useCompanyUsers() {
   const { user } = useAuthStore();
   const { setUsers, setUsersLoading, setUsersError } = useCompanyStore();
 
-  const query = useQuery({
+  const query = useSessionAwareQuery({
     queryKey: userKeys.companyUsers(user?.company_id || ''),
     queryFn: async () => {
       if (!user?.company_id) throw new Error('No company ID available');
