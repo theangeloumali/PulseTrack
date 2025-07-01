@@ -1,6 +1,7 @@
 import { supabase } from '@/lib/db'
-import type { NewCompany, NewUser, NewProject, NewProjectMember, NewTicket, NewTimeEntry, NewComment } from '@/lib/db/schema'
+import type { NewCompany, NewUser, NewProject, NewProjectMember, NewTicket, NewTimeEntry, NewComment, NewActivity, ActivityWithUser } from '@/lib/db/schema'
 import { createOrUpdateTimeEntryBilling } from './billing-service'
+import { getApiPath } from '@/lib/utils'
 import {
   userBasicFields,
   userWithCompanyFields,
@@ -131,10 +132,20 @@ export async function createProject(data: NewProject) {
     throw error;
   }
   
+  // Log project creation activity
+  try {
+    await logProjectCreated(result.id, data.owner_id, data.name)
+  } catch (activityError) {
+    console.error('Failed to log project creation activity:', activityError)
+  }
+  
   return result;
 }
 
 export async function updateProject(id: string, updates: Partial<NewProject>) {
+  // Get current project data to compare changes
+  const currentProject = await getProjectById(id)
+  
   const { data, error } = await supabase
     .from('projects')
     .update(updates)
@@ -143,6 +154,16 @@ export async function updateProject(id: string, updates: Partial<NewProject>) {
     .single()
   
   if (error) throw error
+  
+  // Log project update activity
+  if (currentProject && data) {
+    try {
+      await logProjectUpdated(id, data.owner_id, data.name, updates)
+    } catch (activityError) {
+      console.error('Failed to log project update activity:', activityError)
+    }
+  }
+  
   return data
 }
 
@@ -156,7 +177,7 @@ export async function deleteProject(id: string) {
 }
 
 // Project member operations
-export async function addProjectMember(projectId: string, userId: string, role: 'lead' | 'member' = 'member') {
+export async function addProjectMember(projectId: string, userId: string, role: 'lead' | 'member' = 'member', addedByUserId?: string) {
   const { data, error } = await supabase
     .from('project_members')
     .insert({
@@ -168,10 +189,23 @@ export async function addProjectMember(projectId: string, userId: string, role: 
     .single()
   
   if (error) throw error
+  
+  // Log user added to project activity
+  if (addedByUserId) {
+    try {
+      const project = await getProjectById(projectId)
+      if (project) {
+        await logUserAddedToProject(projectId, addedByUserId, userId, project.name, role)
+      }
+    } catch (activityError) {
+      console.error('Failed to log user added to project activity:', activityError)
+    }
+  }
+  
   return data
 }
 
-export async function removeProjectMember(projectId: string, userId: string) {
+export async function removeProjectMember(projectId: string, userId: string, removedByUserId?: string) {
   const { error } = await supabase
     .from('project_members')
     .delete()
@@ -179,6 +213,18 @@ export async function removeProjectMember(projectId: string, userId: string) {
     .eq('user_id', userId)
   
   if (error) throw error
+  
+  // Log user removed from project activity
+  if (removedByUserId) {
+    try {
+      const project = await getProjectById(projectId)
+      if (project) {
+        await logUserRemovedFromProject(projectId, removedByUserId, userId, project.name)
+      }
+    } catch (activityError) {
+      console.error('Failed to log user removed from project activity:', activityError)
+    }
+  }
 }
 
 export async function getProjectMembers(projectId: string) {
@@ -277,10 +323,21 @@ export async function createTicket(data: NewTicket) {
     .single()
   
   if (error) throw error
+  
+  // Log ticket creation activity
+  try {
+    await logTicketCreated(result.id, result.project_id, result.reporter_id, result.title)
+  } catch (activityError) {
+    console.error('Failed to log ticket creation activity:', activityError)
+  }
+  
   return result
 }
 
-export async function updateTicket(id: string, data: Partial<NewTicket>) {
+export async function updateTicket(id: string, data: Partial<NewTicket>, updatedBy?: string) {
+  // Get current ticket data to compare changes
+  const currentTicket = await getTicketById(id)
+  
   const { data: result, error } = await supabase
     .from('tickets')
     .update(data)
@@ -289,6 +346,21 @@ export async function updateTicket(id: string, data: Partial<NewTicket>) {
     .single()
   
   if (error) throw error
+  
+  // Log ticket update activity
+  if (currentTicket && result && updatedBy) {
+    try {
+      await logTicketUpdated(id, result.project_id, updatedBy, result.title, data)
+      
+      // Special handling for ticket assignment
+      if (data.assignee_id && data.assignee_id !== currentTicket.assignee_id) {
+        await logTicketAssigned(id, result.project_id, updatedBy, data.assignee_id, result.title)
+      }
+    } catch (activityError) {
+      console.error('Failed to log ticket update activity:', activityError)
+    }
+  }
+  
   return result
 }
 
@@ -369,24 +441,37 @@ export async function createTimeEntry(data: NewTimeEntry) {
   
   if (error) throw error
 
-  // Automatically calculate billing if the entry has duration
+  // Log time entry creation activity
   if (result && result.duration && result.duration > 0) {
     try {
-      // Get company_id from the ticket's project
+      // Get ticket and project info for activity logging
       const { data: ticketData } = await supabase
         .from('tickets')
-        .select('projects(company_id)')
+        .select('title, project_id, projects(company_id)')
         .eq('id', result.ticket_id)
         .single()
       
       const projects = Array.isArray(ticketData?.projects) ? ticketData.projects[0] : ticketData?.projects
       const companyId = projects?.company_id
+      
+      // Log activity
+      if (ticketData?.project_id && ticketData?.title) {
+        await logTimeEntryCreated(
+          ticketData.project_id, 
+          result.ticket_id, 
+          result.user_id, 
+          result.duration, 
+          ticketData.title
+        )
+      }
+      
+      // Create billing record
       if (companyId) {
         await createOrUpdateTimeEntryBilling(result.id, companyId)
       }
     } catch (billingError) {
       // Log error but don't fail the time entry creation
-      console.error('Failed to create billing record for time entry:', billingError)
+      console.error('Failed to create billing record or log activity for time entry:', billingError)
     }
   }
   
@@ -532,7 +617,13 @@ export async function getProjectsWithTicketCounts(companyId: string) {
  * to preserve billing integrity and historical data for invoicing purposes.
  */
 export async function getTimeEntriesForBilling(companyId: string, startDate: string, endDate: string) {
-  console.log('Fetching time entries for billing:', { companyId, startDate, endDate });
+  console.log('🔍 Fetching time entries for billing:', { companyId, startDate, endDate });
+  
+  // Create proper end date timestamp
+  const endDateTime = new Date(endDate);
+  endDateTime.setHours(23, 59, 59, 999);
+  const endDateString = endDateTime.toISOString();
+  
   const { data, error } = await supabase
     .from('time_entries')
     .select(
@@ -542,17 +633,20 @@ export async function getTimeEntriesForBilling(companyId: string, startDate: str
       end_time,
       duration,
       description,
-      tickets (
+      user_id,
+      ticket_id,
+      tickets!inner (
         id,
         title,
         deleted_at,
+        project_id,
         projects!inner (
           id,
           name,
           company_id
         )
       ),
-      users (
+      users!inner (
         id,
         first_name,
         last_name,
@@ -563,34 +657,59 @@ export async function getTimeEntriesForBilling(companyId: string, startDate: str
     )
     .eq('tickets.projects.company_id', companyId)
     .gte('start_time', startDate)
-    .lte('start_time', endDate + 'T23:59:59.999Z')
+    .lte('start_time', endDateString)
+    .not('duration', 'is', null)
+    .gt('duration', 0)
     .order('start_time', { ascending: true });
 
   if (error) {
-    console.error('Error fetching time entries for billing:', error);
-    throw error;
+    console.error('❌ Error fetching time entries for billing:', error);
+    throw new Error(`Failed to fetch time entries: ${error.message}`);
   }
-  console.log('Supabase query for time entries completed.');
 
-  console.log('Raw time entries data:', data);
+  console.log(`✅ Supabase query completed. Found ${data?.length || 0} time entries`);
 
-  // Flatten the structure for easier processing
+  if (!data || data.length === 0) {
+    console.log('⚠️ No time entries found for the given criteria');
+    return [];
+  }
+
+  // Flatten the structure for easier processing with better error handling
   const flattenedData = data
-    .map((entry) => {
-      const ticket = Array.isArray(entry.tickets) ? entry.tickets[0] : entry.tickets;
-      const project = ticket && Array.isArray(ticket.projects) ? ticket.projects[0] : ticket?.projects;
-      const user = Array.isArray(entry.users) ? entry.users[0] : entry.users;
+    .map((entry, index) => {
+      try {
+        const ticket = Array.isArray(entry.tickets) ? entry.tickets[0] : entry.tickets;
+        const project = ticket && Array.isArray(ticket.projects) ? ticket.projects[0] : ticket?.projects;
+        const user = Array.isArray(entry.users) ? entry.users[0] : entry.users;
 
-      return {
-        ...entry,
-        ticket,
-        project,
-        user,
-      };
+        if (!ticket) {
+          console.warn(`⚠️ Entry ${index} missing ticket data:`, entry.id);
+          return null;
+        }
+        if (!project) {
+          console.warn(`⚠️ Entry ${index} missing project data:`, entry.id, ticket);
+          return null;
+        }
+        if (!user) {
+          console.warn(`⚠️ Entry ${index} missing user data:`, entry.id);
+          return null;
+        }
+
+        return {
+          ...entry,
+          ticket,
+          project,
+          user,
+        };
+      } catch (flattenError) {
+        console.error(`❌ Error flattening entry ${index}:`, flattenError, entry);
+        return null;
+      }
     })
-    .filter(entry => entry.project); // Ensure project is not null
+    .filter(entry => entry !== null);
 
-  console.log('Flattened time entries data:', flattenedData);
+  console.log(`✅ Successfully flattened ${flattenedData.length} time entries`);
+  console.log('📋 Sample flattened entry:', flattenedData[0]);
 
   return flattenedData;
 }
@@ -728,7 +847,7 @@ export async function inviteUserToCompany(data: {
   hourlyRate?: number
 }) {
   try {
-    const response = await fetch('/api/invite-user', {
+    const response = await fetch(getApiPath('invite-user'), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -762,4 +881,358 @@ export async function updateUser(userId: string, updates: Partial<NewUser>) {
   
   if (error) throw error
   return data
+}
+
+// ==============================================
+// ACTIVITY LOGGING OPERATIONS
+// ==============================================
+
+/**
+ * Create a new activity log entry
+ */
+export async function createActivity(data: NewActivity) {
+  const { data: result, error } = await supabase
+    .from('activities')
+    .insert(data)
+    .select()
+    .single()
+  
+  if (error) throw error
+  return result
+}
+
+/**
+ * Get activities for a specific project with user details
+ */
+export async function getProjectActivities(projectId: string, limit: number = 50) {
+  const { data, error } = await supabase
+    .from('activities')
+    .select(`
+      id,
+      type,
+      title,
+      description,
+      metadata,
+      created_at,
+      updated_at,
+      user_id,
+      target_user_id,
+      project_id,
+      ticket_id,
+      user:users!activities_user_id_users_id_fk (
+        id,
+        first_name,
+        last_name,
+        email,
+        avatar_url
+      ),
+      target_user:users!activities_target_user_id_users_id_fk (
+        id,
+        first_name,
+        last_name,
+        email,
+        avatar_url
+      ),
+      project:projects (
+        id,
+        name
+      ),
+      ticket:tickets (
+        id,
+        title
+      )
+    `)
+    .eq('project_id', projectId)
+    .order('created_at', { ascending: false })
+    .limit(limit)
+  
+  if (error) throw error
+  return data || []
+}
+
+/**
+ * Get activities for a specific user
+ */
+export async function getUserActivities(userId: string, limit: number = 50) {
+  const { data, error } = await supabase
+    .from('activities')
+    .select(`
+      id,
+      type,
+      title,
+      description,
+      metadata,
+      created_at,
+      updated_at,
+      user_id,
+      target_user_id,
+      project_id,
+      ticket_id,
+      user:users!activities_user_id_users_id_fk (
+        id,
+        first_name,
+        last_name,
+        email,
+        avatar_url
+      ),
+      target_user:users!activities_target_user_id_users_id_fk (
+        id,
+        first_name,
+        last_name,
+        email,
+        avatar_url
+      ),
+      project:projects (
+        id,
+        name
+      ),
+      ticket:tickets (
+        id,
+        title
+      )
+    `)
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false })
+    .limit(limit)
+  
+  if (error) throw error
+  return data || []
+}
+
+/**
+ * Get recent activities across accessible projects for a user
+ * This respects project visibility and membership
+ */
+export async function getRecentActivitiesForUser(userId: string, limit: number = 20) {
+  // First get user's accessible projects
+  const { data: userProjects, error: projectError } = await supabase
+    .from('project_members')
+    .select('project_id')
+    .eq('user_id', userId)
+  
+  if (projectError) throw projectError
+  
+  const projectIds = userProjects?.map(p => p.project_id) || []
+  
+  if (projectIds.length === 0) {
+    return []
+  }
+  
+  const { data, error } = await supabase
+    .from('activities')
+    .select(`
+      id,
+      type,
+      title,
+      description,
+      metadata,
+      created_at,
+      updated_at,
+      user_id,
+      target_user_id,
+      project_id,
+      ticket_id,
+      user:users!activities_user_id_users_id_fk (
+        id,
+        first_name,
+        last_name,
+        email,
+        avatar_url
+      ),
+      target_user:users!activities_target_user_id_users_id_fk (
+        id,
+        first_name,
+        last_name,
+        email,
+        avatar_url
+      ),
+      project:projects (
+        id,
+        name
+      ),
+      ticket:tickets (
+        id,
+        title
+      )
+    `)
+    .in('project_id', projectIds)
+    .order('created_at', { ascending: false })
+    .limit(limit)
+  
+  if (error) throw error
+  return data || []
+}
+
+/**
+ * Get company-wide activities (only for admins)
+ */
+export async function getCompanyActivities(companyId: string, limit: number = 50) {
+  const { data, error } = await supabase
+    .from('activities')
+    .select(`
+      id,
+      type,
+      title,
+      description,
+      metadata,
+      created_at,
+      updated_at,
+      user_id,
+      target_user_id,
+      project_id,
+      ticket_id,
+      user:users!activities_user_id_users_id_fk (
+        id,
+        first_name,
+        last_name,
+        email,
+        avatar_url
+      ),
+      target_user:users!activities_target_user_id_users_id_fk (
+        id,
+        first_name,
+        last_name,
+        email,
+        avatar_url
+      ),
+      project:projects!inner (
+        id,
+        name,
+        company_id
+      ),
+      ticket:tickets (
+        id,
+        title
+      )
+    `)
+    .eq('project.company_id', companyId)
+    .order('created_at', { ascending: false })
+    .limit(limit)
+  
+  if (error) throw error
+  return data || []
+}
+
+// ==============================================
+// ACTIVITY HELPER FUNCTIONS
+// ==============================================
+
+/**
+ * Log project creation activity
+ */
+export async function logProjectCreated(projectId: string, userId: string, projectName: string) {
+  return await createActivity({
+    type: 'project_created',
+    project_id: projectId,
+    user_id: userId,
+    title: `Created project "${projectName}"`,
+    description: `Project "${projectName}" was created`,
+    metadata: { projectName }
+  })
+}
+
+/**
+ * Log project update activity
+ */
+export async function logProjectUpdated(projectId: string, userId: string, projectName: string, changes: Record<string, any>) {
+  return await createActivity({
+    type: 'project_updated',
+    project_id: projectId,
+    user_id: userId,
+    title: `Updated project "${projectName}"`,
+    description: `Project "${projectName}" was updated`,
+    metadata: { projectName, changes }
+  })
+}
+
+/**
+ * Log ticket creation activity
+ */
+export async function logTicketCreated(ticketId: string, projectId: string, userId: string, ticketTitle: string) {
+  return await createActivity({
+    type: 'ticket_created',
+    project_id: projectId,
+    ticket_id: ticketId,
+    user_id: userId,
+    title: `Created ticket "${ticketTitle}"`,
+    description: `New ticket "${ticketTitle}" was created`,
+    metadata: { ticketTitle }
+  })
+}
+
+/**
+ * Log ticket update activity
+ */
+export async function logTicketUpdated(ticketId: string, projectId: string, userId: string, ticketTitle: string, changes: Record<string, any>) {
+  return await createActivity({
+    type: 'ticket_updated',
+    project_id: projectId,
+    ticket_id: ticketId,
+    user_id: userId,
+    title: `Updated ticket "${ticketTitle}"`,
+    description: `Ticket "${ticketTitle}" was updated`,
+    metadata: { ticketTitle, changes }
+  })
+}
+
+/**
+ * Log ticket assignment activity
+ */
+export async function logTicketAssigned(ticketId: string, projectId: string, userId: string, assigneeId: string, ticketTitle: string) {
+  return await createActivity({
+    type: 'ticket_assigned',
+    project_id: projectId,
+    ticket_id: ticketId,
+    user_id: userId,
+    target_user_id: assigneeId,
+    title: `Assigned ticket "${ticketTitle}"`,
+    description: `Ticket "${ticketTitle}" was assigned`,
+    metadata: { ticketTitle }
+  })
+}
+
+/**
+ * Log user added to project activity
+ */
+export async function logUserAddedToProject(projectId: string, userId: string, targetUserId: string, projectName: string, role: string) {
+  return await createActivity({
+    type: 'user_added_to_project',
+    project_id: projectId,
+    user_id: userId,
+    target_user_id: targetUserId,
+    title: `Added user to project "${projectName}"`,
+    description: `User was added to project "${projectName}" as ${role}`,
+    metadata: { projectName, role }
+  })
+}
+
+/**
+ * Log user removed from project activity
+ */
+export async function logUserRemovedFromProject(projectId: string, userId: string, targetUserId: string, projectName: string) {
+  return await createActivity({
+    type: 'user_removed_from_project',
+    project_id: projectId,
+    user_id: userId,
+    target_user_id: targetUserId,
+    title: `Removed user from project "${projectName}"`,
+    description: `User was removed from project "${projectName}"`,
+    metadata: { projectName }
+  })
+}
+
+/**
+ * Log time entry creation activity
+ */
+export async function logTimeEntryCreated(projectId: string, ticketId: string, userId: string, duration: number, ticketTitle: string) {
+  const hours = Math.round((duration / 3600) * 100) / 100 // Convert seconds to hours with 2 decimal places
+  return await createActivity({
+    type: 'time_entry_created',
+    project_id: projectId,
+    ticket_id: ticketId,
+    user_id: userId,
+    title: `Logged ${hours}h on "${ticketTitle}"`,
+    description: `${hours} hours logged on ticket "${ticketTitle}"`,
+    metadata: { ticketTitle, duration, hours }
+  })
 }

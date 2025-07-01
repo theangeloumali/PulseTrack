@@ -54,6 +54,8 @@ export const projectBasicFields = `
   status,
   company_id,
   owner_id,
+  visibility,
+  allow_external_activities,
   created_at,
   updated_at
 `;

@@ -11,16 +11,13 @@ import { Badge } from '@workspace/ui/components/badge'
 import { Clock, Play, Square, Plus, Calendar, Filter, DollarSign } from 'lucide-react'
 import { TimeTracker } from '@/components/time-tracker'
 import { TimeEntriesList } from '@/components/time-entries-list'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuthStore } from '@/lib/stores/auth'
-import { createTimeEntry, getTimeEntriesByUser } from '@/lib/db/service'
 import { useProjectsQuery } from '@/lib/hooks/useProjects'
 import { useProjectTicketsQuery } from '@/lib/hooks/useTickets'
-import { useActiveTimeEntry } from '@/lib/hooks/useTimeTracking'
+import { useActiveTimeEntry, useTimeEntriesByUser, useCreateTimeEntry } from '@/lib/hooks/useTimeTracking'
 
 export function TimeTrackingScreen() {
   const { user } = useAuthStore()
-  const queryClient = useQueryClient()
   
   const [selectedProject, setSelectedProject] = useState<string>('')
   const [selectedTicket, setSelectedTicket] = useState<string>('')
@@ -71,7 +68,7 @@ export function TimeTrackingScreen() {
         }
       }
     }
-  }, [activeTimeEntry, projects, isLoadingProjects])
+  }, [activeTimeEntry, projects, isLoadingProjects]) // Remove selectedProject and selectedTicket from dependencies
 
   // Auto-select ticket once tickets are loaded for the selected project (fallback)
   useEffect(() => {
@@ -84,31 +81,11 @@ export function TimeTrackingScreen() {
     }
   }, [activeTimeEntry, selectedProject, tickets, isLoadingTickets, selectedTicket])
 
-  // Fetch user's time entries
-  const { data: userTimeEntries = [], isLoading: isLoadingEntries } = useQuery({
-    queryKey: ['timeEntries', user?.id],
-    queryFn: () => getTimeEntriesByUser(user?.id || ''),
-    enabled: !!user?.id,
-  })
+  // Fetch user's time entries using the proper hook
+  const { data: userTimeEntries = [], isLoading: isLoadingEntries } = useTimeEntriesByUser()
 
-  // Manual entry mutation
-  const createEntryMutation = useMutation({
-    mutationFn: createTimeEntry,
-    onSuccess: () => {
-      alert('Time entry created successfully!')
-      queryClient.invalidateQueries({ queryKey: ['timeEntries', user?.id] })
-      // Reset form
-      setDuration('')
-      setDescription('')
-      setSelectedProject('')
-      setSelectedTicket('')
-      setDate(new Date().toISOString().split('T')[0])
-    },
-    onError: (error) => {
-      alert('Failed to create time entry')
-      console.error('Error creating time entry:', error)
-    },
-  })
+  // Manual entry mutation using the proper hook
+  const createEntryMutation = useCreateTimeEntry()
 
   const handleManualSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -126,13 +103,26 @@ export function TimeTrackingScreen() {
 
     const startTime = new Date(date + 'T09:00:00.000Z').toISOString()
     
-    createEntryMutation.mutate({
-      ticket_id: selectedTicket,
-      user_id: user.id,
-      start_time: startTime,
-      duration: durationHours,
-      description: description || undefined,
-    })
+    try {
+      await createEntryMutation.mutateAsync({
+        ticket_id: selectedTicket,
+        user_id: user.id,
+        start_time: startTime,
+        duration: durationHours,
+        description: description || undefined,
+      })
+      
+      // Reset form on success
+      alert('Time entry created successfully!')
+      setDuration('')
+      setDescription('')
+      setSelectedProject('')
+      setSelectedTicket('')
+      setDate(new Date().toISOString().split('T')[0])
+    } catch (error) {
+      alert('Failed to create time entry')
+      console.error('Error creating time entry:', error)
+    }
   }
 
   return (
@@ -242,16 +232,23 @@ export function TimeTrackingScreen() {
                     </div>
                   </div>
 
-                  {selectedTicket ? (
-                    <TimeTracker ticket={{ id: selectedTicket, title: tickets.find((t: any) => t.id === selectedTicket)?.title || '' } as any} />
+                  {selectedTicket || (activeTimeEntry && activeTimeEntry.ticket_id) ? (
+                    <TimeTracker ticket={{ 
+                      id: selectedTicket || activeTimeEntry?.ticket_id || '', 
+                      title: tickets.find((t: any) => t.id === (selectedTicket || activeTimeEntry?.ticket_id))?.title || 
+                             (activeTimeEntry?.tickets && Array.isArray(activeTimeEntry.tickets) ? activeTimeEntry.tickets[0]?.title : (activeTimeEntry?.tickets as any)?.title) || 
+                             'Active Timer'
+                    } as any} />
+                  ) : activeTimeEntry ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <Clock className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                      <p>Loading active timer...</p>
+                      <p className="text-xs text-gray-400 mt-1">Auto-selecting project and ticket</p>
+                    </div>
                   ) : (
                     <div className="text-center py-8 text-muted-foreground">
                       <Clock className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                      {activeTimeEntry ? (
-                        <p>Loading active timer...</p>
-                      ) : (
-                        <p>Select a project and ticket above to start tracking time</p>
-                      )}
+                      <p>Select a project and ticket above to start tracking time</p>
                     </div>
                   )}
                 </div>

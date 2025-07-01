@@ -7,8 +7,9 @@ import { Button } from '@workspace/ui/components/button';
 import { useAuthStore } from '@/lib/stores/auth';
 import { CreateTicketModal } from '@/components/modals/create-ticket-modal';
 import { CreateProjectModal } from '@/components/modals/create-project-modal';
-import { LayoutDashboard, FolderOpen, Ticket, Clock, Settings, LogOut, Menu, X, Plus, Search, Bug, Users, CreditCard, Shield, Building2 } from 'lucide-react';
+import { LayoutDashboard, FolderOpen, Ticket, Clock, Settings, LogOut, Menu, X, Plus, Search, Bug, Users, CreditCard, Shield, Building2, Activity } from 'lucide-react';
 import { cn } from '@workspace/ui/lib/utils';
+import { ThemeToggle } from './theme-toggle';
 
 interface SidebarLayoutProps {
 	children: React.ReactNode;
@@ -18,6 +19,7 @@ const navigation = [
 	{ name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, roles: ['super_admin', 'system_admin', 'company_admin', 'manager', 'user'] },
 	{ name: 'Projects', href: '/projects', icon: FolderOpen, roles: ['super_admin', 'system_admin', 'company_admin', 'manager', 'user'] },
 	{ name: 'Tickets', href: '/tickets', icon: Ticket, roles: ['super_admin', 'system_admin', 'company_admin', 'manager', 'user'] },
+	{ name: 'Activity', href: '/activity', icon: Activity, roles: ['super_admin', 'system_admin', 'company_admin', 'manager', 'user'] },
 	{ name: 'Time Tracking', href: '/time-tracking', icon: Clock, roles: ['super_admin', 'system_admin', 'company_admin', 'manager', 'user'] },
 	{ name: 'Company', href: '/company/users', icon: Users, roles: ['super_admin', 'system_admin', 'company_admin', 'manager'] },
 	{ name: 'Billing', href: '/billing', icon: CreditCard, roles: ['super_admin', 'system_admin', 'company_admin', 'manager', 'user'] },
@@ -49,20 +51,20 @@ export function SidebarLayout({ children }: SidebarLayoutProps) {
 	}
 
 	return (
-		<div className='flex h-screen bg-gray-50'>
+		<div className='flex h-screen bg-background'>
 			{/* Mobile sidebar backdrop */}
-			{sidebarOpen && <div className='fixed inset-0 z-40 bg-gray-600 bg-opacity-75 lg:hidden' onClick={() => setSidebarOpen(false)} />}
+			{sidebarOpen && <div className='fixed inset-0 z-40 bg-black bg-opacity-50 lg:hidden' onClick={() => setSidebarOpen(false)} />}
 
 			{/* Sidebar */}
-			<div className={cn('fixed inset-y-0 left-0 z-50 w-56 bg-white shadow-lg transform transition-transform duration-200 ease-in-out lg:translate-x-0 lg:static lg:inset-0', sidebarOpen ? 'translate-x-0' : '-translate-x-full')}>
+			<div className={cn('fixed inset-y-0 left-0 z-50 w-56 bg-sidebar shadow-lg transform transition-transform duration-200 ease-in-out lg:translate-x-0 lg:static lg:inset-0', sidebarOpen ? 'translate-x-0' : '-translate-x-full')}>
 				<div className='flex flex-col h-full'>
 					{/* Logo/Header */}
-					<div className='flex items-center justify-between h-14 px-4 border-b border-gray-200'>
+					<div className='flex items-center justify-between h-14 px-4 border-b border-sidebar-border'>
 						<Link href='/dashboard' className='flex items-center space-x-2'>
-							<div className='w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center'>
-								<Ticket className='h-5 w-5 text-white' />
+							<div className='w-8 h-8 bg-sidebar-primary rounded-lg flex items-center justify-center'>
+								<Ticket className='h-5 w-5 text-sidebar-primary-foreground' />
 							</div>
-							<span className='text-xl font-bold text-gray-900'>PulseTrack</span>
+							<span className='text-xl font-bold text-sidebar-foreground'>PulseTrack</span>
 						</Link>
 						<Button variant='ghost' size='sm' className='lg:hidden' onClick={() => setSidebarOpen(false)}>
 							<X className='h-5 w-5' />
@@ -70,7 +72,7 @@ export function SidebarLayout({ children }: SidebarLayoutProps) {
 					</div>
 
 					{/* Quick Actions */}
-					<div className='px-4 py-3 border-b border-gray-200'>
+					<div className='px-4 py-3 border-b border-sidebar-border'>
 						<div className='space-y-2'>
 							<Button size='sm' className='w-full justify-start' onClick={() => setShowCreateProjectModal(true)}>
 								<Plus className='h-4 w-4 mr-2' />
@@ -98,10 +100,10 @@ export function SidebarLayout({ children }: SidebarLayoutProps) {
 									<Link
 										key={item.name}
 										href={item.href}
-										className={cn('flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors', isActive ? 'bg-blue-50 text-blue-700 border-r-2 border-blue-700' : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900')}
+										className={cn('flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors', isActive ? 'bg-sidebar-accent text-sidebar-primary border-r-2 border-sidebar-primary' : 'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground')}
 										onClick={() => setSidebarOpen(false)}
 									>
-										<item.icon className={cn('mr-3 h-5 w-5', isActive ? 'text-blue-700' : 'text-gray-400')} />
+										<item.icon className={cn('mr-3 h-5 w-5', isActive ? 'text-sidebar-primary' : 'text-muted-foreground')} />
 										{item.name}
 									</Link>
 								);
@@ -109,16 +111,16 @@ export function SidebarLayout({ children }: SidebarLayoutProps) {
 					</nav>
 
 					{/* User Profile & Logout */}
-					<div className='px-3 py-3 border-t border-gray-200'>
+					<div className='px-3 py-3 border-t border-sidebar-border'>
 						<div className='flex items-center space-x-3 px-3 py-2'>
-							<div className='w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center'>
-								<span className='text-sm font-medium text-gray-700'>{user.first_name?.[0] || user.email?.[0]?.toUpperCase() || 'U'}</span>
+							<div className='w-8 h-8 bg-sidebar-accent rounded-full flex items-center justify-center'>
+								<span className='text-sm font-medium text-sidebar-accent-foreground'>{user.first_name?.[0] || user.email?.[0]?.toUpperCase() || 'U'}</span>
 							</div>
 							<div className='flex-1 min-w-0'>
-								<p className='text-sm font-medium text-gray-900 truncate'>
+								<p className='text-sm font-medium text-sidebar-foreground truncate'>
 									{user.first_name || 'User'} {user.last_name || ''}
 								</p>
-								<p className='text-xs text-gray-500 truncate'>{user.email}</p>
+								<p className='text-xs text-muted-foreground truncate'>{user.email}</p>
 								<div className='flex items-center mt-1'>
 									<span
 										className={cn(
@@ -139,7 +141,13 @@ export function SidebarLayout({ children }: SidebarLayoutProps) {
 								</div>
 							</div>
 						</div>
-						<Button variant='ghost' size='sm' className='w-full justify-start mt-2 text-red-600 hover:text-red-700 hover:bg-red-50' onClick={handleLogout}>
+						
+						{/* Theme Toggle */}
+						<div className='mt-2'>
+							<ThemeToggle />
+						</div>
+						
+						<Button variant='ghost' size='sm' className='w-full justify-start mt-2 text-destructive hover:text-destructive hover:bg-destructive-foreground/10' onClick={handleLogout}>
 							<LogOut className='h-4 w-4 mr-2' />
 							Logout
 						</Button>
@@ -150,7 +158,7 @@ export function SidebarLayout({ children }: SidebarLayoutProps) {
 			{/* Main content */}
 			<div className='flex-1 flex flex-col overflow-hidden'>
 				{/* Top bar for mobile */}
-				<div className='lg:hidden bg-white border-b border-gray-200 px-4 py-2'>
+				<div className='lg:hidden bg-background border-b border-border px-4 py-2'>
 					<Button variant='ghost' size='sm' onClick={() => setSidebarOpen(true)}>
 						<Menu className='h-5 w-5' />
 					</Button>

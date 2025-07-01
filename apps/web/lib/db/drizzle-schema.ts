@@ -1,5 +1,5 @@
 // Drizzle schema for migrations only - not used at runtime
-import { pgTable, uuid, text, timestamp, integer, unique, decimal, foreignKey, date, index, boolean } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, text, timestamp, integer, unique, decimal, foreignKey, date, index, boolean, jsonb } from 'drizzle-orm/pg-core';
 
 // Companies table
 export const companies = pgTable('companies', {
@@ -62,6 +62,8 @@ export const projects = pgTable('projects', {
 	owner_id: uuid('owner_id')
 		.notNull()
 		.references(() => users.id, { onDelete: 'cascade' }),
+	visibility: text('visibility').default('company'), // 'public' | 'company' | 'private'
+	allow_external_activities: boolean('allow_external_activities').default(false),
 	created_at: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 	updated_at: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 }, (table) => ({
@@ -71,6 +73,7 @@ export const projects = pgTable('projects', {
 	ownerIdIdx: index('projects_owner_id_idx').on(table.owner_id),
 	statusIdx: index('projects_status_idx').on(table.status),
 	nameIdx: index('projects_name_idx').on(table.name),
+	visibilityIdx: index('projects_visibility_idx').on(table.visibility),
 })).enableRLS();
 
 // Project members table (many-to-many relationship between projects and users)
@@ -259,4 +262,27 @@ export const ticketHistory = pgTable('ticket_history', {
 	userIdIdx: index('ticket_history_user_id_idx').on(table.user_id),
 	fieldNameIdx: index('ticket_history_field_name_idx').on(table.field_name),
 	createdAtIdx: index('ticket_history_created_at_idx').on(table.created_at),
+})).enableRLS();
+
+// Activities table for comprehensive activity logging
+export const activities = pgTable('activities', {
+	id: uuid('id').primaryKey().defaultRandom(),
+	type: text('type').notNull(), // 'project_created', 'ticket_created', etc.
+	project_id: uuid('project_id').references(() => projects.id, { onDelete: 'cascade' }),
+	ticket_id: uuid('ticket_id').references(() => tickets.id, { onDelete: 'cascade' }),
+	user_id: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+	target_user_id: uuid('target_user_id').references(() => users.id, { onDelete: 'cascade' }),
+	title: text('title').notNull(),
+	description: text('description'),
+	metadata: jsonb('metadata'), // Additional data as JSON
+	created_at: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+	updated_at: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+}, (table) => ({
+	// Performance indexes
+	typeIdx: index('activities_type_idx').on(table.type),
+	projectIdIdx: index('activities_project_id_idx').on(table.project_id),
+	ticketIdIdx: index('activities_ticket_id_idx').on(table.ticket_id),
+	userIdIdx: index('activities_user_id_idx').on(table.user_id),
+	targetUserIdIdx: index('activities_target_user_id_idx').on(table.target_user_id),
+	createdAtIdx: index('activities_created_at_idx').on(table.created_at),
 })).enableRLS();

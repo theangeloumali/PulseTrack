@@ -3,46 +3,27 @@
 import { useAuthStore } from '@/lib/stores/auth';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@workspace/ui/components/card';
 import { Button } from '@workspace/ui/components/button';
-import { Loader2, Plus, Users, FolderOpen, Timer, AlertCircle } from 'lucide-react';
+import { Plus, Users, FolderOpen, Timer, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
 import MyWeeklySummary from '@/components/dashboard/my-weekly-summary';
+import { ActivityFeed } from '@/components/activity/activity-feed';
 
 export default function DashboardPage() {
-	const { user, isLoading, signOut, initialize } = useAuthStore();
-	const [isInitialized, setIsInitialized] = useState(false);
-
-	useEffect(() => {
-		// Ensure auth store is initialized when dashboard loads
-		const initAuth = async () => {
-			await initialize();
-			setIsInitialized(true);
-		};
-		initAuth();
-	}, [initialize]);
-
-	// Show loading while auth store is initializing
-	if (!isInitialized || isLoading) {
-		return (
-			<div className='min-h-screen flex items-center justify-center'>
-				<Loader2 className='h-8 w-8 animate-spin' />
-			</div>
-		);
-	}
+	const { user, signOut } = useAuthStore();
 
 	const handleSignOut = async () => {
 		await signOut();
 	};
 
 	return (
-		<div className='h-full bg-gray-50'>
+		<div className='h-full bg-background'>
 			{/* Header */}
-			<header className='bg-white shadow-sm'>
+			<header className='bg-card shadow-sm border-b border-border'>
 				<div className='px-4'>
 					<div className='flex justify-between items-center py-4'>
 						<div>
-							<h1 className='text-3xl font-bold text-gray-900'>Dashboard</h1>
-							<p className='text-gray-600'>Welcome back, {user?.first_name || 'User'}!</p>
+							<h1 className='text-3xl font-bold text-foreground'>Dashboard</h1>
+							<p className='text-muted-foreground'>Welcome back, {user?.first_name || 'User'}!</p>
 						</div>
 						<div className='flex items-center space-x-4'>
 							<Button variant='outline' onClick={handleSignOut}>
@@ -130,19 +111,13 @@ export default function DashboardPage() {
 							</CardContent>
 						</Card>
 
-						<Card>
-							<CardHeader>
-								<CardTitle>Recent Activity</CardTitle>
-								<CardDescription>Your latest project and ticket updates</CardDescription>
-							</CardHeader>
-							<CardContent>
-								<div className='text-center py-8 text-muted-foreground'>
-									<AlertCircle className='mx-auto h-12 w-12 mb-4 opacity-50' />
-									<p>No recent activity</p>
-									<p className='text-sm'>Start by creating your first project</p>
-								</div>
-							</CardContent>
-						</Card>
+						<div className='lg:col-span-1'>
+							<ActivityFeed 
+								limit={10} 
+								title="Recent Activity"
+								showFilters={false}
+							/>
+						</div>
 					</div>
 
 				{/* Getting Started Section */}
