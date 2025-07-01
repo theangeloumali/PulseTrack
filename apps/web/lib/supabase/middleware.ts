@@ -24,11 +24,26 @@ export async function updateSession(request: NextRequest) {
 	try {
 		const {
 			data: { user },
+			error: userError
 		} = await supabase.auth.getUser();
 
 		console.log('Middleware - Path:', request.nextUrl.pathname, 'User:', user?.id || 'No user');
 		console.log('Middleware - Full URL:', request.url);
 		console.log('Middleware - Query params:', request.nextUrl.searchParams.toString());
+		
+		// If there's an error getting user, log it but don't immediately redirect
+		// unless it's clearly an auth error
+		if (userError) {
+			console.warn('Middleware - Error getting user:', userError);
+			// Only redirect for clear auth errors, not network issues
+			const isAuthError = userError.message?.includes('JWT') || 
+			                   userError.message?.includes('token') ||
+			                   userError.message?.includes('expired');
+			if (!isAuthError) {
+				console.log('Middleware - Non-auth error, allowing through');
+				return supabaseResponse;
+			}
+		}
 		
 		// Check each path condition individually for debugging
 		const isLogin = request.nextUrl.pathname.startsWith('/login')

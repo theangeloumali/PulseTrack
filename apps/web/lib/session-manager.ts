@@ -44,17 +44,35 @@ class SessionManager {
    * Check and refresh session if needed
    */
   async checkAndRefreshSession(): Promise<boolean> {
-    if (this.isRefreshing) return true;
+    // If already refreshing, wait for it to complete
+    if (this.isRefreshing) {
+      console.log('Session refresh already in progress, waiting...');
+      // Wait for current refresh to complete with timeout
+      let attempts = 0;
+      while (this.isRefreshing && attempts < 50) { // 5 second timeout
+        await new Promise(resolve => setTimeout(resolve, 100));
+        attempts++;
+      }
+      // Return false if timeout, true if completed
+      return !this.isRefreshing;
+    }
 
     try {
       this.isRefreshing = true;
       
       const { data: { session }, error } = await supabase.auth.getSession();
       
+      // Only handle session errors, not network errors
       if (error) {
         console.error('Session check failed:', error);
-        this.handleSessionError();
-        return false;
+        // Only clear session for auth-specific errors
+        if (this.isAuthError(error)) {
+          this.handleSessionError();
+          return false;
+        }
+        // For network errors, assume session is still valid
+        console.warn('Network error during session check, assuming session is valid');
+        return true;
       }
 
       if (!session) {
@@ -74,8 +92,14 @@ class SessionManager {
         
         if (refreshError) {
           console.error('Session refresh failed:', refreshError);
-          this.handleSessionError();
-          return false;
+          // Only clear session for auth-specific errors
+          if (this.isAuthError(refreshError)) {
+            this.handleSessionError();
+            return false;
+          }
+          // For network errors, keep current session
+          console.warn('Network error during session refresh, keeping current session');
+          return true;
         }
 
         if (newSession) {
@@ -95,10 +119,36 @@ class SessionManager {
       return true;
     } catch (error) {
       console.error('Session management error:', error);
-      return false;
+      // For unexpected errors, don't clear session unless it's clearly auth-related
+      if (this.isAuthError(error)) {
+        this.handleSessionError();
+        return false;
+      }
+      return true; // Assume session is still valid for network errors
     } finally {
       this.isRefreshing = false;
     }
+  }
+
+  /**
+   * Check if error is authentication-related (vs network/infrastructure)
+   */
+  private isAuthError(error: any): boolean {
+    const message = error?.message?.toLowerCase() || '';
+    const code = error?.code?.toLowerCase() || '';
+    
+    return (
+      message.includes('jwt') ||
+      message.includes('token') ||
+      message.includes('expired') ||
+      message.includes('invalid') ||
+      message.includes('unauthorized') ||
+      message.includes('forbidden') ||
+      code.includes('jwt') ||
+      code.includes('token') ||
+      error?.status === 401 ||
+      error?.status === 403
+    );
   }
 
   /**
