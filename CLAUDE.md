@@ -113,6 +113,55 @@ This is PulseTrack, a comprehensive project management system that includes tick
 
 The application is deployed to Vercel. Pushes to the `main` branch trigger an automatic production deployment. Preview deployments are created for all pull requests.
 
+### Proxy Deployment Configuration
+
+The Next.js app is configured to work as a sub-path under another domain using Vercel rewrites:
+
+**Next.js Configuration (`next.config.mjs`):**
+```javascript
+const nextConfig = {
+  transpilePackages: ["@workspace/ui"],
+  basePath: "/pulse",
+  assetPrefix: "/pulse",
+}
+```
+
+**Middleware Proxy Detection (`lib/supabase/middleware.ts`):**
+```javascript
+// Check if we're being accessed through a proxy
+const host = request.headers.get('x-forwarded-host') || request.headers.get('host');
+const isProxiedRequest = host === 'zkidzdev.com' || host === 'www.zkidzdev.com';
+
+if (isProxiedRequest) {
+  // Maintain the /pulse prefix for proxied requests
+  url.pathname = '/pulse/login';
+} else {
+  url.pathname = '/login';
+}
+```
+
+**Vite Project Vercel Configuration (`vercel.json`):**
+```json
+{
+  "rewrites": [
+    {
+      "source": "/pulse",
+      "destination": "https://pulsetrack-zkidz-web.vercel.app/pulse"
+    },
+    {
+      "source": "/pulse/:path*",
+      "destination": "https://pulsetrack-zkidz-web.vercel.app/pulse/:path*"
+    }
+  ]
+}
+```
+
+This configuration allows:
+- **Direct access**: `https://pulsetrack-zkidz-web.vercel.app/pulse/` works normally
+- **Proxy access**: `https://www.zkidzdev.com/pulse/` proxies to the Next.js app
+- **Static assets**: All CSS, JS, and font files load correctly with the `/pulse` prefix
+- **Authentication**: Login redirects work properly for both direct and proxy access
+
 ## 8. Project Documentation
 
 **Comprehensive documentation is available in the [`docs/`](./docs/) folder:**
