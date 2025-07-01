@@ -1,4 +1,5 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useSessionAwareQuery } from './useSessionAwareQuery';
 import { 
   getTicketsByProject,
   getTicketsByCompany,
@@ -24,7 +25,7 @@ export const ticketKeys = {
 
 // Tickets by project query
 export function useProjectTicketsQuery(projectId: string) {
-  return useQuery({
+  return useSessionAwareQuery({
     queryKey: ticketKeys.list(projectId),
     queryFn: () => getTicketsByProject(projectId),
     enabled: !!projectId,
@@ -34,7 +35,7 @@ export function useProjectTicketsQuery(projectId: string) {
 
 // Tickets by company query (for main tickets page)
 export function useCompanyTicketsQuery(companyId?: string) {
-  return useQuery({
+  return useSessionAwareQuery({
     queryKey: [...ticketKeys.all, 'company', companyId],
     queryFn: () => getTicketsByCompany(companyId!),
     enabled: !!companyId,
@@ -46,7 +47,7 @@ export function useCompanyTicketsQuery(companyId?: string) {
 export function useTicketQuery(ticketId: string) {
   const { user } = useAuthStore();
   
-  return useQuery({
+  return useSessionAwareQuery({
     queryKey: ticketKeys.detail(ticketId),
     queryFn: () => getTicketById(ticketId),
     enabled: !!ticketId && !!user,
@@ -144,7 +145,7 @@ export function useUpdateTicket() {
 
 // Get recent tickets for project dashboard
 export function useRecentProjectTicketsQuery(projectId: string, limit: number = 5) {
-  return useQuery({
+  return useSessionAwareQuery({
     queryKey: [...ticketKeys.all, 'recent', projectId, limit],
     queryFn: () => getRecentTicketsByProject(projectId, limit),
     enabled: !!projectId,
@@ -154,7 +155,7 @@ export function useRecentProjectTicketsQuery(projectId: string, limit: number = 
 
 // Get ticket count for project
 export function useProjectTicketCountQuery(projectId: string) {
-  return useQuery({
+  return useSessionAwareQuery({
     queryKey: [...ticketKeys.all, 'count', projectId],
     queryFn: () => getTicketCountByProject(projectId),
     enabled: !!projectId,

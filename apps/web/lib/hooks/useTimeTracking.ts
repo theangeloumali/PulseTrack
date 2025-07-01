@@ -1,4 +1,5 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useSessionAwareQuery } from './useSessionAwareQuery'
 import { useAuth } from './useAuth'
 import { 
   getTimeEntriesByTicket, 
@@ -26,7 +27,7 @@ export const timeEntryKeys = {
 
 // Get time entries for a specific ticket
 export function useTimeEntriesByTicket(ticketId: string) {
-  return useQuery({
+  return useSessionAwareQuery({
     queryKey: timeEntryKeys.byTicket(ticketId),
     queryFn: () => getTimeEntriesByTicket(ticketId),
     enabled: !!ticketId,
@@ -38,7 +39,7 @@ export function useTimeEntriesByTicket(ticketId: string) {
 export function useTimeEntriesByUser(limit?: number) {
   const { user } = useAuth()
   
-  return useQuery({
+  return useSessionAwareQuery({
     queryKey: timeEntryKeys.byUser(user?.id || ''),
     queryFn: () => getTimeEntriesByUser(user?.id || '', limit),
     enabled: !!user?.id,
@@ -50,7 +51,7 @@ export function useTimeEntriesByUser(limit?: number) {
 export function useActiveTimeEntry() {
   const { user } = useAuth()
   
-  return useQuery({
+  return useSessionAwareQuery({
     queryKey: timeEntryKeys.active(user?.id || ''),
     queryFn: () => getActiveTimeEntry(user?.id || ''),
     enabled: !!user?.id,
@@ -61,7 +62,7 @@ export function useActiveTimeEntry() {
 
 // Get total time for a ticket
 export function useTotalTimeByTicket(ticketId: string) {
-  return useQuery({
+  return useSessionAwareQuery({
     queryKey: timeEntryKeys.totalByTicket(ticketId),
     queryFn: () => getTotalTimeByTicket(ticketId),
     enabled: !!ticketId,
@@ -73,7 +74,7 @@ export function useTotalTimeByTicket(ticketId: string) {
 export function useTotalTimeByUser(dateFrom?: string, dateTo?: string) {
   const { user } = useAuth()
   
-  return useQuery({
+  return useSessionAwareQuery({
     queryKey: timeEntryKeys.totalByUser(user?.id || '', dateFrom, dateTo),
     queryFn: () => getTotalTimeByUser(user?.id || '', dateFrom, dateTo),
     enabled: !!user?.id,

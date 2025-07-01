@@ -1,4 +1,5 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useSessionAwareQuery } from './useSessionAwareQuery';
 import { 
   getProjectsByCompany, 
   createProject, 
@@ -30,7 +31,7 @@ export const projectKeys = {
 export function useProjectsQuery() {
   const { user } = useAuthStore();
   
-  return useQuery({
+  return useSessionAwareQuery({
     queryKey: projectKeys.list(user?.company_id || ''),
     queryFn: async () => {
       const result = await getProjectsByCompany(user!.company_id);
@@ -45,7 +46,7 @@ export function useProjectsQuery() {
 export function useProjectQuery(projectId: string) {
   const { user } = useAuthStore();
   
-  return useQuery({
+  return useSessionAwareQuery({
     queryKey: projectKeys.detail(projectId),
     queryFn: async () => {
       const result = await getProjectById(projectId);
@@ -153,7 +154,7 @@ export function useDeleteProjectMutation() {
 export function useProjectsWithTicketCountsQuery() {
   const { user } = useAuthStore();
   
-  return useQuery({
+  return useSessionAwareQuery({
     queryKey: [...projectKeys.all, 'withTicketCounts', user?.company_id],
     queryFn: async () => {
       const result = await getProjectsWithTicketCounts(user!.company_id);
@@ -168,7 +169,7 @@ export function useProjectsWithTicketCountsQuery() {
 
 // Get project members
 export function useProjectMembersQuery(projectId: string) {
-  return useQuery({
+  return useSessionAwareQuery({
     queryKey: projectKeys.members(projectId),
     queryFn: () => getProjectMembers(projectId),
     enabled: !!projectId,
@@ -181,7 +182,7 @@ export function useUserProjectsQuery(userId?: string) {
   const { user } = useAuthStore();
   const targetUserId = userId || user?.id;
   
-  return useQuery({
+  return useSessionAwareQuery({
     queryKey: projectKeys.userProjects(targetUserId || ''),
     queryFn: () => getUserProjects(targetUserId!),
     enabled: !!targetUserId,
