@@ -27,6 +27,45 @@ A ticketing system with time tracking capabilities for project management and is
 
 ## 📋 Core MVP Features
 
+### -1. Landing Page & Marketing
+- [ ] **-1.1** Set up landing page workspace in monorepo (apps/landing)
+- [ ] **-1.2** Design landing page layout and components
+- [ ] **-1.3** Implement hero section with value proposition
+- [ ] **-1.4** Create features showcase section
+- [ ] **-1.5** Build pricing section with subscription tiers
+- [ ] **-1.6** Add customer testimonials section
+- [ ] **-1.7** Implement contact/demo request forms
+- [ ] **-1.8** Add SEO optimization and meta tags
+- [ ] **-1.9** Set up analytics tracking (Google Analytics, Mixpanel)
+- [ ] **-1.10** Create marketing content strategy
+- [ ] **-1.11** Set up social media presence
+- [ ] **-1.12** Implement lead capture and email marketing
+- [ ] **-1.13** Add blog/content management system
+- [ ] **-1.14** Configure domain and SSL certificates
+- [ ] **-1.15** Set up conversion tracking and A/B testing
+
+### -0. Stripe Payment Integration
+- [ ] **-0.1** Set up Stripe account and obtain API keys
+- [ ] **-0.2** Design subscription database schema (plans, subscriptions, customers)
+- [ ] **-0.3** Create Stripe customer creation API endpoint
+- [ ] **-0.4** Implement Stripe Checkout session creation
+- [ ] **-0.5** Build subscription plan management system
+- [ ] **-0.6** Set up Stripe webhook handling (payment success, failed, subscription changes)
+- [ ] **-0.7** Implement subscription status checking middleware
+- [ ] **-0.8** Create billing portal integration (Stripe Customer Portal)
+- [ ] **-0.9** Add payment method management
+- [ ] **-0.10** Implement subscription upgrade/downgrade logic
+- [ ] **-0.11** Set up failed payment handling and dunning management
+- [ ] **-0.12** Create subscription analytics dashboard
+- [ ] **-0.13** Add invoice generation and email delivery
+- [ ] **-0.14** Implement proration handling for plan changes
+- [ ] **-0.15** Set up tax calculation (Stripe Tax)
+- [ ] **-0.16** Add subscription limits enforcement (users, projects, etc.)
+- [ ] **-0.17** Create free trial management system
+- [ ] **-0.18** Implement subscription cancellation flow
+- [ ] **-0.19** Add revenue analytics and reporting
+- [ ] **-0.20** Set up subscription renewal notifications
+
 ### 0. Company Management
 - [x] **0.1** Design company data model
 - [x] **0.2** Implement company creation (by first admin user)

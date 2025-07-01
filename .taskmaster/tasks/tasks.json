@@ -1514,11 +1514,104 @@
         ],
         "priority": "medium",
         "subtasks": []
+      },
+      {
+        "id": 25,
+        "title": "Landing Page Implementation with Vite Workspace",
+        "description": "Set up a new Vite workspace for the landing page and implement core components including Hero, Features, Pricing, Testimonials, CTA, and Footer sections with PulseTrack branding integration.",
+        "details": "Implement a complete landing page system with the following components:\n\n1. **Vite Workspace Setup**:\n   - Create new Vite workspace in apps/landing/ directory\n   - Configure Vite with React and TypeScript support\n   - Set up PostCSS configuration for Tailwind CSS v4 compatibility\n   - Add workspace to pnpm workspaces and Turbo configuration\n   - Configure build and dev scripts in package.json\n\n2. **Component Architecture**:\n   - Create Hero component with compelling headline, subtitle, and CTA buttons\n   - Build Features component with key PulseTrack features showcase\n   - Implement Pricing component with tiered pricing plans and feature comparison\n   - Create Testimonials component with customer feedback and ratings\n   - Build CTA component with conversion-focused call-to-action sections\n   - Implement Footer component with links, contact info, and legal pages\n\n3. **PulseTrack Integration**:\n   - Import and integrate PulseTrack brand assets (logos, colors, fonts)\n   - Create consistent design system with shared UI components\n   - Add responsive design for mobile, tablet, and desktop viewports\n   - Implement smooth scrolling and animations for enhanced UX\n   - Configure routing to PulseTrack app with proper URL handling\n\n4. **PostCSS and Tailwind Configuration**:\n   - Fix PostCSS configuration to support Tailwind CSS v4\n   - Set up custom Tailwind theme with PulseTrack brand colors\n   - Configure utility classes for landing page-specific styling\n   - Add responsive breakpoints and custom animations\n   - Optimize CSS bundle size with purging and minification",
+        "testStrategy": "1. **Workspace Configuration Tests**:\n   - Verify Vite workspace builds successfully without errors\n   - Test PostCSS and Tailwind CSS v4 compilation works correctly\n   - Validate pnpm workspace and Turbo integration functions properly\n   - Test dev server starts and hot reload works as expected\n\n2. **Component Functionality Tests**:\n   - Test each component renders correctly with proper content and styling\n   - Verify responsive design works across different screen sizes\n   - Test component interactions (CTAs, form submissions, navigation)\n   - Validate accessibility compliance with WCAG guidelines\n\n3. **Integration Tests**:\n   - Test PulseTrack asset integration and brand consistency\n   - Verify routing to main PulseTrack application works correctly\n   - Test cross-browser compatibility (Chrome, Firefox, Safari, Edge)\n   - Validate performance metrics (page load speed, Core Web Vitals)\n\n4. **Build and Deployment Tests**:\n   - Test production build process completes without errors\n   - Verify CSS optimization and purging works correctly\n   - Test static asset handling and optimization\n   - Validate final bundle size meets performance requirements",
+        "status": "done",
+        "dependencies": [],
+        "priority": "medium",
+        "subtasks": []
+      },
+      {
+        "id": 26,
+        "title": "Implement Stripe Subscription Payment System",
+        "description": "Build comprehensive Stripe-based subscription system with customer management, payment processing, subscription plans, billing portal, and webhook handling for automated billing and payment status updates.",
+        "details": "Implement a complete Stripe subscription system with the following components:\n\n1. **Stripe Account and Webhook Setup**:\n   - Configure Stripe account with test and production environments\n   - Set up webhook endpoints for subscription events (payment_intent.succeeded, invoice.payment_failed, customer.subscription.updated, etc.)\n   - Implement webhook signature verification for security\n   - Create webhook event processing queue with retry logic\n   - Add webhook event logging and monitoring\n\n2. **Customer Management System**:\n   - Create StripeCustomerService for customer lifecycle management\n   - Implement customer creation and profile synchronization with Supabase users\n   - Build customer payment method management (cards, bank accounts)\n   - Add customer billing address and tax information handling\n   - Create customer portal access for self-service account management\n\n3. **Subscription Plan Architecture**:\n   - Design subscription plan database schema with pricing tiers\n   - Implement plan creation and management API endpoints\n   - Build subscription plan components with feature comparisons\n   - Add plan upgrade/downgrade logic with prorations\n   - Create usage-based billing support for metered features\n\n4. **Checkout Flow Implementation**:\n   - Build Stripe Checkout integration with custom success/cancel pages\n   - Implement subscription signup flow with plan selection\n   - Add payment method collection and validation\n   - Create trial period and promotional code support\n   - Build subscription preview with pricing calculations\n\n5. **Billing Portal Integration**:\n   - Integrate Stripe Customer Portal for subscription management\n   - Add invoice history and payment method updates\n   - Implement subscription cancellation and pause capabilities\n   - Create billing notifications and receipt delivery\n   - Build subscription analytics and usage reporting\n\n6. **Payment Processing Engine**:\n   - Implement payment intent creation and confirmation\n   - Add automatic payment retry logic for failed payments\n   - Create dunning management for overdue accounts\n   - Build refund and credit processing capabilities\n   - Add payment fraud detection and security measures\n\n7. **Database Schema Updates**:\n   - Add subscription, plans, and payment tables to schema\n   - Create indexes for efficient subscription queries\n   - Implement subscription status tracking and history\n   - Add billing cycle and next payment date calculations\n   - Create subscription metrics and reporting tables",
+        "testStrategy": "1. **Stripe Integration Tests**:\n   - Test webhook endpoint security and signature verification\n   - Verify customer creation and synchronization with Stripe\n   - Test subscription creation, updates, and cancellation flows\n   - Validate payment processing with test cards and scenarios\n   - Test checkout flow with various payment methods and edge cases\n\n2. **Subscription Management Tests**:\n   - Test plan upgrade/downgrade with proration calculations\n   - Verify trial period handling and conversion to paid subscriptions\n   - Test subscription pause and resume functionality\n   - Validate usage-based billing calculations and metering\n   - Test promotional codes and discount application\n\n3. **Payment Processing Tests**:\n   - Test failed payment retry logic and dunning management\n   - Verify refund processing and credit handling\n   - Test fraud detection triggers and security measures\n   - Validate invoice generation and delivery\n   - Test payment method updates and validation\n\n4. **Webhook Processing Tests**:\n   - Test all subscription lifecycle webhook events\n   - Verify webhook retry logic and failure handling\n   - Test webhook event deduplication and idempotency\n   - Validate subscription status updates from webhook events\n   - Test webhook performance under high event volumes\n\n5. **End-to-End Tests**:\n   - Test complete subscription signup and onboarding flow\n   - Verify billing portal functionality and user experience\n   - Test subscription analytics and reporting accuracy\n   - Validate subscription cancellation and offboarding process\n   - Test multi-tenant subscription isolation and security",
+        "status": "pending",
+        "dependencies": [
+          1,
+          2
+        ],
+        "priority": "medium",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Set up Stripe Infrastructure and Database Schema",
+            "description": "Configure Stripe account, implement database schema for subscriptions, and set up core webhook infrastructure with security verification.",
+            "dependencies": [],
+            "details": "Create Stripe test/production accounts, add subscription-related tables (subscriptions, plans, payments, customers) to Drizzle schema, implement webhook endpoint with signature verification, set up environment variables for Stripe keys, create basic webhook event logging table.",
+            "status": "pending",
+            "testStrategy": "Test webhook signature verification, validate database schema migrations, verify Stripe API connectivity"
+          },
+          {
+            "id": 2,
+            "title": "Build Customer Management System",
+            "description": "Implement comprehensive customer lifecycle management with Stripe customer creation, profile synchronization, and payment method handling.",
+            "dependencies": [
+              1
+            ],
+            "details": "Create StripeCustomerService class, implement customer creation/update APIs, build customer-user synchronization logic, add payment method management endpoints, create customer portal access functionality, implement billing address management.",
+            "status": "pending",
+            "testStrategy": "Test customer creation flow, verify user-customer sync, validate payment method CRUD operations"
+          },
+          {
+            "id": 3,
+            "title": "Create Subscription Plan Architecture",
+            "description": "Design and implement subscription plan management with pricing tiers, feature definitions, and plan upgrade/downgrade capabilities.",
+            "dependencies": [
+              1
+            ],
+            "details": "Build subscription plan database tables, create plan management API endpoints, implement plan comparison components, add upgrade/downgrade logic with prorations, create usage-based billing foundation, build plan selection UI components.",
+            "status": "pending",
+            "testStrategy": "Test plan CRUD operations, validate pricing calculations, verify proration logic for upgrades/downgrades"
+          },
+          {
+            "id": 4,
+            "title": "Implement Checkout Flow and Payment Processing",
+            "description": "Build complete Stripe Checkout integration with subscription signup, payment processing, and trial period support.",
+            "dependencies": [
+              2,
+              3
+            ],
+            "details": "Integrate Stripe Checkout Sessions, create subscription signup flow, implement payment intent processing, add trial period logic, create success/cancel page handlers, build subscription preview with pricing, add promotional code support.",
+            "status": "pending",
+            "testStrategy": "Test complete checkout flow, verify payment processing, validate trial period activation, test promotional code application"
+          },
+          {
+            "id": 5,
+            "title": "Integrate Billing Portal and Webhook Event Processing",
+            "description": "Complete the system with Stripe Customer Portal integration, comprehensive webhook event handling, and subscription management capabilities.",
+            "dependencies": [
+              4
+            ],
+            "details": "Integrate Stripe Customer Portal, implement webhook event processors for all subscription events (payment success/failure, subscription updates, cancellations), add automatic payment retry logic, create billing notifications, build subscription analytics dashboard, implement dunning management.",
+            "status": "pending",
+            "testStrategy": "Test webhook event processing, verify customer portal functionality, validate payment retry logic, test subscription lifecycle events"
+          }
+        ]
+      },
+      {
+        "id": 27,
+        "title": "Landing Page Deployment and Marketing Setup",
+        "description": "Configure production deployment for the landing page with domain setup, SSL certificates, analytics tracking, SEO optimization, and A/B testing framework for conversion optimization.",
+        "details": "Implement complete deployment and marketing infrastructure for the landing page with the following components:\n\n1. **Domain and SSL Configuration**:\n   - Configure custom domain DNS settings and CNAME records\n   - Set up SSL certificates with automatic renewal (Let's Encrypt or Cloudflare)\n   - Configure domain redirects and canonical URLs\n   - Set up subdomain routing for landing page deployment\n   - Add domain verification for analytics and marketing platforms\n\n2. **Analytics Integration**:\n   - Implement Google Analytics 4 with enhanced ecommerce tracking\n   - Set up Mixpanel for user behavior and conversion funnel analysis\n   - Configure event tracking for key user interactions (form submissions, CTA clicks, page scrolling)\n   - Add UTM parameter tracking for campaign attribution\n   - Create custom conversion goals and audience segments\n   - Implement privacy-compliant cookie consent management\n\n3. **SEO Optimization**:\n   - Generate dynamic meta tags (title, description, Open Graph, Twitter Cards)\n   - Create XML sitemap with automatic updates\n   - Implement structured data markup (JSON-LD for organization, product, reviews)\n   - Set up robots.txt with proper crawling directives\n   - Add canonical URLs and hreflang attributes\n   - Optimize images with alt tags and proper formats (WebP, AVIF)\n   - Configure page speed optimization (lazy loading, code splitting)\n\n4. **A/B Testing Framework**:\n   - Integrate testing platform (Google Optimize, Optimizely, or custom solution)\n   - Create A/B test configuration system for components\n   - Implement variant tracking and statistical significance calculation\n   - Set up conversion rate optimization experiments\n   - Add multivariate testing capabilities for complex scenarios\n   - Create testing dashboard with real-time results\n\n5. **Performance and Monitoring**:\n   - Set up Core Web Vitals monitoring\n   - Configure error tracking and performance monitoring\n   - Implement uptime monitoring and alerting\n   - Add CDN configuration for global content delivery\n   - Set up automated lighthouse audits\n\n6. **Marketing Automation**:\n   - Configure marketing pixel integration (Facebook, LinkedIn, Google Ads)\n   - Set up email capture and lead generation tracking\n   - Implement conversion tracking for advertising platforms\n   - Add remarketing audience creation\n   - Configure marketing attribution modeling",
+        "testStrategy": "1. **Deployment and Domain Tests**:\n   - Verify domain resolves correctly with SSL certificate validation\n   - Test subdomain routing and redirect functionality\n   - Validate HTTPS enforcement and security headers\n   - Test deployment pipeline with staging and production environments\n\n2. **Analytics Validation**:\n   - Verify Google Analytics 4 tracking with real-time reports\n   - Test Mixpanel event firing for all tracked interactions\n   - Validate UTM parameter capture and attribution\n   - Test conversion goal tracking with test scenarios\n   - Verify privacy compliance with cookie consent flows\n\n3. **SEO Functionality Tests**:\n   - Validate meta tag generation across all pages\n   - Test sitemap accessibility and proper XML structure\n   - Verify structured data markup with Google Rich Results Test\n   - Test robots.txt accessibility and crawling directives\n   - Validate canonical URLs and duplicate content handling\n   - Test page speed scores and Core Web Vitals metrics\n\n4. **A/B Testing Framework Tests**:\n   - Test variant assignment and consistent user experience\n   - Verify statistical significance calculations\n   - Test conversion tracking for different test variants\n   - Validate experiment configuration and management interface\n   - Test multivariate testing scenarios with multiple variables\n\n5. **Marketing Integration Tests**:\n   - Verify pixel firing for all integrated marketing platforms\n   - Test lead capture and email integration functionality\n   - Validate conversion tracking with test purchases/signups\n   - Test remarketing audience creation and segmentation\n   - Verify attribution modeling accuracy with test campaigns\n\n6. **Performance and Monitoring Tests**:\n   - Test uptime monitoring and alert functionality\n   - Verify error tracking and performance metrics collection\n   - Test CDN performance and global content delivery\n   - Validate automated lighthouse audit reporting\n   - Test mobile performance and responsive design optimization",
+        "status": "pending",
+        "dependencies": [
+          25
+        ],
+        "priority": "medium",
+        "subtasks": []
       }
     ],
     "metadata": {
       "created": "2025-06-30T01:34:12.388Z",
-      "updated": "2025-06-30T01:47:51.177Z",
+      "updated": "2025-07-01T01:57:20.399Z",
       "description": "=Data management, import/export, backup, analytics, and compliance features"
     }
   }
