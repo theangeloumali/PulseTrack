@@ -407,6 +407,42 @@ export async function updateTicket(id: string, data: Partial<NewTicket>, updated
   return result
 }
 
+/**
+ * Update ticket sort orders for drag-and-drop reordering
+ */
+export async function updateTicketSortOrders(updates: Array<{ id: string; sort_order: number }>) {
+  // Use a transaction to update multiple tickets atomically
+  const { data, error } = await supabase.rpc('update_ticket_sort_orders', {
+    ticket_updates: updates
+  });
+
+  if (error) {
+    // If RPC function doesn't exist, fall back to individual updates
+    console.warn('RPC function not found, using individual updates:', error);
+    
+    // Update each ticket individually
+    const promises = updates.map(async ({ id, sort_order }) => {
+      const { data, error } = await supabase
+        .from('tickets')
+        .update({ sort_order })
+        .eq('id', id)
+        .select();
+      
+      if (error) throw error;
+      return data;
+    });
+    
+    try {
+      await Promise.all(promises);
+      return true;
+    } catch (fallbackError) {
+      throw fallbackError;
+    }
+  }
+
+  return data;
+}
+
 export async function deleteTicket(id: string) {
   const { error } = await supabase
     .from('tickets')

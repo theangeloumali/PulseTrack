@@ -8,7 +8,7 @@ import { Input } from '@workspace/ui/components/input';
 import { Ticket, TicketStatus } from '@/lib/db/schema';
 import { DeleteTicketModal } from '@/components/modals/delete-ticket-modal';
 import { TimeTrackingModal } from '@/components/modals/time-tracking-modal';
-import { useUpdateTicket } from '@/lib/hooks/useTickets';
+import { useUpdateTicket, useUpdateTicketSortOrders } from '@/lib/hooks/useTickets';
 import { useAssignableUsers } from '@/lib/hooks/useUsers';
 import {
   DndContext,
@@ -472,6 +472,7 @@ export function TicketBoard({ tickets, isLoading }: TicketBoardProps) {
   });
 
   const updateTicketMutation = useUpdateTicket();
+  const updateSortOrdersMutation = useUpdateTicketSortOrders();
   const { data: users = [], isLoading: usersLoading } = useAssignableUsers();
   
   const sensors = useSensors(
@@ -484,6 +485,17 @@ export function TicketBoard({ tickets, isLoading }: TicketBoardProps) {
 
   const sortTickets = (tickets: Ticket[], sortOption: SortOption, direction: SortDirection) => {
     return [...tickets].sort((a, b) => {
+      // Always check for custom sort_order first when using default sort
+      if (sortOption === 'created_at' && direction === 'desc') {
+        const aOrder = a.sort_order ?? 0;
+        const bOrder = b.sort_order ?? 0;
+        if (aOrder !== bOrder) {
+          return bOrder - aOrder; // Higher order numbers first
+        }
+        // Fall back to created_at for items with same sort_order
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      }
+
       let aValue: any;
       let bValue: any;
 
@@ -546,25 +558,71 @@ export function TicketBoard({ tickets, isLoading }: TicketBoardProps) {
 
     if (!over) return;
 
-    const activeId = active.id;
-    const overId = over.id;
+    const activeId = active.id as string;
+    const overId = over.id as string;
 
     // Find the ticket being dragged
     const activeTicket = tickets.find(t => t.id === activeId);
     if (!activeTicket) return;
 
-    // Determine the new column - check if dropping directly on a column
+    // Check if dropping on another ticket (for reordering)
+    const overTicket = tickets.find(t => t.id === overId);
+    
+    if (overTicket) {
+      // Dropping on another ticket - reorder within the same column
+      if (activeTicket.status === overTicket.status) {
+        const columnTickets = getTicketsForColumn(activeTicket.status);
+        const activeIndex = columnTickets.findIndex(t => t.id === activeId);
+        const overIndex = columnTickets.findIndex(t => t.id === overId);
+        
+        if (activeIndex !== overIndex) {
+          // Calculate new sort orders for all affected tickets
+          const updates: Array<{ id: string; sort_order: number }> = [];
+          const baseOrder = Date.now();
+          
+          // Create new arrangement by moving active ticket to new position
+          const newArrangement = [...columnTickets];
+          const [movedTicket] = newArrangement.splice(activeIndex, 1);
+          newArrangement.splice(overIndex, 0, movedTicket);
+          
+          // Assign new sort orders (higher numbers = higher priority)
+          newArrangement.forEach((ticket, index) => {
+            const newSortOrder = baseOrder + (newArrangement.length - index) * 1000;
+            updates.push({ id: ticket.id, sort_order: newSortOrder });
+          });
+          
+          // Update database
+          updateSortOrdersMutation.mutate(updates);
+          
+          // Reset the column to use default sorting (which will now use the updated sort_order)
+          setColumnSorts(prev => ({
+            ...prev,
+            [activeTicket.status]: { option: 'created_at', direction: 'desc' }
+          }));
+        }
+      } else {
+        // Different columns - move ticket and reset its sort order
+        const newStatus = overTicket.status;
+        updateTicketMutation.mutate({
+          id: activeTicket.id,
+          data: { status: newStatus, sort_order: 0 } // Reset sort order when moving between columns
+        });
+      }
+      return;
+    }
+
+    // Check if dropping directly on a column
     const overColumn = columns.find(col => col.id === overId);
-    if (!overColumn) return; // Only allow dropping on columns, not other tickets
+    if (overColumn) {
+      const newStatus = overColumn.id;
 
-    const newStatus = overColumn.id;
-
-    // Update ticket status if it changed
-    if (activeTicket.status !== newStatus) {
-      updateTicketMutation.mutate({
-        id: activeTicket.id,
-        data: { status: newStatus }
-      });
+      // Update ticket status if it changed
+      if (activeTicket.status !== newStatus) {
+        updateTicketMutation.mutate({
+          id: activeTicket.id,
+          data: { status: newStatus, sort_order: 0 } // Reset sort order when moving between columns
+        });
+      }
     }
   };
 
@@ -611,6 +669,18 @@ export function TicketBoard({ tickets, isLoading }: TicketBoardProps) {
         [columnId]: { option, direction: newDirection }
       };
     });
+    
+    // Clear custom sort orders when applying automatic sorting (unless it's the default created_at desc)
+    if (!(option === 'created_at' && 
+         ((columnSorts[columnId]?.option === option && columnSorts[columnId]?.direction === 'asc') || 
+          (!columnSorts[columnId] || columnSorts[columnId]?.option !== option)))) {
+      // Clear sort_order for this column's tickets in the database
+      const columnTickets = tickets.filter(t => t.status === columnId);
+      const updates = columnTickets.map(ticket => ({ id: ticket.id, sort_order: 0 }));
+      if (updates.length > 0) {
+        updateSortOrdersMutation.mutate(updates);
+      }
+    }
   };
 
   if (isLoading) {

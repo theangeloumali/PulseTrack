@@ -116,6 +116,7 @@ export const tickets = pgTable('tickets', {
 	estimated_hours: integer('estimated_hours'),
 	actual_hours: integer('actual_hours'),
 	due_date: timestamp('due_date', { withTimezone: true }),
+	sort_order: integer('sort_order').default(0), // For custom drag-and-drop ordering within columns
 	deleted_at: timestamp('deleted_at', { withTimezone: true }),
 	created_at: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 	updated_at: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),

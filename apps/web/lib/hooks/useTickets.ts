@@ -8,6 +8,7 @@ import {
   createTicket,
   updateTicket,
   deleteTicket,
+  updateTicketSortOrders,
   getRecentTicketsByProject,
   getTicketCountByProject,
 } from '@/lib/db/service';
@@ -159,6 +160,23 @@ export function useUpdateTicket() {
         ticketKeys.detail(updatedTicket.id),
         updatedTicket
       );
+    },
+  });
+}
+
+/**
+ * Hook to update ticket sort orders for drag-and-drop
+ */
+export function useUpdateTicketSortOrders() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: updateTicketSortOrders,
+    onSuccess: () => {
+      // Invalidate all ticket-related queries to refresh the UI
+      queryClient.invalidateQueries({ 
+        queryKey: ticketKeys.all 
+      });
     },
   });
 }

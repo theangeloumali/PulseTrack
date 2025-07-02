@@ -105,6 +105,7 @@ export interface Ticket extends BaseRecord {
   estimated_hours?: number | null
   actual_hours?: number | null
   due_date?: string | null
+  sort_order?: number | null
 }
 
 export interface NewTicket {
@@ -118,6 +119,7 @@ export interface NewTicket {
   estimated_hours?: number | null
   actual_hours?: number | null
   due_date?: string | null
+  sort_order?: number | null
 }
 
 // Time entry types
