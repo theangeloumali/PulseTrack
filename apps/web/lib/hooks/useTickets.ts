@@ -173,10 +173,14 @@ export function useUpdateTicketSortOrders() {
   return useMutation({
     mutationFn: updateTicketSortOrders,
     onSuccess: () => {
-      // Use a small delay to allow optimistic updates to show first
-      setTimeout(() => {
-        queryClient.invalidateQueries({ queryKey: ticketKeys.all });
-      }, 500);
+      // Don't invalidate immediately - let optimistic updates persist
+      // Only invalidate on component unmount or explicit refresh
+      console.log('✅ Sort order update successful - keeping optimistic state');
+    },
+    onError: (error) => {
+      console.log('❌ Sort order update failed - invalidating cache:', error);
+      // Only invalidate on error to revert to server state
+      queryClient.invalidateQueries({ queryKey: ticketKeys.all });
     },
   });
 }

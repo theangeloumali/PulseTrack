@@ -816,7 +816,7 @@ export function TicketBoard({ tickets: serverTickets, isLoading }: TicketBoardPr
       
       if (updates.length > 0) {
         // Update local state immediately
-        setLocalTickets(prevTickets => {
+        setOptimisticTickets(prevTickets => {
           return prevTickets.map(ticket => {
             const shouldUpdate = updates.find(u => u.id === ticket.id);
             return shouldUpdate ? { ...ticket, sort_order: 0 } : ticket;

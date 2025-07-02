@@ -224,3 +224,88 @@ This configuration allows:
 6. Mark current task as done: `task-master set-status --id=<current-task-id> --status=done`
 
 **CRITICAL**: Always verify build and type checking before marking tasks complete!
+
+## Problem-Solving Memory: Complex Bug Resolution
+
+### 🔬 Systematic Debugging Approach for Persistent Issues
+
+When facing complex bugs that don't resolve with standard fixes, follow this proven methodology:
+
+#### **1. Document the Problem-Solving Journey**
+- Create mental or written notes tracking each attempt
+- Document: **Problem → Fix → Result** for each iteration
+- Maintain running theory of root cause
+- Plan next steps if current attempt fails
+
+#### **2. Add Comprehensive Debugging**
+- Use emoji-coded console logs for easy identification
+- Make invisible state changes visible
+- Track the full flow: input → processing → output → side effects
+
+#### **3. Build Custom Solutions When Libraries Fail**
+- Don't rely solely on library defaults
+- Create context-aware handlers for complex interaction patterns
+- Implement smart collision detection, custom state management, etc.
+
+### 🎯 **Case Study: Drag-and-Drop Persistence Bug (July 2025)**
+
+**Issue**: Manual reordering within kanban columns reverted to original state despite multiple implementation attempts.
+
+**Root Causes Found**:
+1. **State Management Inconsistency**: Mixed usage of `setLocalTickets` vs `setOptimisticTickets`
+2. **Cache Invalidation Conflict**: React Query cache invalidation was overriding optimistic updates
+
+**Solution Pattern**:
+```typescript
+// ❌ WRONG: Mixed state management
+setLocalTickets(prevTickets => { /* update */ });      // Wrong variable
+setOptimisticTickets(prevTickets => { /* update */ }); // Correct variable
+
+// ❌ WRONG: Aggressive cache invalidation
+onSuccess: () => {
+  setTimeout(() => {
+    queryClient.invalidateQueries({ queryKey: ticketKeys.all });
+  }, 500); // This overrides optimistic updates!
+}
+
+// ✅ CORRECT: Persistent optimistic updates
+onSuccess: () => {
+  console.log('✅ Sort order update successful - keeping optimistic state');
+  // No invalidation - let optimistic state persist
+},
+onError: (error) => {
+  // Only invalidate on error to revert
+  queryClient.invalidateQueries({ queryKey: ticketKeys.all });
+}
+```
+
+**Key Lesson**: When optimistic updates keep getting overridden, check for:
+- Inconsistent state variable usage
+- Automatic cache invalidation timing conflicts
+- Multiple state management patterns in the same component
+
+### 🧠 **Application to Future Complex Issues**
+
+#### **For State Management Bugs**:
+1. **Audit state variable consistency** - Use single source of truth
+2. **Review cache invalidation timing** - Avoid overriding optimistic updates
+3. **Add debugging logs** to track state flow
+4. **Test error scenarios** to ensure proper fallback behavior
+
+#### **For UI Interaction Issues**:
+1. **Document each attempt** with specific results
+2. **Add visible debugging** with clear markers
+3. **Build custom solutions** when libraries don't handle your exact use case
+4. **Test edge cases** systematically
+
+#### **General Problem-Solving Pattern**:
+```
+Complex Issue?
+├── Document attempts → Track what's been tried
+├── Add debugging → Make invisible visible  
+├── Identify patterns → Look for systematic issues
+├── Build custom solution → Don't rely only on defaults
+└── Test systematically → Verify all interaction patterns
+```
+
+This methodology turned a frustrating persistent bug into a robust, well-debugged feature! 🎉
