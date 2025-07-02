@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuthStore } from '@/lib/stores/auth';
 import { useBillingSettings, useUpdateBillingSettings, useBillingReport, useBillingRates, useCreateBillingRate, useDeleteBillingRate } from '@/lib/hooks/useBilling';
 import { useCompanyUsers } from '@/lib/hooks/useUsers';
-import { useProjectsQuery } from '@/lib/hooks/useProjects';
+import { useAllCompanyProjectsQuery } from '@/lib/hooks/useProjects';
 import { formatISO } from 'date-fns';
 import { Button } from '@workspace/ui/components/button';
 import { Input } from '@workspace/ui/components/input';
@@ -56,7 +56,7 @@ const BillingPage = () => {
 	const { mutate: deleteRate } = useDeleteBillingRate(companyId || '');
 
 	const { data: users } = useCompanyUsers();
-	const { data: projects } = useProjectsQuery();
+	const { data: projects } = useAllCompanyProjectsQuery();
 	console.log('BillingPage rendered with companyId:',  billingReport);
 	const filteredBillingReport = React.useMemo(() => {
 		if (!billingReport) return null;

@@ -1,11 +1,14 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useSessionAwareQuery } from './useSessionAwareQuery';
 import { 
   getTicketsByProject,
   getTicketsByCompany,
+  getAccessibleTicketsByCompany,
   getTicketById,
   createTicket,
   updateTicket,
   deleteTicket,
+  updateTicketSortOrders,
   getRecentTicketsByProject,
   getTicketCountByProject,
 } from '@/lib/db/service';
@@ -24,7 +27,7 @@ export const ticketKeys = {
 
 // Tickets by project query
 export function useProjectTicketsQuery(projectId: string) {
-  return useQuery({
+  return useSessionAwareQuery({
     queryKey: ticketKeys.list(projectId),
     queryFn: () => getTicketsByProject(projectId),
     enabled: !!projectId,
@@ -32,12 +35,31 @@ export function useProjectTicketsQuery(projectId: string) {
   });
 }
 
-// Tickets by company query (for main tickets page)
+// Tickets by company query with access control (for main tickets page)
 export function useCompanyTicketsQuery(companyId?: string) {
-  return useQuery({
-    queryKey: [...ticketKeys.all, 'company', companyId],
+  const { user } = useAuthStore();
+  
+  return useSessionAwareQuery({
+    queryKey: [...ticketKeys.all, 'company', companyId, user?.id, user?.role],
+    queryFn: () => {
+      if (!companyId || !user?.id || !user?.role) {
+        throw new Error('User or company information not available');
+      }
+      return getAccessibleTicketsByCompany(companyId, user.id, user.role);
+    },
+    enabled: !!companyId && !!user?.id && !!user?.role,
+    staleTime: 1000 * 60 * 2, // 2 minutes
+  });
+}
+
+// Admin-only hook to get all company tickets (unrestricted)
+export function useAllCompanyTicketsQuery(companyId?: string) {
+  const { user } = useAuthStore();
+  
+  return useSessionAwareQuery({
+    queryKey: [...ticketKeys.all, 'allCompanyTickets', companyId],
     queryFn: () => getTicketsByCompany(companyId!),
-    enabled: !!companyId,
+    enabled: !!companyId && !!user?.role && ['super_admin', 'system_admin', 'company_admin'].includes(user.role),
     staleTime: 1000 * 60 * 2, // 2 minutes
   });
 }
@@ -46,7 +68,7 @@ export function useCompanyTicketsQuery(companyId?: string) {
 export function useTicketQuery(ticketId: string) {
   const { user } = useAuthStore();
   
-  return useQuery({
+  return useSessionAwareQuery({
     queryKey: ticketKeys.detail(ticketId),
     queryFn: () => getTicketById(ticketId),
     enabled: !!ticketId && !!user,
@@ -69,7 +91,7 @@ export function useCreateTicketMutation() {
       
       // Invalidate company tickets query
       queryClient.invalidateQueries({ 
-        queryKey: [...ticketKeys.all, 'company', user?.company_id] 
+        queryKey: [...ticketKeys.all, 'company'] 
       });
       
       // Invalidate project ticket count query
@@ -84,7 +106,7 @@ export function useCreateTicketMutation() {
       
       // Invalidate projects with ticket counts (used in projects page)
       queryClient.invalidateQueries({ 
-        queryKey: ['projects', 'withTicketCounts', user?.company_id] 
+        queryKey: ['projects', 'withTicketCounts'] 
       });
       
       // Optimistically add to cache
@@ -115,7 +137,7 @@ export function useUpdateTicket() {
       
       // Invalidate company tickets query
       queryClient.invalidateQueries({ 
-        queryKey: [...ticketKeys.all, 'company', user?.company_id] 
+        queryKey: [...ticketKeys.all, 'company'] 
       });
       
       // Invalidate project ticket count query
@@ -130,7 +152,7 @@ export function useUpdateTicket() {
       
       // Invalidate projects with ticket counts
       queryClient.invalidateQueries({ 
-        queryKey: ['projects', 'withTicketCounts', user?.company_id] 
+        queryKey: ['projects', 'withTicketCounts'] 
       });
       
       // Update the single ticket cache
@@ -142,9 +164,26 @@ export function useUpdateTicket() {
   });
 }
 
+/**
+ * Hook to update ticket sort orders for drag-and-drop
+ */
+export function useUpdateTicketSortOrders() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: updateTicketSortOrders,
+    onSuccess: () => {
+      // Use a small delay to allow optimistic updates to show first
+      setTimeout(() => {
+        queryClient.invalidateQueries({ queryKey: ticketKeys.all });
+      }, 500);
+    },
+  });
+}
+
 // Get recent tickets for project dashboard
 export function useRecentProjectTicketsQuery(projectId: string, limit: number = 5) {
-  return useQuery({
+  return useSessionAwareQuery({
     queryKey: [...ticketKeys.all, 'recent', projectId, limit],
     queryFn: () => getRecentTicketsByProject(projectId, limit),
     enabled: !!projectId,
@@ -154,7 +193,7 @@ export function useRecentProjectTicketsQuery(projectId: string, limit: number = 
 
 // Get ticket count for project
 export function useProjectTicketCountQuery(projectId: string) {
-  return useQuery({
+  return useSessionAwareQuery({
     queryKey: [...ticketKeys.all, 'count', projectId],
     queryFn: () => getTicketCountByProject(projectId),
     enabled: !!projectId,
@@ -177,12 +216,12 @@ export function useDeleteTicketMutation() {
       
       // Invalidate company tickets query
       queryClient.invalidateQueries({ 
-        queryKey: [...ticketKeys.all, 'company', user?.company_id] 
+        queryKey: [...ticketKeys.all, 'company'] 
       });
       
       // Invalidate projects with ticket counts
       queryClient.invalidateQueries({ 
-        queryKey: ['projects', 'withTicketCounts', user?.company_id] 
+        queryKey: ['projects', 'withTicketCounts'] 
       });
       
       // Remove from cache optimistically

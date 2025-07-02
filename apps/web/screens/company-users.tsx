@@ -44,7 +44,7 @@ export default function CompanyUsersPage() {
 
   // Don't render the page if user doesn't have access
   if (currentUser && !canAccessCompany()) {
-    return null;
+    return <div></div>;
   }
   
   const filteredUsers = getFilteredUsers();

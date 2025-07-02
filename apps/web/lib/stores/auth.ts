@@ -108,14 +108,15 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
 								return { error: null };
 							} else {
 								console.error('No user profile found in database for:', data.user.id);
-								// Clear the session since we don't have a complete user profile
-								set({ supabaseUser: null, session: null, user: null, isLoading: false });
+								// Don't clear Supabase session immediately - keep it for retry
+								set({ user: null, isLoading: false });
 								return { error: new Error('User profile not found. Please contact support.') };
 							}
 						} catch (dbError) {
 							console.error('Error fetching user from database:', dbError);
-							// Clear the session since we couldn't get the user profile
-							set({ supabaseUser: null, session: null, user: null, isLoading: false });
+							// For database errors, don't clear the Supabase session
+							// This allows for retry on network issues
+							set({ user: null, isLoading: false });
 							return { error: new Error('Failed to load user profile. Please try again.') };
 						}
 					}
@@ -288,18 +289,22 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
 					// });
 
 					// If there's an error getting the session (e.g., invalid refresh token), 
-					// clear everything and let the user sign in again
+					// only clear for auth-specific errors, not network issues
 					if (error) {
-						console.error('❌ Auth Store: Error getting user, clearing auth state:', error);
+						console.error('❌ Auth Store: Error getting user:', error);
 						
 						// Check if it's a refresh token error and clear corrupted state
 						if (isRefreshTokenError(error)) {
 							// console.log('🧹 Auth Store: Refresh token error detected, clearing corrupted state');
 							clearAuthState();
+							await supabase.auth.signOut(); // Clear any invalid tokens
+							set({ isLoading: false, session: null, supabaseUser: null, user: null });
+							return;
 						}
 						
-						await supabase.auth.signOut(); // Clear any invalid tokens
-						set({ isLoading: false, session: null, supabaseUser: null, user: null });
+						// For other errors (network issues), don't immediately clear session
+						console.warn('❌ Auth Store: Non-auth error during initialization, keeping partial state');
+						set({ isLoading: false, user: null });
 						return;
 					}
 
@@ -323,14 +328,14 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
 									set({ user: dbUser, isLoading: false });
 								} else {
 									// console.log('❌ Auth Store: No database user found for:', user.id);
-									// Clear the invalid session since we don't have a complete user profile
-									await supabase.auth.signOut();
-									set({ session: null, supabaseUser: null, user: null, isLoading: false });
+									// Keep Supabase session but clear user profile - allows for retry
+									set({ user: null, isLoading: false });
 								}
 							} catch (dbError) {
 								console.error('❌ Auth Store: Error fetching user from database:', dbError);
-								// Clear the invalid session since we couldn't get the user profile
-								set({ session: null, supabaseUser: null, user: null, isLoading: false });
+								// For database connection issues, keep Supabase session but clear user profile
+								// This allows the app to retry fetching the profile later
+								set({ user: null, isLoading: false });
 							}
 						} else {
 							// console.log('🔄 Auth Store: No user found');

@@ -1,4 +1,5 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useSessionAwareQuery } from './useSessionAwareQuery'
 import { useEffect } from 'react'
 import { useAuth } from './useAuth'
 import { 
@@ -28,7 +29,7 @@ export const userKeys = {
 export function useUsersInCompany() {
   const { user } = useAuth()
   
-  return useQuery({
+  return useSessionAwareQuery({
     queryKey: userKeys.byCompany(user?.company_id || ''),
     queryFn: () => getUsersInCompany(user?.company_id || ''),
     enabled: !!user?.company_id,
@@ -43,14 +44,14 @@ export function useCompanyUsers() {
   const { user } = useAuthStore();
   const { setUsers, setUsersLoading, setUsersError } = useCompanyStore();
 
-  const query = useQuery({
+  const query = useSessionAwareQuery({
     queryKey: userKeys.companyUsers(user?.company_id || ''),
     queryFn: async () => {
       if (!user?.company_id) throw new Error('No company ID available');
       return getCompanyUsers(user.company_id);
     },
     enabled: !!user?.company_id,
-    staleTime: 1000 * 60 * 5, // 5 minutes
+    staleTime: 1000 * 60 * 2, // 2 minutes
   });
 
   // Handle state updates in useEffect-like pattern
@@ -76,7 +77,7 @@ export function useCompanyUsers() {
 export function useAssignableUsers() {
   const { user } = useAuthStore();
 
-  return useQuery({
+  return useSessionAwareQuery({
     queryKey: userKeys.assignableUsers(user?.company_id || ''),
     queryFn: async () => {
       if (!user?.company_id) throw new Error('No company ID available');

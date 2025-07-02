@@ -1,4 +1,5 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useSessionAwareQuery } from './useSessionAwareQuery';
 import { 
   getProjectsByCompany, 
   createProject, 
@@ -6,6 +7,8 @@ import {
   deleteProject,
   getProjectById,
   getProjectsWithTicketCounts,
+  getAccessibleProjectsByCompany,
+  getAccessibleProjectsWithTicketCounts,
   addProjectMember,
   removeProjectMember,
   getProjectMembers,
@@ -26,18 +29,21 @@ export const projectKeys = {
   userProjects: (userId: string) => [...projectKeys.all, 'userProjects', userId] as const,
 };
 
-// Projects list query
+// Projects list query with access control
 export function useProjectsQuery() {
   const { user } = useAuthStore();
   
-  return useQuery({
+  return useSessionAwareQuery({
     queryKey: projectKeys.list(user?.company_id || ''),
     queryFn: async () => {
-      const result = await getProjectsByCompany(user!.company_id);
+      if (!user?.company_id || !user?.id || !user?.role) {
+        throw new Error('User information not available');
+      }
+      const result = await getAccessibleProjectsByCompany(user.company_id, user.id, user.role);
       return result;
     },
-    enabled: !!user?.company_id,
-    staleTime: 1000 * 60 * 5, // 5 minutes
+    enabled: !!user?.company_id && !!user?.id && !!user?.role,
+    staleTime: 1000 * 60 * 2, // 2 minutes
   });
 }
 
@@ -45,7 +51,7 @@ export function useProjectsQuery() {
 export function useProjectQuery(projectId: string) {
   const { user } = useAuthStore();
   
-  return useQuery({
+  return useSessionAwareQuery({
     queryKey: projectKeys.detail(projectId),
     queryFn: async () => {
       const result = await getProjectById(projectId);
@@ -70,9 +76,9 @@ export function useCreateProjectMutation() {
       // Invalidate all project-related queries
       queryClient.invalidateQueries({ queryKey: projectKeys.list(user!.company_id) });
       
-      // Invalidate projects with ticket counts
+      // Invalidate projects with ticket counts (both admin and user queries)
       queryClient.invalidateQueries({ 
-        queryKey: ['projects', 'withTicketCounts', user!.company_id] 
+        queryKey: ['projects', 'withTicketCounts'] 
       });
       
       // Invalidate user projects
@@ -101,9 +107,9 @@ export function useUpdateProjectMutation() {
       // Invalidate all project-related queries
       queryClient.invalidateQueries({ queryKey: projectKeys.list(user!.company_id) });
       
-      // Invalidate projects with ticket counts
+      // Invalidate projects with ticket counts (both admin and user queries)
       queryClient.invalidateQueries({ 
-        queryKey: ['projects', 'withTicketCounts', user!.company_id] 
+        queryKey: ['projects', 'withTicketCounts'] 
       });
       
       // Update individual project cache
@@ -128,9 +134,9 @@ export function useDeleteProjectMutation() {
       // Invalidate all project-related queries
       queryClient.invalidateQueries({ queryKey: projectKeys.list(user!.company_id) });
       
-      // Invalidate projects with ticket counts
+      // Invalidate projects with ticket counts (both admin and user queries)
       queryClient.invalidateQueries({ 
-        queryKey: ['projects', 'withTicketCounts', user!.company_id] 
+        queryKey: ['projects', 'withTicketCounts'] 
       });
       
       // Remove individual project cache
@@ -149,18 +155,57 @@ export function useDeleteProjectMutation() {
   });
 }
 
-// Projects list query with ticket counts
+// Projects list query with ticket counts and access control
 export function useProjectsWithTicketCountsQuery() {
   const { user } = useAuthStore();
   
-  return useQuery({
-    queryKey: [...projectKeys.all, 'withTicketCounts', user?.company_id],
+  return useSessionAwareQuery({
+    queryKey: [...projectKeys.all, 'withTicketCounts', user?.company_id, user?.id, user?.role],
     queryFn: async () => {
-      const result = await getProjectsWithTicketCounts(user!.company_id);
+      if (!user?.company_id || !user?.id || !user?.role) {
+        throw new Error('User information not available');
+      }
+      const result = await getAccessibleProjectsWithTicketCounts(user.company_id, user.id, user.role);
       return result;
     },
-    enabled: !!user?.company_id,
-    staleTime: 1000 * 60 * 5, // 5 minutes
+    enabled: !!user?.company_id && !!user?.id && !!user?.role,
+    staleTime: 1000 * 60 * 2, // 2 minutes
+  });
+}
+
+// Admin-only hook to get all projects in company (unrestricted)
+export function useAllCompanyProjectsQuery() {
+  const { user } = useAuthStore();
+  
+  return useSessionAwareQuery({
+    queryKey: [...projectKeys.all, 'allCompanyProjects', user?.company_id],
+    queryFn: async () => {
+      if (!user?.company_id) {
+        throw new Error('Company ID not available');
+      }
+      const result = await getProjectsByCompany(user.company_id);
+      return result;
+    },
+    enabled: !!user?.company_id && !!user?.role && ['super_admin', 'system_admin', 'company_admin'].includes(user.role),
+    staleTime: 1000 * 60 * 2, // 2 minutes
+  });
+}
+
+// Admin-only hook to get all projects with ticket counts (unrestricted)
+export function useAllCompanyProjectsWithTicketCountsQuery() {
+  const { user } = useAuthStore();
+  
+  return useSessionAwareQuery({
+    queryKey: [...projectKeys.all, 'allWithTicketCounts', user?.company_id],
+    queryFn: async () => {
+      if (!user?.company_id) {
+        throw new Error('Company ID not available');
+      }
+      const result = await getProjectsWithTicketCounts(user.company_id);
+      return result;
+    },
+    enabled: !!user?.company_id && !!user?.role && ['super_admin', 'system_admin', 'company_admin'].includes(user.role),
+    staleTime: 1000 * 60 * 2, // 2 minutes
   });
 }
 
@@ -168,12 +213,30 @@ export function useProjectsWithTicketCountsQuery() {
 
 // Get project members
 export function useProjectMembersQuery(projectId: string) {
-  return useQuery({
+  return useSessionAwareQuery({
     queryKey: projectKeys.members(projectId),
     queryFn: () => getProjectMembers(projectId),
     enabled: !!projectId,
-    staleTime: 1000 * 60 * 5, // 5 minutes
+    staleTime: 1000 * 60 * 2, // 2 minutes
   });
+}
+
+// Utility hook to check if user can manage project members
+export function useCanManageProjectMembers(projectId?: string) {
+  const { user } = useAuthStore();
+  
+  if (!user || !projectId) {
+    return false;
+  }
+
+  // Admins can manage all project members in their company
+  if (['super_admin', 'system_admin', 'company_admin'].includes(user.role)) {
+    return true;
+  }
+
+  // Project owners can manage members (this would need project data to check)
+  // For now, we'll let managers manage members of projects they have access to
+  return user.role === 'manager';
 }
 
 // Get user's projects
@@ -181,11 +244,11 @@ export function useUserProjectsQuery(userId?: string) {
   const { user } = useAuthStore();
   const targetUserId = userId || user?.id;
   
-  return useQuery({
+  return useSessionAwareQuery({
     queryKey: projectKeys.userProjects(targetUserId || ''),
     queryFn: () => getUserProjects(targetUserId!),
     enabled: !!targetUserId,
-    staleTime: 1000 * 60 * 5, // 5 minutes
+    staleTime: 1000 * 60 * 2, // 2 minutes
   });
 }
 

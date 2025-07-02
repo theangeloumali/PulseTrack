@@ -1,4 +1,5 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useSessionAwareQuery } from './useSessionAwareQuery'
 import { 
   createActivity, 
   getProjectActivities, 
@@ -22,7 +23,7 @@ const ACTIVITY_KEYS = {
  * Hook to get activities for a specific project
  */
 export function useProjectActivities(projectId: string, limit: number = 50) {
-  return useQuery({
+  return useSessionAwareQuery({
     queryKey: ACTIVITY_KEYS.project(projectId),
     queryFn: () => getProjectActivities(projectId, limit),
     enabled: !!projectId,
@@ -34,7 +35,7 @@ export function useProjectActivities(projectId: string, limit: number = 50) {
  * Hook to get activities for a specific user
  */
 export function useUserActivities(userId: string, limit: number = 50) {
-  return useQuery({
+  return useSessionAwareQuery({
     queryKey: ACTIVITY_KEYS.user(userId),
     queryFn: () => getUserActivities(userId, limit),
     enabled: !!userId,
@@ -48,7 +49,7 @@ export function useUserActivities(userId: string, limit: number = 50) {
 export function useRecentActivities(limit: number = 20) {
   const { user } = useAuth()
   
-  return useQuery({
+  return useSessionAwareQuery({
     queryKey: ACTIVITY_KEYS.userRecent(user?.id || ''),
     queryFn: () => getRecentActivitiesForUser(user!.id, limit),
     enabled: !!user?.id,
@@ -65,7 +66,7 @@ export function useCompanyActivities(companyId: string, limit: number = 50) {
   // Only allow company admins and above to access company activities
   const isAdmin = user?.role && ['super_admin', 'system_admin', 'company_admin'].includes(user.role)
   
-  return useQuery({
+  return useSessionAwareQuery({
     queryKey: ACTIVITY_KEYS.company(companyId),
     queryFn: () => getCompanyActivities(companyId, limit),
     enabled: !!companyId && !!isAdmin,

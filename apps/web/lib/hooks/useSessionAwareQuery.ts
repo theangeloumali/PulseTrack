@@ -43,12 +43,24 @@ export function useSessionAwareQuery<TQueryFnData = unknown, TError = Error, TDa
       }
     },
     retry: (failureCount, error: any) => {
-      // Don't retry if it's a session-related error
-      if (error?.message?.includes('Session expired') || 
-          error?.message?.includes('JWT') ||
-          error?.status === 401 || 
-          error?.status === 403) {
+      // Only give up on confirmed auth errors, be more resilient for other errors
+      const isConfirmedAuthError = (
+        error?.message?.includes('Session expired') ||
+        error?.message?.includes('invalid JWT') ||
+        error?.message?.includes('JWT expired') ||
+        (error?.status === 401 && error?.message?.includes('JWT')) ||
+        (error?.status === 403 && error?.message?.includes('JWT'))
+      );
+      
+      if (isConfirmedAuthError) {
+        console.log('Confirmed auth error, not retrying:', error);
         return false;
+      }
+      
+      // For network errors or other 401/403s, allow retries
+      if (error?.status === 401 || error?.status === 403) {
+        console.log(`Retrying ${error?.status} error (attempt ${failureCount + 1}):`, error?.message);
+        return failureCount < 2; // Allow 2 retries for potential network issues
       }
       
       // Use original retry logic or default
@@ -64,7 +76,7 @@ export function useSessionAwareQuery<TQueryFnData = unknown, TError = Error, TDa
         }
       }
       
-      // Default retry logic
+      // Default retry logic - be more generous with retries
       return failureCount < 3;
     },
     retryDelay: (attemptIndex, error) => {

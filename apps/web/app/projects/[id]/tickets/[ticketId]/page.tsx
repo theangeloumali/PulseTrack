@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@work
 import { Badge } from '@workspace/ui/components/badge';
 import { useAuthStore } from '@/lib/stores/auth';
 import { useTicketStore } from '@/lib/stores/ticket';
-import { getTicketById } from '@/lib/db/service';
+import { useTicketQuery, useDeleteTicketMutation } from '@/lib/hooks/useTickets';
 import { TimeTracker } from '@/components/time-tracker';
 import { TimeEntriesList } from '@/components/time-entries-list';
 import { TicketAssignment } from '@/components/ticket-assignment';
@@ -23,7 +23,8 @@ import {
 	AlertCircle,
 	CheckCircle2,
 	PlayCircle,
-	Loader2
+	Loader2,
+	Trash2
 } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
@@ -38,13 +39,14 @@ interface Props {
 export default function TicketDetailPage({ params }: Props) {
 	const [projectId, setProjectId] = useState<string>('');
 	const [ticketId, setTicketId] = useState<string>('');
-	const [ticket, setTicket] = useState<any>(null); // Use any for now since service returns extended data
-	const [isLoading, setIsLoading] = useState(true);
-	const [error, setError] = useState('');
 	
 	const { user } = useAuthStore();
 	const { setSelectedTicketId } = useTicketStore();
 	const router = useRouter();
+	
+	// Use React Query for ticket data
+	const { data: ticket, isLoading, error } = useTicketQuery(ticketId);
+	const deleteTicketMutation = useDeleteTicketMutation();
 
 	// Resolve params on mount
 	useEffect(() => {
@@ -56,46 +58,25 @@ export default function TicketDetailPage({ params }: Props) {
 		resolveParams();
 	}, [params]);
 
+	// Set selected ticket ID when ticket data is available
 	useEffect(() => {
-		if (ticketId && user) {
-			loadTicket();
+		if (ticket) {
+			setSelectedTicketId(ticket.id);
 		}
-	}, [ticketId, user]);
-
-	const loadTicket = async () => {
+	}, [ticket, setSelectedTicketId]);
+	
+	// Handle ticket deletion
+	const handleDeleteTicket = async () => {
+		if (!ticket) return;
+		
+		const confirmed = confirm(`Are you sure you want to delete the ticket "${ticket.title}"? This action cannot be undone.`);
+		if (!confirmed) return;
+		
 		try {
-			setIsLoading(true);
-			const ticketData = await getTicketById(ticketId);
-			
-			if (!ticketData) {
-				setError('Ticket not found');
-				return;
-			}
-			console.log('Ticket Data:', JSON.stringify(ticketData));
-			
-			// Cast the ticketData.projects to any to avoid TypeScript errors
-			const projectData = ticketData.projects as any;
-			const projectCompanyId = projectData?.company_id || 
-				(Array.isArray(projectData) ? projectData[0]?.company_id : null);
-			
-			// Security check: ensure ticket's project belongs to user's company (PRD requirement)
-			console.log('Security Check:', {
-				ticketCompanyId: projectCompanyId, 
-				userCompanyId: user?.company_id,
-				projects: projectData
-			});
-			
-			if (!projectCompanyId || projectCompanyId !== user?.company_id) {
-				setError('Ticket not found or access denied');
-				return;
-			}
-			
-			setTicket(ticketData);
-			setSelectedTicketId(ticketData.id);
-		} catch (err: any) {
-			setError(err.message || 'Failed to load ticket');
-		} finally {
-			setIsLoading(false);
+			await deleteTicketMutation.mutateAsync(ticket.id);
+			router.push(`/projects/${projectId}/tickets`);
+		} catch (error) {
+			alert('Failed to delete ticket. Please try again.');
 		}
 	};
 
@@ -160,7 +141,7 @@ export default function TicketDetailPage({ params }: Props) {
 					<Card className="w-96">
 						<CardHeader>
 							<CardTitle>Error</CardTitle>
-							<CardDescription>{error || 'Ticket not found'}</CardDescription>
+							<CardDescription>{error?.message || 'Ticket not found'}</CardDescription>
 						</CardHeader>
 						<CardContent>
 							<Link href={`/projects/${projectId}`}>
@@ -370,6 +351,15 @@ export default function TicketDetailPage({ params }: Props) {
 									>
 										<FileText className="h-4 w-4 mr-2" />
 										Add Comment
+									</Button>
+									<Button 
+										variant="destructive" 
+										className="w-full justify-start"
+										onClick={handleDeleteTicket}
+										disabled={deleteTicketMutation.isPending}
+									>
+										<Trash2 className="h-4 w-4 mr-2" />
+										{deleteTicketMutation.isPending ? 'Deleting...' : 'Delete Ticket'}
 									</Button>
 								</CardContent>
 							</Card>

@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query'
+import { useSessionAwareQuery } from './useSessionAwareQuery'
 import { useAuthStore } from '@/lib/stores/auth'
 import { getApiPath } from '@/lib/utils'
 
@@ -38,7 +38,7 @@ export const superAdminCompanyKeys = {
 export function useSuperAdminCompanies() {
   const { user } = useAuthStore()
   
-  return useQuery({
+  return useSessionAwareQuery({
     queryKey: superAdminCompanyKeys.list(),
     queryFn: async (): Promise<SuperAdminCompany[]> => {
       const response = await fetch(getApiPath('admin/companies'))
@@ -48,6 +48,6 @@ export function useSuperAdminCompanies() {
       return response.json()
     },
     enabled: !!user && user.role === 'super_admin',
-    staleTime: 1000 * 60 * 5, // 5 minutes
+    staleTime: 1000 * 60 * 2, // 2 minutes
   })
 }

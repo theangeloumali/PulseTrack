@@ -1,4 +1,5 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useSessionAwareQuery } from './useSessionAwareQuery';
 import {
   getCompanyBillingSettings,
   updateCompanyBillingSettings,
@@ -12,7 +13,7 @@ import type { CompanyBillingSettings, NewCompanyBillingSettings, BillingRate, Ne
 import { getApiPath } from '@/lib/utils';
 
 export function useBillingSettings(companyId: string) {
-    return useQuery<CompanyBillingSettings | null, Error>({
+    return useSessionAwareQuery<CompanyBillingSettings | null, Error>({
         queryKey: ['billing-settings', companyId],
         queryFn: () => getCompanyBillingSettings(companyId),
         enabled: !!companyId, // Only run if companyId is available
@@ -37,7 +38,7 @@ export function useUpdateBillingSettings(companyId: string) {
 }
 
 export function useBillingReport(companyId: string, startDate: string, endDate: string) {
-    return useQuery<any, Error>({
+    return useSessionAwareQuery<any, Error>({
         queryKey: ['billing-report', companyId, startDate, endDate],
         queryFn: async () => {
             const apiPath = getApiPath(`billing/report?companyId=${companyId}&startDate=${startDate}&endDate=${endDate}`);
@@ -55,7 +56,7 @@ export function useBillingReport(companyId: string, startDate: string, endDate: 
 }
 
 export function useBillingRates(companyId: string) {
-    return useQuery<BillingRate[], Error>({
+    return useSessionAwareQuery<BillingRate[], Error>({
         queryKey: ['billing-rates', companyId],
         queryFn: () => getBillingRatesByCompany(companyId),
         enabled: !!companyId,

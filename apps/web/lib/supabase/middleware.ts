@@ -24,11 +24,26 @@ export async function updateSession(request: NextRequest) {
 	try {
 		const {
 			data: { user },
+			error: userError
 		} = await supabase.auth.getUser();
 
 		console.log('Middleware - Path:', request.nextUrl.pathname, 'User:', user?.id || 'No user');
 		console.log('Middleware - Full URL:', request.url);
 		console.log('Middleware - Query params:', request.nextUrl.searchParams.toString());
+		
+		// If there's an error getting user, log it but don't immediately redirect
+		// unless it's clearly an auth error
+		if (userError) {
+			console.warn('Middleware - Error getting user:', userError);
+			// Only redirect for clear auth errors, not network issues
+			const isAuthError = userError.message?.includes('JWT') || 
+			                   userError.message?.includes('token') ||
+			                   userError.message?.includes('expired');
+			if (!isAuthError) {
+				console.log('Middleware - Non-auth error, allowing through');
+				return supabaseResponse;
+			}
+		}
 		
 		// Check each path condition individually for debugging
 		const isLogin = request.nextUrl.pathname.startsWith('/login')
@@ -45,6 +60,29 @@ export async function updateSession(request: NextRequest) {
 		console.log('Middleware - Path checks:', {
 			isLogin, isSignup, isVerifyEmail, isAuthDiagnostic, isAuthCallback, isRecoveryCallback, isAcceptInvitation, isAuthRoute, isForgotPassword, isResetPassword
 		})
+		
+		// Special handling for root path - always redirect appropriately
+		// Note: Due to basePath="/pulse", the root path here is actually /pulse
+		const isRootPath = request.nextUrl.pathname === '/' || request.nextUrl.pathname === '/pulse'
+		if (isRootPath) {
+			console.log('Middleware - Root path detected:', request.nextUrl.pathname)
+			const url = request.nextUrl.clone()
+			
+			// Check if we're being accessed through a proxy
+			const host = request.headers.get('x-forwarded-host') || request.headers.get('host')
+			const isProxiedRequest = host === 'zkidzdev.com' || host === 'www.zkidzdev.com'
+			
+			if (user) {
+				// User is authenticated, redirect to dashboard
+				url.pathname = '/dashboard'
+				console.log('Middleware - Root path: Authenticated user, redirecting to dashboard')
+			} else {
+				// User is not authenticated, redirect to login
+				url.pathname = '/login'
+				console.log('Middleware - Root path: No user, redirecting to login')
+			}
+			return NextResponse.redirect(url)
+		}
 		
 		// For API routes, don't redirect to login - let them handle their own auth
 		const isApiRoute = request.nextUrl.pathname.startsWith('/api/')
