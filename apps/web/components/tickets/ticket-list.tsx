@@ -235,7 +235,7 @@ export function TicketList({ tickets, isLoading }: TicketListProps) {
                     <MoreVertical className="h-4 w-4" />
                   </Button>
                   {expandedDropdown === ticket.id && (
-                    <div className="absolute right-0 top-9 bg-white border rounded-md shadow-lg z-10 py-1 min-w-[150px]">
+                    <div className="absolute right-0 top-9 bg-white border rounded-md shadow-lg z-50 py-1 min-w-[150px]">
                       <div className="px-3 py-2 text-xs font-medium text-gray-500 border-b">
                         Quick Status Change
                       </div>

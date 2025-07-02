@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@workspace/ui/components/card';
 import { Badge } from '@workspace/ui/components/badge';
 import { Button } from '@workspace/ui/components/button';
@@ -51,6 +52,49 @@ import {
   ArrowDown
 } from 'lucide-react';
 import Link from 'next/link';
+
+// Portal for dropdowns to escape stacking context with proper positioning
+function DropdownPortal({ 
+  isOpen, 
+  triggerRef, 
+  children, 
+  position = 'bottom-left' 
+}: { 
+  isOpen: boolean; 
+  triggerRef: React.RefObject<HTMLElement>; 
+  children: React.ReactNode;
+  position?: 'bottom-left' | 'bottom-right';
+}) {
+  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0 });
+
+  useEffect(() => {
+    if (isOpen && triggerRef.current) {
+      const rect = triggerRef.current.getBoundingClientRect();
+      const scrollY = window.pageYOffset || document.documentElement.scrollTop;
+      const scrollX = window.pageXOffset || document.documentElement.scrollLeft;
+
+      let top = rect.bottom + scrollY + 8; // 8px below trigger
+      let left = position === 'bottom-right' ? rect.right + scrollX : rect.left + scrollX;
+
+      setDropdownPosition({ top, left });
+    }
+  }, [isOpen, triggerRef, position]);
+
+  if (!isOpen || typeof window === 'undefined') return null;
+  
+  return createPortal(
+    <div 
+      className="fixed z-[9999] pointer-events-auto"
+      style={{ 
+        top: dropdownPosition.top, 
+        left: dropdownPosition.left 
+      }}
+    >
+      {children}
+    </div>,
+    document.body
+  );
+}
 
 interface Column {
   id: TicketStatus;
@@ -147,7 +191,7 @@ function DroppableColumn({
                   {getSortIcon()}
                 </Button>
                 {showSortMenu && (
-                  <div className="absolute right-0 top-7 bg-white border rounded-md shadow-lg z-20 py-1 min-w-[140px]">
+                  <div className="absolute right-0 top-7 bg-white border rounded-md shadow-lg z-[9999] py-1 min-w-[140px]">
                     {sortOptions.map((option) => (
                       <button
                         key={option.value}
@@ -181,8 +225,8 @@ function DroppableColumn({
             </div>
           </div>
         </CardHeader>
-        <CardContent className="space-y-3 min-h-[200px] relative">
-          <div ref={setNodeRef} className="min-h-full">
+        <CardContent className="space-y-3 min-h-[200px] relative overflow-visible">
+          <div ref={setNodeRef} className="min-h-full overflow-visible">
             {children}
             {/* Add some empty space at the bottom for easier dropping */}
             <div className="h-16 w-full" />
@@ -206,6 +250,9 @@ function SortableTicketCard({
   onExpandPriority,
   expandedPriority
 }: SortableTicketCardProps) {
+  const assigneeRef = React.useRef<HTMLDivElement>(null);
+  const priorityRef = React.useRef<HTMLDivElement>(null);
+  const moreButtonRef = React.useRef<HTMLButtonElement>(null);
   const { data: users = [], isLoading: usersLoading } = useAssignableUsers();
   const {
     attributes,
@@ -270,8 +317,9 @@ function SortableTicketCard({
       style={style}
       {...attributes}
       {...listeners}
-      className={`bg-white hover:shadow-md transition-all duration-200 cursor-grab active:cursor-grabbing border border-gray-200 ${
-        isDragging ? 'shadow-lg ring-2 ring-blue-300' : ''
+      data-ticket-id={ticket.id}
+      className={`relative bg-white hover:shadow-md transition-all duration-200 cursor-grab active:cursor-grabbing border border-gray-200 ${
+        isDragging ? 'shadow-lg ring-2 ring-blue-300 z-50' : 'z-10'
       }`}
     >
       <CardContent className="p-3">
@@ -290,8 +338,9 @@ function SortableTicketCard({
               </h4>
             </Link>
           </div>
-          <div className="relative">
+          <div className="relative z-[200]">
             <Button
+              ref={moreButtonRef}
               variant="ghost"
               size="sm"
               onClick={(e) => {
@@ -302,8 +351,12 @@ function SortableTicketCard({
             >
               <MoreVertical className="h-4 w-4" />
             </Button>
-            {expandedDropdown === ticket.id && (
-              <div className="absolute right-0 top-7 bg-white border rounded-md shadow-lg z-10 py-1 min-w-[180px]">
+            <DropdownPortal
+              isOpen={expandedDropdown === ticket.id}
+              triggerRef={moreButtonRef}
+              position="bottom-right"
+            >
+              <div className="bg-white border rounded-md shadow-lg py-1 min-w-[180px]">
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
@@ -350,7 +403,7 @@ function SortableTicketCard({
                   Delete
                 </button>
               </div>
-            )}
+            </DropdownPortal>
           </div>
         </div>
         
@@ -362,9 +415,10 @@ function SortableTicketCard({
         
         <div className="flex items-center gap-2 mb-2">
           {/* Priority Badge with Dropdown - More obvious styling */}
-          <div className="relative">
-            <Badge 
-              className={`${getPriorityColor(ticket.priority)} text-xs flex items-center gap-1 cursor-pointer hover:opacity-80 border border-dashed hover:border-solid transition-all`}
+          <div className="relative z-[200]">
+            <div
+              ref={priorityRef}
+              className={`${getPriorityColor(ticket.priority)} text-xs flex items-center gap-1 cursor-pointer hover:opacity-80 border border-dashed hover:border-solid transition-all px-2 py-1 rounded-full`}
               onClick={(e) => {
                 e.stopPropagation();
                 onExpandPriority(expandedPriority === ticket.id ? null : ticket.id);
@@ -374,9 +428,13 @@ function SortableTicketCard({
               {getPriorityIcon(ticket.priority)}
               {ticket.priority}
               <ArrowUpDown className="h-2 w-2 opacity-60" />
-            </Badge>
-            {expandedPriority === ticket.id && (
-              <div className="absolute left-0 top-7 bg-white border rounded-md shadow-lg z-30 py-1 min-w-[120px]">
+            </div>
+            <DropdownPortal 
+              isOpen={expandedPriority === ticket.id}
+              triggerRef={priorityRef}
+              position="bottom-left"
+            >
+              <div className="bg-white border rounded-md shadow-lg py-1 min-w-[120px]">
                 {priorityOptions.map((priority) => (
                   <button
                     key={priority.value}
@@ -395,14 +453,15 @@ function SortableTicketCard({
                   </button>
                 ))}
               </div>
-            )}
+            </DropdownPortal>
           </div>
         </div>
 
         <div className="flex items-center justify-between text-xs text-gray-500">
           {/* Assignee with Dropdown */}
-          <div className="relative">
+          <div className="relative z-[200]">
             <div 
+              ref={assigneeRef}
               className="flex items-center gap-1 cursor-pointer hover:bg-gray-100 rounded px-2 py-1 border border-dashed border-gray-300 hover:border-solid transition-all"
               onClick={(e) => {
                 e.stopPropagation();
@@ -416,8 +475,12 @@ function SortableTicketCard({
               </span>
               <UserPlus className="h-3 w-3 opacity-50" />
             </div>
-            {expandedAssignment === ticket.id && (
-              <div className="absolute left-0 top-7 bg-white border rounded-md shadow-lg z-30 py-1 min-w-[180px] max-h-40 overflow-y-auto">
+            <DropdownPortal 
+              isOpen={expandedAssignment === ticket.id}
+              triggerRef={assigneeRef}
+              position="bottom-left"
+            >
+              <div className="bg-white border rounded-md shadow-lg py-1 min-w-[180px] max-h-40 overflow-y-auto">
                 {/* Unassign option */}
                 <button
                   onClick={(e) => {
@@ -457,7 +520,7 @@ function SortableTicketCard({
                   ))
                 )}
               </div>
-            )}
+            </DropdownPortal>
           </div>
           
           <div className="flex items-center gap-1">

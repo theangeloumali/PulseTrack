@@ -309,3 +309,112 @@ Complex Issue?
 ```
 
 This methodology turned a frustrating persistent bug into a robust, well-debugged feature! 🎉
+
+### 🎯 **Case Study: Z-Index Dropdown Visibility Bug (July 2025)**
+
+**Issue**: Dropdown menus and popups in the kanban board were appearing behind ticket cards and other UI elements, making them invisible or partially obscured.
+
+**Root Causes Found**:
+1. **CSS Stacking Context Limitations**: Parent containers with transforms, opacity, or other CSS properties create stacking contexts that limit z-index effectiveness
+2. **Relative Positioning Conflicts**: Dropdowns rendered within component hierarchy were constrained by parent z-index values
+
+**Solution Pattern - Portal-Based Dropdowns**:
+```typescript
+// ❌ WRONG: Traditional z-index approach (fails in stacking contexts)
+<div className="relative">
+  <button>Trigger</button>
+  <div className="absolute z-[9999] top-full left-0">
+    Dropdown content
+  </div>
+</div>
+
+// ✅ CORRECT: Portal-based approach with smart positioning
+import { createPortal } from 'react-dom';
+
+function DropdownPortal({ 
+  isOpen, 
+  triggerRef, 
+  children, 
+  position = 'bottom-left' 
+}: { 
+  isOpen: boolean; 
+  triggerRef: React.RefObject<HTMLElement>; 
+  children: React.ReactNode;
+  position?: 'bottom-left' | 'bottom-right';
+}) {
+  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0 });
+
+  useEffect(() => {
+    if (isOpen && triggerRef.current) {
+      const rect = triggerRef.current.getBoundingClientRect();
+      const scrollY = window.pageYOffset || document.documentElement.scrollTop;
+      const scrollX = window.pageXOffset || document.documentElement.scrollLeft;
+
+      let top = rect.bottom + scrollY + 8; // 8px below trigger
+      let left = position === 'bottom-right' ? rect.right + scrollX : rect.left + scrollX;
+
+      setDropdownPosition({ top, left });
+    }
+  }, [isOpen, triggerRef, position]);
+
+  if (!isOpen || typeof window === 'undefined') return null;
+  
+  return createPortal(
+    <div 
+      className="fixed z-[9999] pointer-events-auto"
+      style={{ 
+        top: dropdownPosition.top, 
+        left: dropdownPosition.left 
+      }}
+    >
+      {children}
+    </div>,
+    document.body
+  );
+}
+
+// Usage in component:
+const triggerRef = React.useRef<HTMLButtonElement>(null);
+const [isOpen, setIsOpen] = useState(false);
+
+return (
+  <>
+    <button ref={triggerRef} onClick={() => setIsOpen(!isOpen)}>
+      Trigger
+    </button>
+    <DropdownPortal 
+      isOpen={isOpen} 
+      triggerRef={triggerRef}
+      position="bottom-left"
+    >
+      Dropdown content
+    </DropdownPortal>
+  </>
+);
+```
+
+**Key Technical Concepts**:
+- **React Portal (`createPortal`)**: Renders dropdown at document root level, completely bypassing stacking context constraints
+- **Smart Positioning Algorithm**: Uses `getBoundingClientRect()` to calculate exact pixel coordinates relative to trigger elements
+- **Scroll-Aware Positioning**: Accounts for page scroll position using `window.pageYOffset` and `document.documentElement.scrollTop`
+- **Fixed Positioning**: Uses CSS `fixed` positioning with calculated coordinates for reliable placement
+- **Configurable Alignment**: Supports different positioning strategies (bottom-left, bottom-right) for various use cases
+
+**When to Use This Pattern**:
+1. **Dropdown/Popup Visibility Issues**: When z-index approaches fail due to stacking contexts
+2. **Complex Component Hierarchies**: In nested layouts where traditional positioning is constrained
+3. **Consistent UX Requirements**: When all dropdowns need uniform behavior across the application
+4. **Kanban Boards**: Specifically useful in card-based layouts where cards create stacking contexts
+
+**Implementation Checklist**:
+- [ ] Create reusable `DropdownPortal` component
+- [ ] Add refs to all dropdown trigger elements (`useRef<HTMLElement>`)
+- [ ] Implement position calculation with scroll awareness
+- [ ] Add positioning options for different alignment needs
+- [ ] Apply portal pattern consistently across all dropdowns
+- [ ] Test dropdown positioning with page scrolling
+- [ ] Verify dropdowns appear above all other content
+
+**Files Updated**: `components/tickets/ticket-board.tsx:56-97` - DropdownPortal component implementation
+
+This portal-based solution provides bulletproof dropdown visibility by rendering outside the normal component hierarchy! 🎯

@@ -14,6 +14,7 @@ import { Badge } from '@workspace/ui/components/badge';
 import type { BillingFrequency, NewBillingRate } from '@/lib/db/schema';
 import { startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfYear, endOfYear, format } from 'date-fns';
 import { Clock, DollarSign, Calendar, Users, Settings } from 'lucide-react';
+import { DateRangePicker } from '@/components/ui/date-range-picker';
 
 const currencies = ['USD', 'EUR', 'GBP', 'JPY', 'AUD', 'CAD', 'CHF', 'CNY', 'SEK', 'NZD'];
 
@@ -192,14 +193,39 @@ const BillingPage = () => {
 				end = today;
 				break;
 			default:
-				start = new Date(reportStartDate);
-				end = new Date(reportEndDate);
+				// Validate custom dates, fallback to this week if invalid
+				if (reportStartDate && reportEndDate) {
+					const startDate = new Date(reportStartDate);
+					const endDate = new Date(reportEndDate);
+					if (!isNaN(startDate.getTime()) && !isNaN(endDate.getTime())) {
+						start = startDate;
+						end = endDate;
+					} else {
+						// Fallback to this week if dates are invalid
+						start = startOfWeek(today, { weekStartsOn: 1 });
+						end = endOfWeek(today, { weekStartsOn: 1 });
+					}
+				} else {
+					// Fallback to this week if dates are empty
+					start = startOfWeek(today, { weekStartsOn: 1 });
+					end = endOfWeek(today, { weekStartsOn: 1 });
+				}
 				break;
 		}
 
-		setReportStartDate(format(start, 'yyyy-MM-dd'));
-		setReportEndDate(format(end, 'yyyy-MM-dd'));
-		setShowReport(true);
+		try {
+			setReportStartDate(format(start, 'yyyy-MM-dd'));
+			setReportEndDate(format(end, 'yyyy-MM-dd'));
+			setShowReport(true);
+		} catch (error) {
+			console.error('Error formatting dates:', error);
+			// Fallback to this week on error
+			const fallbackStart = startOfWeek(today, { weekStartsOn: 1 });
+			const fallbackEnd = endOfWeek(today, { weekStartsOn: 1 });
+			setReportStartDate(format(fallbackStart, 'yyyy-MM-dd'));
+			setReportEndDate(format(fallbackEnd, 'yyyy-MM-dd'));
+			setShowReport(true);
+		}
 	};
 
 	useEffect(() => {
@@ -327,56 +353,89 @@ console.log('filteredBillingReport:', filteredBillingReport);
 										View detailed time entries and billing information
 									</CardDescription>
 								</div>
-								<div className="flex gap-4 items-end">
-									<div>
-										<Label htmlFor='reportFilter'>Period</Label>
-										<Select value={reportFilter} onValueChange={setReportFilter}>
-											<SelectTrigger id='reportFilter' className="w-32">
-												<SelectValue />
-											</SelectTrigger>
-											<SelectContent>
-												<SelectItem value='weekly'>Weekly</SelectItem>
-												<SelectItem value='bi_monthly'>Bi-monthly</SelectItem>
-												<SelectItem value='monthly'>Monthly</SelectItem>
-												<SelectItem value='yearly'>Yearly</SelectItem>
-												<SelectItem value='overall'>Overall</SelectItem>
-												<SelectItem value='custom'>Custom</SelectItem>
-											</SelectContent>
-										</Select>
-									</div>
-									{reportFilter === 'custom' && (
-										<>
-											<div>
-												<Label htmlFor='reportStartDate'>Start Date</Label>
-												<Input id='reportStartDate' type='date' value={reportStartDate} onChange={(e) => setReportStartDate(e.target.value)} />
+								<div className="flex flex-col gap-4">
+									{/* Date Range Filter Section */}
+									<div className="bg-gray-50 p-4 rounded-lg border">
+										<h4 className="text-sm font-medium text-gray-900 mb-3 flex items-center gap-2">
+											<Calendar className="h-4 w-4" />
+											Date Range Filter
+										</h4>
+										<div className="space-y-4">
+											{/* Quick Period Selection */}
+											<div className="flex gap-4 items-end flex-wrap">
+												<div>
+													<Label htmlFor='reportFilter'>Quick Periods</Label>
+													<Select value={reportFilter} onValueChange={setReportFilter}>
+														<SelectTrigger id='reportFilter' className="w-36">
+															<SelectValue />
+														</SelectTrigger>
+														<SelectContent>
+															<SelectItem value='weekly'>This Week</SelectItem>
+															<SelectItem value='bi_monthly'>Bi-monthly</SelectItem>
+															<SelectItem value='monthly'>This Month</SelectItem>
+															<SelectItem value='yearly'>This Year</SelectItem>
+															<SelectItem value='overall'>All Time</SelectItem>
+															<SelectItem value='custom'>Custom Range</SelectItem>
+														</SelectContent>
+													</Select>
+												</div>
+												<div className="text-sm text-gray-600 bg-white px-3 py-2 rounded border">
+													<div className="flex items-center gap-2">
+														<span className="font-medium">Current Range:</span>
+														<span>{reportStartDate && reportEndDate ? 
+															`${format(new Date(reportStartDate), 'MMM dd')} - ${format(new Date(reportEndDate), 'MMM dd, yyyy')}` : 
+															'Loading...'}</span>
+													</div>
+												</div>
 											</div>
-											<div>
-												<Label htmlFor='reportEndDate'>End Date</Label>
-												<Input id='reportEndDate' type='date' value={reportEndDate} onChange={(e) => setReportEndDate(e.target.value)} />
+											
+											{/* Combined Date Range Picker */}
+											<div className="max-w-xs">
+												<DateRangePicker
+													startDate={reportStartDate}
+													endDate={reportEndDate}
+													onStartDateChange={(date) => {
+														setReportStartDate(date);
+														setReportFilter('custom');
+													}}
+													onEndDateChange={(date) => {
+														setReportEndDate(date);
+														setReportFilter('custom');
+													}}
+													onRangeChange={(startDate, endDate) => {
+														setReportStartDate(startDate);
+														setReportEndDate(endDate);
+														setReportFilter('custom');
+														// Auto-refresh the report when range is applied
+														setTimeout(() => {
+															handleGenerateReport();
+														}, 100);
+													}}
+												/>
 											</div>
-										</>
-									)}
-									{isAdmin && (
-										<div>
-											<Label htmlFor='userFilter'>User</Label>
-											<Select value={selectedUserId} onValueChange={setSelectedUserId}>
-												<SelectTrigger id='userFilter' className="w-40">
-													<SelectValue />
-												</SelectTrigger>
-												<SelectContent>
-													<SelectItem value='all'>All Users</SelectItem>
-													{users?.map((user) => (
-														<SelectItem key={user.id} value={user.id}>
-															{user.first_name} {user.last_name}
-														</SelectItem>
-													))}
-												</SelectContent>
-											</Select>
+											{isAdmin && (
+												<div>
+													<Label htmlFor='userFilter'>User</Label>
+													<Select value={selectedUserId} onValueChange={setSelectedUserId}>
+														<SelectTrigger id='userFilter' className="w-40">
+															<SelectValue />
+														</SelectTrigger>
+														<SelectContent>
+															<SelectItem value='all'>All Users</SelectItem>
+															{users?.map((user) => (
+																<SelectItem key={user.id} value={user.id}>
+																	{user.first_name} {user.last_name}
+																</SelectItem>
+															))}
+														</SelectContent>
+													</Select>
+												</div>
+											)}
+											<Button onClick={handleGenerateReport} disabled={isReportLoading}>
+												{isReportLoading ? 'Loading...' : 'Refresh'}
+											</Button>
 										</div>
-									)}
-									<Button onClick={handleGenerateReport} disabled={isReportLoading}>
-										{isReportLoading ? 'Loading...' : 'Refresh'}
-									</Button>
+									</div>
 								</div>
 							</div>
 						</CardHeader>
