@@ -23,6 +23,8 @@ import {
   useDroppable,
   useDraggable,
   DragOverlay,
+  rectIntersection,
+  CollisionDetection,
 } from '@dnd-kit/core';
 import {
   SortableContext,
@@ -120,7 +122,7 @@ function DroppableColumn({
   ];
 
   return (
-    <div ref={setNodeRef} className="flex-shrink-0 w-80">
+    <div className="flex-shrink-0 w-80">
       <Card className={`h-fit ${column.color} border-2 ${isOver ? 'ring-2 ring-blue-400 ring-opacity-50' : ''}`}>
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
@@ -179,8 +181,12 @@ function DroppableColumn({
             </div>
           </div>
         </CardHeader>
-        <CardContent className="space-y-3 min-h-[200px]">
-          {children}
+        <CardContent className="space-y-3 min-h-[200px] relative">
+          <div ref={setNodeRef} className="min-h-full">
+            {children}
+            {/* Add some empty space at the bottom for easier dropping */}
+            <div className="h-16 w-full" />
+          </div>
         </CardContent>
       </Card>
     </div>
@@ -509,6 +515,47 @@ export function TicketBoard({ tickets: serverTickets, isLoading }: TicketBoardPr
     })
   );
 
+  // Custom collision detection that handles both column moves and within-column sorting
+  const customCollisionDetection: CollisionDetection = (args) => {
+    console.log('🔍 Collision Detection - Active:', args.active?.id, 'Containers:', args.droppableContainers.map(c => c.id));
+    
+    // Get all droppables
+    const allCollisions = rectIntersection(args);
+    
+    if (allCollisions.length === 0) return [];
+    
+    // Separate columns from tickets
+    const columnIds = ['new', 'in_progress', 'review', 'done'];
+    const columnCollisions = allCollisions.filter(collision => 
+      columnIds.includes(collision.id as string)
+    );
+    const ticketCollisions = allCollisions.filter(collision => 
+      !columnIds.includes(collision.id as string)
+    );
+    
+    console.log('🎯 Collisions - Columns:', columnCollisions.map(c => c.id), 'Tickets:', ticketCollisions.map(c => c.id));
+    
+    // If we have ticket collisions, check if it's the same column for reordering
+    if (ticketCollisions.length > 0) {
+      const activeTicket = tickets.find(t => t.id === args.active?.id);
+      const targetTicket = tickets.find(t => t.id === ticketCollisions[0].id);
+      
+      if (activeTicket && targetTicket && activeTicket.status === targetTicket.status) {
+        console.log('🔄 Same-column reordering detected');
+        return ticketCollisions.slice(0, 1); // Return first ticket collision for reordering
+      }
+    }
+    
+    // For cross-column moves, prioritize columns
+    if (columnCollisions.length > 0) {
+      console.log('📂 Column move detected:', columnCollisions[0].id);
+      return columnCollisions.slice(0, 1);
+    }
+    
+    // Fallback to first available collision
+    return allCollisions.slice(0, 1);
+  };
+
   const sortTickets = (tickets: Ticket[], sortOption: SortOption, direction: SortDirection) => {
     return [...tickets].sort((a, b) => {
       // Always check for custom sort_order first when using default sort
@@ -570,17 +617,26 @@ export function TicketBoard({ tickets: serverTickets, isLoading }: TicketBoardPr
 
   const handleDragStart = (event: DragStartEvent) => {
     const { active } = event;
+    console.log('🚀 DRAG START - Active:', active.id);
     const ticket = tickets.find(t => t.id === active.id);
+    if (ticket) {
+      console.log('🎫 Dragging ticket:', ticket.title, 'Status:', ticket.status);
+    }
     setActiveTicket(ticket || null);
   };
 
   const handleDragOver = (event: DragOverEvent) => {
-    // Just for visual feedback during drag, don't update data here
+    const { over } = event;
+    if (over) {
+      console.log('🔄 DRAG OVER - Over:', over.id, 'Type:', typeof over.id);
+    }
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     console.log('🔄 DRAG END - Active:', active.id, 'Over:', over?.id);
+    console.log('🔍 Available column IDs:', columns.map(c => c.id));
+    console.log('🔍 Over data:', over?.data);
     setActiveTicket(null);
 
     if (!over) {
@@ -607,9 +663,32 @@ export function TicketBoard({ tickets: serverTickets, isLoading }: TicketBoardPr
       const newStatus = overColumn.id;
       if (activeTicket.status !== newStatus) {
         console.log('🔄 Status change:', activeTicket.status, '->', newStatus);
+        
+        // Calculate a high sort_order to place the moved ticket at the top of the new column
+        const targetColumnTickets = getTicketsForColumn(newStatus);
+        const maxSortOrder = Math.max(...targetColumnTickets.map(t => t.sort_order || 0), 0);
+        const newSortOrder = maxSortOrder + 1000; // Place at top with some margin
+        
+        console.log('📊 Moving to top of column with sort_order:', newSortOrder);
+        
+        // Immediately update optimistic state for smooth UX
+        setOptimisticTickets(prevTickets => {
+          return prevTickets.map(ticket => {
+            if (ticket.id === activeTicket.id) {
+              return { ...ticket, status: newStatus, sort_order: newSortOrder };
+            }
+            return ticket;
+          });
+        });
+        
         updateTicketMutation.mutate({
           id: activeTicket.id,
-          data: { status: newStatus, sort_order: 0 }
+          data: { status: newStatus, sort_order: newSortOrder }
+        }, {
+          onError: () => {
+            // Revert optimistic update on error
+            setOptimisticTickets(serverTickets);
+          }
         });
       }
       return;
@@ -773,7 +852,7 @@ export function TicketBoard({ tickets: serverTickets, isLoading }: TicketBoardPr
     <>
       <DndContext
         sensors={sensors}
-        collisionDetection={closestCorners}
+        collisionDetection={customCollisionDetection}
         onDragStart={handleDragStart}
         onDragOver={handleDragOver}
         onDragEnd={handleDragEnd}
