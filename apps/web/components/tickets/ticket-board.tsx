@@ -214,8 +214,10 @@ function SortableTicketCard({
 
   const style = {
     transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.5 : 1,
+    transition: isDragging ? 'none' : transition, // Remove transition during drag for immediate feedback
+    opacity: isDragging ? 0.6 : 1,
+    scale: isDragging ? '1.02' : '1',
+    zIndex: isDragging ? 50 : 'auto',
   };
 
   const getPriorityColor = (priority: string) => {
@@ -262,7 +264,9 @@ function SortableTicketCard({
       style={style}
       {...attributes}
       {...listeners}
-      className="bg-white hover:shadow-md transition-shadow cursor-grab active:cursor-grabbing border border-gray-200"
+      className={`bg-white hover:shadow-md transition-all duration-200 cursor-grab active:cursor-grabbing border border-gray-200 ${
+        isDragging ? 'shadow-lg ring-2 ring-blue-300' : ''
+      }`}
     >
       <CardContent className="p-3">
         <div className="flex items-start justify-between mb-2">
@@ -482,8 +486,16 @@ export function TicketBoard({ tickets: serverTickets, isLoading }: TicketBoardPr
     done: { option: 'created_at', direction: 'desc' },
   });
   
-  // Use server tickets directly since database now respects sort_order
-  const tickets = serverTickets;
+  // Local optimistic state for smooth dragging experience
+  const [optimisticTickets, setOptimisticTickets] = useState<Ticket[]>([]);
+  
+  // Sync server tickets to optimistic state
+  React.useEffect(() => {
+    setOptimisticTickets(serverTickets);
+  }, [serverTickets]);
+  
+  // Use optimistic tickets for immediate UI updates
+  const tickets = optimisticTickets;
 
   const updateTicketMutation = useUpdateTicket();
   const updateSortOrdersMutation = useUpdateTicketSortOrders();
@@ -492,7 +504,7 @@ export function TicketBoard({ tickets: serverTickets, isLoading }: TicketBoardPr
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 8,
+        distance: 3, // Reduced distance for more responsive dragging
       },
     })
   );
@@ -634,7 +646,18 @@ export function TicketBoard({ tickets: serverTickets, isLoading }: TicketBoardPr
         
         console.log('💾 Sort order updates:', updates);
         
-        // Update database and let React Query handle cache refresh
+        // Immediately update optimistic state for smooth UX
+        setOptimisticTickets(prevTickets => {
+          return prevTickets.map(ticket => {
+            const update = updates.find(u => u.id === ticket.id);
+            if (update) {
+              return { ...ticket, sort_order: update.sort_order };
+            }
+            return ticket;
+          });
+        });
+        
+        // Update database in background
         console.log('🚀 Sending database update...');
         updateSortOrdersMutation.mutate(updates, {
           onSuccess: (data) => {
@@ -642,6 +665,8 @@ export function TicketBoard({ tickets: serverTickets, isLoading }: TicketBoardPr
           },
           onError: (error) => {
             console.log('❌ Database update failed:', error);
+            // Revert optimistic update on error
+            setOptimisticTickets(serverTickets);
           }
         });
         
@@ -839,7 +864,7 @@ export function TicketBoard({ tickets: serverTickets, isLoading }: TicketBoardPr
         
         <DragOverlay>
           {activeTicket ? (
-            <div className="rotate-6 transform">
+            <div className="rotate-3 transform scale-105 shadow-xl opacity-95 transition-all duration-150">
               <SortableTicketCard
                 ticket={activeTicket}
                 onDelete={() => {}}

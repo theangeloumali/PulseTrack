@@ -173,8 +173,10 @@ export function useUpdateTicketSortOrders() {
   return useMutation({
     mutationFn: updateTicketSortOrders,
     onSuccess: () => {
-      // Invalidate immediately since database now respects sort_order
-      queryClient.invalidateQueries({ queryKey: ticketKeys.all });
+      // Use a small delay to allow optimistic updates to show first
+      setTimeout(() => {
+        queryClient.invalidateQueries({ queryKey: ticketKeys.all });
+      }, 500);
     },
   });
 }
