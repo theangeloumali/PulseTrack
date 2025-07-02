@@ -297,6 +297,7 @@ export async function getTicketsByProject(projectId: string) {
     .select(ticketWithUsersFields)
     .eq('project_id', projectId)
     .is('deleted_at', null)
+    .order('sort_order', { ascending: false, nullsFirst: false })
     .order('created_at', { ascending: false })
   
   if (error) throw error
@@ -309,6 +310,7 @@ export async function getTicketsByCompany(companyId: string) {
     .select(ticketWithProjectFields)
     .eq('projects.company_id', companyId)
     .is('deleted_at', null)
+    .order('sort_order', { ascending: false, nullsFirst: false })
     .order('created_at', { ascending: false })
   
   if (error) throw error
@@ -350,6 +352,7 @@ export async function getAccessibleTicketsByCompany(companyId: string, userId: s
     .eq('projects.company_id', companyId)
     .in('project_id', memberProjectIds)
     .is('deleted_at', null)
+    .order('sort_order', { ascending: false, nullsFirst: false })
     .order('created_at', { ascending: false });
 
   if (error) {
@@ -411,36 +414,35 @@ export async function updateTicket(id: string, data: Partial<NewTicket>, updated
  * Update ticket sort orders for drag-and-drop reordering
  */
 export async function updateTicketSortOrders(updates: Array<{ id: string; sort_order: number }>) {
-  // Use a transaction to update multiple tickets atomically
-  const { data, error } = await supabase.rpc('update_ticket_sort_orders', {
-    ticket_updates: updates
-  });
-
-  if (error) {
-    // If RPC function doesn't exist, fall back to individual updates
-    console.warn('RPC function not found, using individual updates:', error);
+  console.log('🔧 Service: updateTicketSortOrders called with:', updates);
+  
+  // Update each ticket individually (more reliable than RPC)
+  const promises = updates.map(async ({ id, sort_order }) => {
+    console.log(`🔧 Service: Updating ticket ${id} with sort_order ${sort_order}`);
     
-    // Update each ticket individually
-    const promises = updates.map(async ({ id, sort_order }) => {
-      const { data, error } = await supabase
-        .from('tickets')
-        .update({ sort_order })
-        .eq('id', id)
-        .select();
-      
-      if (error) throw error;
-      return data;
-    });
+    const { data, error } = await supabase
+      .from('tickets')
+      .update({ sort_order, updated_at: new Date().toISOString() })
+      .eq('id', id)
+      .select();
     
-    try {
-      await Promise.all(promises);
-      return true;
-    } catch (fallbackError) {
-      throw fallbackError;
+    if (error) {
+      console.error('🔧 Service: Database error for ticket', id, ':', error);
+      throw error;
     }
+    
+    console.log('🔧 Service: Successfully updated ticket', id, ':', data);
+    return data;
+  });
+  
+  try {
+    const results = await Promise.all(promises);
+    console.log('🔧 Service: All updates completed successfully');
+    return results.flat();
+  } catch (error) {
+    console.error('🔧 Service: Failed to update sort orders:', error);
+    throw error;
   }
-
-  return data;
 }
 
 export async function deleteTicket(id: string) {
@@ -475,6 +477,7 @@ export async function getRecentTicketsByProject(projectId: string, limit: number
     .select(ticketWithUsersFields)
     .eq('project_id', projectId)
     .is('deleted_at', null)
+    .order('sort_order', { ascending: false, nullsFirst: false })
     .order('created_at', { ascending: false })
     .limit(limit)
   

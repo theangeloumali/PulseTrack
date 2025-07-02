@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@workspace/ui/components/card';
 import { Badge } from '@workspace/ui/components/badge';
 import { Button } from '@workspace/ui/components/button';
@@ -19,9 +19,18 @@ import {
   useSensor,
   useSensors,
   closestCenter,
+  closestCorners,
   useDroppable,
   useDraggable,
+  DragOverlay,
 } from '@dnd-kit/core';
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+  useSortable,
+  arrayMove,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import { 
   Plus, 
   MoreVertical, 
@@ -57,7 +66,7 @@ const defaultColumns: Column[] = [
   { id: 'done', title: 'Done', color: 'bg-green-50 border-green-200' },
 ];
 
-interface DraggableTicketCardProps {
+interface SortableTicketCardProps {
   ticket: Ticket;
   onDelete: (ticket: Ticket) => void;
   onTimeTrack: (ticket: Ticket) => void;
@@ -178,7 +187,7 @@ function DroppableColumn({
   );
 }
 
-function DraggableTicketCard({ 
+function SortableTicketCard({ 
   ticket, 
   onDelete, 
   onTimeTrack, 
@@ -190,22 +199,24 @@ function DraggableTicketCard({
   onUpdatePriority,
   onExpandPriority,
   expandedPriority
-}: DraggableTicketCardProps) {
+}: SortableTicketCardProps) {
   const { data: users = [], isLoading: usersLoading } = useAssignableUsers();
   const {
     attributes,
     listeners,
     setNodeRef,
     transform,
+    transition,
     isDragging,
-  } = useDraggable({
+  } = useSortable({
     id: ticket.id,
   });
 
-  const style = transform ? {
-    transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
     opacity: isDragging ? 0.5 : 1,
-  } : undefined;
+  };
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
@@ -454,7 +465,7 @@ interface TicketBoardProps {
   isLoading: boolean;
 }
 
-export function TicketBoard({ tickets, isLoading }: TicketBoardProps) {
+export function TicketBoard({ tickets: serverTickets, isLoading }: TicketBoardProps) {
   const [columns, setColumns] = useState<Column[]>(defaultColumns);
   const [isAddingColumn, setIsAddingColumn] = useState(false);
   const [newColumnTitle, setNewColumnTitle] = useState('');
@@ -470,6 +481,9 @@ export function TicketBoard({ tickets, isLoading }: TicketBoardProps) {
     review: { option: 'created_at', direction: 'desc' },
     done: { option: 'created_at', direction: 'desc' },
   });
+  
+  // Use server tickets directly since database now respects sort_order
+  const tickets = serverTickets;
 
   const updateTicketMutation = useUpdateTicket();
   const updateSortOrdersMutation = useUpdateTicketSortOrders();
@@ -554,75 +568,93 @@ export function TicketBoard({ tickets, isLoading }: TicketBoardProps) {
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
+    console.log('🔄 DRAG END - Active:', active.id, 'Over:', over?.id);
     setActiveTicket(null);
 
-    if (!over) return;
+    if (!over) {
+      console.log('❌ No drop target');
+      return;
+    }
 
     const activeId = active.id as string;
     const overId = over.id as string;
 
     // Find the ticket being dragged
     const activeTicket = tickets.find(t => t.id === activeId);
-    if (!activeTicket) return;
+    if (!activeTicket) {
+      console.log('❌ Active ticket not found');
+      return;
+    }
 
-    // Check if dropping on another ticket (for reordering)
-    const overTicket = tickets.find(t => t.id === overId);
-    
-    if (overTicket) {
-      // Dropping on another ticket - reorder within the same column
-      if (activeTicket.status === overTicket.status) {
-        const columnTickets = getTicketsForColumn(activeTicket.status);
-        const activeIndex = columnTickets.findIndex(t => t.id === activeId);
-        const overIndex = columnTickets.findIndex(t => t.id === overId);
-        
-        if (activeIndex !== overIndex) {
-          // Calculate new sort orders for all affected tickets
-          const updates: Array<{ id: string; sort_order: number }> = [];
-          const baseOrder = Date.now();
-          
-          // Create new arrangement by moving active ticket to new position
-          const newArrangement = [...columnTickets];
-          const [movedTicket] = newArrangement.splice(activeIndex, 1);
-          newArrangement.splice(overIndex, 0, movedTicket);
-          
-          // Assign new sort orders (higher numbers = higher priority)
-          newArrangement.forEach((ticket, index) => {
-            const newSortOrder = baseOrder + (newArrangement.length - index) * 1000;
-            updates.push({ id: ticket.id, sort_order: newSortOrder });
-          });
-          
-          // Update database
-          updateSortOrdersMutation.mutate(updates);
-          
-          // Reset the column to use default sorting (which will now use the updated sort_order)
-          setColumnSorts(prev => ({
-            ...prev,
-            [activeTicket.status]: { option: 'created_at', direction: 'desc' }
-          }));
-        }
-      } else {
-        // Different columns - move ticket and reset its sort order
-        const newStatus = overTicket.status;
+    console.log('🎫 Active ticket:', activeTicket.title, 'Status:', activeTicket.status);
+
+    // Check if we're dropping on a column (status change)
+    const overColumn = columns.find(col => col.id === overId);
+    if (overColumn) {
+      console.log('📂 Dropping on column:', overColumn.title);
+      const newStatus = overColumn.id;
+      if (activeTicket.status !== newStatus) {
+        console.log('🔄 Status change:', activeTicket.status, '->', newStatus);
         updateTicketMutation.mutate({
           id: activeTicket.id,
-          data: { status: newStatus, sort_order: 0 } // Reset sort order when moving between columns
+          data: { status: newStatus, sort_order: 0 }
         });
       }
       return;
     }
 
-    // Check if dropping directly on a column
-    const overColumn = columns.find(col => col.id === overId);
-    if (overColumn) {
-      const newStatus = overColumn.id;
-
-      // Update ticket status if it changed
-      if (activeTicket.status !== newStatus) {
-        updateTicketMutation.mutate({
-          id: activeTicket.id,
-          data: { status: newStatus, sort_order: 0 } // Reset sort order when moving between columns
+    // Check if we're dropping on another ticket (reordering within same column)
+    const overTicket = tickets.find(t => t.id === overId);
+    console.log('🎫 Over ticket:', overTicket?.title, 'Same status?', overTicket?.status === activeTicket.status);
+    
+    if (overTicket && activeTicket.status === overTicket.status) {
+      console.log('✅ Reordering within same column');
+      const columnTickets = getTicketsForColumn(activeTicket.status);
+      const activeIndex = columnTickets.findIndex(t => t.id === activeId);
+      const overIndex = columnTickets.findIndex(t => t.id === overId);
+      
+      console.log('📍 Indices - Active:', activeIndex, 'Over:', overIndex);
+      console.log('📋 Current column order:', columnTickets.map(t => t.title));
+      
+      if (activeIndex !== overIndex) {
+        console.log('🔀 Performing reorder from', activeIndex, 'to', overIndex);
+        
+        // Use arrayMove to get the new order
+        const newOrder = arrayMove(columnTickets, activeIndex, overIndex);
+        console.log('📋 New order:', newOrder.map(t => t.title));
+        
+        // Calculate new sort orders for all tickets in the column
+        const updates: Array<{ id: string; sort_order: number }> = [];
+        
+        newOrder.forEach((ticket, index) => {
+          // Use simple descending order: highest number = first position
+          const newSortOrder = (newOrder.length - index) * 1000;
+          updates.push({ id: ticket.id, sort_order: newSortOrder });
         });
+        
+        console.log('💾 Sort order updates:', updates);
+        
+        // Update database and let React Query handle cache refresh
+        console.log('🚀 Sending database update...');
+        updateSortOrdersMutation.mutate(updates, {
+          onSuccess: (data) => {
+            console.log('✅ Database update successful:', data);
+          },
+          onError: (error) => {
+            console.log('❌ Database update failed:', error);
+          }
+        });
+        
+        // Reset the column to use default sorting (which will now use the updated sort_order)
+        setColumnSorts(prev => ({
+          ...prev,
+          [activeTicket.status]: { option: 'created_at', direction: 'desc' }
+        }));
+      } else {
+        console.log('⚠️ Same position, no reorder needed');
       }
+    } else {
+      console.log('❌ Cannot reorder - different columns or invalid drop target');
     }
   };
 
@@ -674,10 +706,20 @@ export function TicketBoard({ tickets, isLoading }: TicketBoardProps) {
     if (!(option === 'created_at' && 
          ((columnSorts[columnId]?.option === option && columnSorts[columnId]?.direction === 'asc') || 
           (!columnSorts[columnId] || columnSorts[columnId]?.option !== option)))) {
-      // Clear sort_order for this column's tickets in the database
+      // Clear sort_order for this column's tickets in the database and local state
       const columnTickets = tickets.filter(t => t.status === columnId);
       const updates = columnTickets.map(ticket => ({ id: ticket.id, sort_order: 0 }));
+      
       if (updates.length > 0) {
+        // Update local state immediately
+        setLocalTickets(prevTickets => {
+          return prevTickets.map(ticket => {
+            const shouldUpdate = updates.find(u => u.id === ticket.id);
+            return shouldUpdate ? { ...ticket, sort_order: 0 } : ticket;
+          });
+        });
+        
+        // Update database
         updateSortOrdersMutation.mutate(updates);
       }
     }
@@ -706,7 +748,7 @@ export function TicketBoard({ tickets, isLoading }: TicketBoardProps) {
     <>
       <DndContext
         sensors={sensors}
-        collisionDetection={closestCenter}
+        collisionDetection={closestCorners}
         onDragStart={handleDragStart}
         onDragOver={handleDragOver}
         onDragEnd={handleDragEnd}
@@ -725,22 +767,27 @@ export function TicketBoard({ tickets, isLoading }: TicketBoardProps) {
                 sortDirection={sort.direction}
                 onSort={handleSort}
               >
-                {columnTickets.map((ticket) => (
-                  <DraggableTicketCard
-                    key={ticket.id}
-                    ticket={ticket}
-                    onDelete={setSelectedTicketForDelete}
-                    onTimeTrack={setSelectedTicketForTime}
-                    onExpandDropdown={setExpandedDropdown}
-                    expandedDropdown={expandedDropdown}
-                    onAssign={handleAssignTicket}
-                    onExpandAssignment={setExpandedAssignment}
-                    expandedAssignment={expandedAssignment}
-                    onUpdatePriority={handleUpdatePriority}
-                    onExpandPriority={setExpandedPriority}
-                    expandedPriority={expandedPriority}
-                  />
-                ))}
+                <SortableContext
+                  items={columnTickets.map(t => t.id)}
+                  strategy={verticalListSortingStrategy}
+                >
+                  {columnTickets.map((ticket) => (
+                    <SortableTicketCard
+                      key={ticket.id}
+                      ticket={ticket}
+                      onDelete={setSelectedTicketForDelete}
+                      onTimeTrack={setSelectedTicketForTime}
+                      onExpandDropdown={setExpandedDropdown}
+                      expandedDropdown={expandedDropdown}
+                      onAssign={handleAssignTicket}
+                      onExpandAssignment={setExpandedAssignment}
+                      expandedAssignment={expandedAssignment}
+                      onUpdatePriority={handleUpdatePriority}
+                      onExpandPriority={setExpandedPriority}
+                      expandedPriority={expandedPriority}
+                    />
+                  ))}
+                </SortableContext>
                 
                 {columnTickets.length === 0 && (
                   <div className="text-center py-8 text-gray-400">
@@ -789,6 +836,26 @@ export function TicketBoard({ tickets, isLoading }: TicketBoardProps) {
           )}
         </div>
         </div>
+        
+        <DragOverlay>
+          {activeTicket ? (
+            <div className="rotate-6 transform">
+              <SortableTicketCard
+                ticket={activeTicket}
+                onDelete={() => {}}
+                onTimeTrack={() => {}}
+                onExpandDropdown={() => {}}
+                expandedDropdown={null}
+                onAssign={() => {}}
+                onExpandAssignment={() => {}}
+                expandedAssignment={null}
+                onUpdatePriority={() => {}}
+                onExpandPriority={() => {}}
+                expandedPriority={null}
+              />
+            </div>
+          ) : null}
+        </DragOverlay>
       </DndContext>
 
       {/* Modals */}
