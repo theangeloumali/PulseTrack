@@ -81,7 +81,7 @@ export default function ProjectTicketsPage({ params }: Props) {
 	// Security check: ensure project belongs to user's company (PRD requirement)
 	if (project && user && project.company_id !== user.company_id) {
 		router.push('/projects');
-		return null;
+		return <div></div>;
 	}
 
 	const getStatusColor = (status: string) => {

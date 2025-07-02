@@ -51,7 +51,7 @@ export function useCompanyUsers() {
       return getCompanyUsers(user.company_id);
     },
     enabled: !!user?.company_id,
-    staleTime: 1000 * 60 * 5, // 5 minutes
+    staleTime: 1000 * 60 * 2, // 2 minutes
   });
 
   // Handle state updates in useEffect-like pattern

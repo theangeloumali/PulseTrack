@@ -43,7 +43,7 @@ export function useProjectsQuery() {
       return result;
     },
     enabled: !!user?.company_id && !!user?.id && !!user?.role,
-    staleTime: 1000 * 60 * 5, // 5 minutes
+    staleTime: 1000 * 60 * 2, // 2 minutes
   });
 }
 
@@ -169,7 +169,7 @@ export function useProjectsWithTicketCountsQuery() {
       return result;
     },
     enabled: !!user?.company_id && !!user?.id && !!user?.role,
-    staleTime: 1000 * 60 * 5, // 5 minutes
+    staleTime: 1000 * 60 * 2, // 2 minutes
   });
 }
 
@@ -187,7 +187,7 @@ export function useAllCompanyProjectsQuery() {
       return result;
     },
     enabled: !!user?.company_id && !!user?.role && ['super_admin', 'system_admin', 'company_admin'].includes(user.role),
-    staleTime: 1000 * 60 * 5, // 5 minutes
+    staleTime: 1000 * 60 * 2, // 2 minutes
   });
 }
 
@@ -205,7 +205,7 @@ export function useAllCompanyProjectsWithTicketCountsQuery() {
       return result;
     },
     enabled: !!user?.company_id && !!user?.role && ['super_admin', 'system_admin', 'company_admin'].includes(user.role),
-    staleTime: 1000 * 60 * 5, // 5 minutes
+    staleTime: 1000 * 60 * 2, // 2 minutes
   });
 }
 
@@ -217,7 +217,7 @@ export function useProjectMembersQuery(projectId: string) {
     queryKey: projectKeys.members(projectId),
     queryFn: () => getProjectMembers(projectId),
     enabled: !!projectId,
-    staleTime: 1000 * 60 * 5, // 5 minutes
+    staleTime: 1000 * 60 * 2, // 2 minutes
   });
 }
 
@@ -248,7 +248,7 @@ export function useUserProjectsQuery(userId?: string) {
     queryKey: projectKeys.userProjects(targetUserId || ''),
     queryFn: () => getUserProjects(targetUserId!),
     enabled: !!targetUserId,
-    staleTime: 1000 * 60 * 5, // 5 minutes
+    staleTime: 1000 * 60 * 2, // 2 minutes
   });
 }
 

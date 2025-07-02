@@ -13,6 +13,7 @@ import { useProjectsWithTicketCountsQuery } from '@/lib/hooks/useProjects';
 import { useAuthStore } from '@/lib/stores/auth';
 import { CreateProjectModal } from '@/components/modals/create-project-modal';
 import { ProjectMembersModal } from '@/components/modals/project-members-modal';
+import { AutoRefresh } from '@/components/auto-refresh';
 import { Plus, Search, Loader2, FolderOpen, Calendar, AlertCircle, User, Users } from 'lucide-react';
 
 function ProjectsContent() {
@@ -105,6 +106,13 @@ function ProjectsContent() {
 
 	return (
 		<div className="h-full bg-gray-50">
+			{/* Auto-refresh component for projects data */}
+			<AutoRefresh 
+				queryKeys={user?.company_id && user?.id && user?.role ? [
+					['projects', 'withTicketCounts', user.company_id, user.id, user.role]
+				] : []} 
+			/>
+			
 			{/* Header */}
 			<header className="bg-white shadow-sm">
 				<div className="px-4">

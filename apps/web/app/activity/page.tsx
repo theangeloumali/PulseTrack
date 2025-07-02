@@ -31,7 +31,7 @@ export default function ActivityPage(): React.JSX.Element {
 
   // Redirect if no user (will trigger useEffect)
   if (!user) {
-    return null
+    return <div></div>
   }
 
   return (

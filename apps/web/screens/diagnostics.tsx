@@ -38,7 +38,7 @@ export default function DiagnosticsPage() {
 
 	// Don't render the page if user doesn't have access
 	if (user && !canAccessDiagnostics()) {
-		return null;
+		return <div></div>;
 	}
 
 	const tabs = [

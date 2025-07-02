@@ -11,6 +11,7 @@ import { useCompanyTicketsQuery } from '@/lib/hooks/useTickets';
 import { CreateTicketModal } from '@/components/modals/create-ticket-modal';
 import { TicketBoard } from '@/components/tickets/ticket-board';
 import { TicketList } from '@/components/tickets/ticket-list';
+import { AutoRefresh } from '@/components/auto-refresh';
 import { 
 	Plus, 
 	Search,
@@ -120,6 +121,13 @@ export default function TicketsPage() {
 
 	return (
 		<div className="h-full bg-gray-50">
+			{/* Auto-refresh component for tickets data */}
+			<AutoRefresh 
+				queryKeys={user?.company_id && user?.id && user?.role ? [
+					['tickets', 'company', user.company_id, user.id, user.role]
+				] : []} 
+			/>
+			
 			<div className="h-full px-4 py-4">
 				{/* Header */}
 				<div className="flex justify-between items-center mb-4">

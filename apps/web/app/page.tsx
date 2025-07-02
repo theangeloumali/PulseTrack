@@ -5,6 +5,7 @@ import { createServerClient } from '@supabase/ssr'
 export default async function Page() {
   // This handles the root /pulse path
   // Always redirect to either login or dashboard based on auth status
+  // Note: Due to basePath="/pulse", this actually handles /pulse not /
   
   const cookieStore = await cookies()
   
