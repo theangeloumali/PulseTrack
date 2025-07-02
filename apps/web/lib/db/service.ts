@@ -297,6 +297,7 @@ export async function getTicketsByProject(projectId: string) {
     .select(ticketWithUsersFields)
     .eq('project_id', projectId)
     .is('deleted_at', null)
+    .order('sort_order', { ascending: false, nullsFirst: false })
     .order('created_at', { ascending: false })
   
   if (error) throw error
@@ -309,10 +310,55 @@ export async function getTicketsByCompany(companyId: string) {
     .select(ticketWithProjectFields)
     .eq('projects.company_id', companyId)
     .is('deleted_at', null)
+    .order('sort_order', { ascending: false, nullsFirst: false })
     .order('created_at', { ascending: false })
   
   if (error) throw error
   return data || []
+}
+
+/**
+ * Get tickets accessible to a user based on their role and project membership
+ * - Admins (company_admin, system_admin, super_admin): See all company tickets
+ * - Regular users (user, manager): See only tickets from projects they are members of
+ */
+export async function getAccessibleTicketsByCompany(companyId: string, userId: string, userRole: string) {
+  // Admins can see all tickets in their company
+  if (['super_admin', 'system_admin', 'company_admin'].includes(userRole)) {
+    return getTicketsByCompany(companyId);
+  }
+
+  // For regular users, get tickets from projects they are members of
+  const { data: membershipData, error: membershipError } = await supabase
+    .from('project_members')
+    .select('project_id')
+    .eq('user_id', userId);
+
+  if (membershipError) {
+    throw membershipError;
+  }
+
+  const memberProjectIds = membershipData?.map(pm => pm.project_id) || [];
+
+  // If user has no project memberships, return empty array
+  if (memberProjectIds.length === 0) {
+    return [];
+  }
+
+  // Get tickets only from projects where user is a member
+  const { data, error } = await supabase
+    .from('tickets')
+    .select(ticketWithProjectFields)
+    .eq('projects.company_id', companyId)
+    .in('project_id', memberProjectIds)
+    .is('deleted_at', null)
+    .order('sort_order', { ascending: false, nullsFirst: false })
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    throw error;
+  }
+  return data || [];
 }
 
 export async function createTicket(data: NewTicket) {
@@ -364,6 +410,41 @@ export async function updateTicket(id: string, data: Partial<NewTicket>, updated
   return result
 }
 
+/**
+ * Update ticket sort orders for drag-and-drop reordering
+ */
+export async function updateTicketSortOrders(updates: Array<{ id: string; sort_order: number }>) {
+  console.log('🔧 Service: updateTicketSortOrders called with:', updates);
+  
+  // Update each ticket individually (more reliable than RPC)
+  const promises = updates.map(async ({ id, sort_order }) => {
+    console.log(`🔧 Service: Updating ticket ${id} with sort_order ${sort_order}`);
+    
+    const { data, error } = await supabase
+      .from('tickets')
+      .update({ sort_order, updated_at: new Date().toISOString() })
+      .eq('id', id)
+      .select();
+    
+    if (error) {
+      console.error('🔧 Service: Database error for ticket', id, ':', error);
+      throw error;
+    }
+    
+    console.log('🔧 Service: Successfully updated ticket', id, ':', data);
+    return data;
+  });
+  
+  try {
+    const results = await Promise.all(promises);
+    console.log('🔧 Service: All updates completed successfully');
+    return results.flat();
+  } catch (error) {
+    console.error('🔧 Service: Failed to update sort orders:', error);
+    throw error;
+  }
+}
+
 export async function deleteTicket(id: string) {
   const { error } = await supabase
     .from('tickets')
@@ -396,6 +477,7 @@ export async function getRecentTicketsByProject(projectId: string, limit: number
     .select(ticketWithUsersFields)
     .eq('project_id', projectId)
     .is('deleted_at', null)
+    .order('sort_order', { ascending: false, nullsFirst: false })
     .order('created_at', { ascending: false })
     .limit(limit)
   
@@ -608,6 +690,173 @@ export async function getProjectsWithTicketCounts(companyId: string) {
   }));
   
   return transformedData;
+}
+
+/**
+ * Get projects accessible to a user based on their role and membership
+ * - Admins (company_admin, system_admin, super_admin): See all company projects
+ * - Regular users (user, manager): See only projects they are explicitly assigned to as members
+ */
+export async function getAccessibleProjectsByCompany(companyId: string, userId: string, userRole: string) {
+  // Admins can see all projects in their company
+  if (['super_admin', 'system_admin', 'company_admin'].includes(userRole)) {
+    return getProjectsByCompany(companyId);
+  }
+
+  // For regular users, get ONLY projects they are explicitly assigned to as members
+  const { data: membershipData, error: membershipError } = await supabase
+    .from('project_members')
+    .select('project_id')
+    .eq('user_id', userId);
+
+  if (membershipError) {
+    throw membershipError;
+  }
+
+  const memberProjectIds = membershipData?.map(pm => pm.project_id) || [];
+
+  // If user has no project memberships, return empty array
+  if (memberProjectIds.length === 0) {
+    return [];
+  }
+
+  // Get only projects where user is explicitly a member
+  const { data, error } = await supabase
+    .from('projects')
+    .select(projectWithRelationsFields)
+    .eq('company_id', companyId)
+    .in('id', memberProjectIds)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    throw error;
+  }
+  return data || [];
+}
+
+/**
+ * Get projects with ticket counts accessible to a user based on their role and membership
+ * - Admins (company_admin, system_admin, super_admin): See all company projects
+ * - Regular users (user, manager): See only projects they are explicitly assigned to as members
+ */
+export async function getAccessibleProjectsWithTicketCounts(companyId: string, userId: string, userRole: string) {
+  // Admins can see all projects in their company
+  if (['super_admin', 'system_admin', 'company_admin'].includes(userRole)) {
+    return getProjectsWithTicketCounts(companyId);
+  }
+
+  // For regular users, get ONLY projects they are explicitly assigned to as members
+  const { data: membershipData, error: membershipError } = await supabase
+    .from('project_members')
+    .select('project_id')
+    .eq('user_id', userId);
+
+  if (membershipError) {
+    throw membershipError;
+  }
+
+  const memberProjectIds = membershipData?.map(pm => pm.project_id) || [];
+
+  // If user has no project memberships, return empty array
+  if (memberProjectIds.length === 0) {
+    return [];
+  }
+
+  // Get full project data with ticket counts for accessible projects
+  const { data, error } = await supabase
+    .from('projects')
+    .select(`
+      ${projectBasicFields},
+      companies (
+        ${companyBasicFields}
+      ),
+      users:owner_id (
+        ${userBasicFields}
+      ),
+      ticket_count:tickets(count)
+    `)
+    .eq('company_id', companyId)
+    .in('id', memberProjectIds)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    throw error;
+  }
+
+  // Transform the data to include ticket_count as a number
+  const transformedData = (data || []).map(project => ({
+    ...project,
+    ticket_count: project.ticket_count?.[0]?.count || 0
+  }));
+
+  return transformedData;
+}
+
+/**
+ * Check if a user can manage project members based on role and project access
+ */
+export async function canUserManageProjectMembers(userId: string, projectId: string): Promise<boolean> {
+  // Get user information
+  const { data: user, error: userError } = await supabase
+    .from('users')
+    .select('id, role, company_id')
+    .eq('id', userId)
+    .single();
+
+  if (userError || !user) {
+    return false;
+  }
+
+  // Admins can manage all project members in their company
+  if (['super_admin', 'system_admin', 'company_admin'].includes(user.role)) {
+    // Verify project is in their company
+    const { data: project, error: projectError } = await supabase
+      .from('projects')
+      .select('id, company_id, owner_id')
+      .eq('id', projectId)
+      .single();
+
+    if (projectError || !project) {
+      return false;
+    }
+
+    // Super/system admins can manage any project, company admins only their company
+    if (user.role === 'super_admin' || user.role === 'system_admin') {
+      return true;
+    }
+
+    return project.company_id === user.company_id;
+  }
+
+  // Check if user is project owner
+  const { data: project, error: projectError } = await supabase
+    .from('projects')
+    .select('id, owner_id, company_id')
+    .eq('id', projectId)
+    .eq('company_id', user.company_id)
+    .single();
+
+  if (projectError || !project) {
+    return false;
+  }
+
+  if (project.owner_id === userId) {
+    return true;
+  }
+
+  // Check if user is a project lead
+  const { data: membership, error: membershipError } = await supabase
+    .from('project_members')
+    .select('role')
+    .eq('project_id', projectId)
+    .eq('user_id', userId)
+    .single();
+
+  if (membershipError || !membership) {
+    return false;
+  }
+
+  return membership.role === 'lead';
 }
 
 /**

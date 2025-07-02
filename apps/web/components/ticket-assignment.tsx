@@ -5,7 +5,7 @@ import { User, UserPlus } from 'lucide-react'
 import { Button } from '@workspace/ui/components/button'
 import { Card } from '@workspace/ui/components/card'
 import { Label } from '@workspace/ui/components/label'
-import { useUsersInCompany } from '@/lib/hooks/useUsers'
+import { useAssignableUsers } from '@/lib/hooks/useUsers'
 import { useUpdateTicket } from '@/lib/hooks/useTickets'
 import type { Ticket } from '@/lib/db/schema'
 
@@ -15,7 +15,7 @@ interface TicketAssignmentProps {
 }
 
 export function TicketAssignment({ ticket, compact = false }: TicketAssignmentProps) {
-  const { data: users = [], isLoading: usersLoading } = useUsersInCompany()
+  const { data: users = [], isLoading: usersLoading } = useAssignableUsers()
   const updateTicketMutation = useUpdateTicket()
   
   const [isAssigning, setIsAssigning] = useState(false)
@@ -29,8 +29,10 @@ export function TicketAssignment({ ticket, compact = false }: TicketAssignmentPr
         data: { assignee_id: userId }
       })
       setIsAssigning(false)
+      // The mutation will automatically invalidate the ticket cache and update the UI
     } catch (error) {
       console.error('Failed to assign ticket:', error)
+      alert('Failed to assign ticket. Please try again.')
     }
   }
 

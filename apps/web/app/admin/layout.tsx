@@ -30,7 +30,7 @@ export default function AdminLayout({
   }
 
   if (!user || user.role !== 'super_admin') {
-    return null // Will redirect via useEffect
+    return <div></div> // Will redirect via useEffect
   }
 
   return <>{children}</>

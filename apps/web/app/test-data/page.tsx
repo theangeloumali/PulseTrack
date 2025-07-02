@@ -4,8 +4,8 @@ import { useState } from 'react';
 import { Button } from '@workspace/ui/components/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@workspace/ui/components/card';
 import { useAuthStore } from '@/lib/stores/auth';
-import { useProjectsQuery } from '@/lib/hooks/useProjects';
-import { useCompanyTicketsQuery } from '@/lib/hooks/useTickets';
+import { useAllCompanyProjectsQuery } from '@/lib/hooks/useProjects';
+import { useAllCompanyTicketsQuery } from '@/lib/hooks/useTickets';
 import { 
   createTicket,
   createProject,
@@ -31,8 +31,8 @@ export default function TestDataPage() {
   const [isLoading, setIsLoading] = useState(false);
   const { user } = useAuthStore();
 
-  const { data: projects = [] } = useProjectsQuery();
-  const { data: tickets = [] } = useCompanyTicketsQuery(user?.company_id);
+  const { data: projects = [] } = useAllCompanyProjectsQuery();
+  const { data: tickets = [] } = useAllCompanyTicketsQuery(user?.company_id);
 
   const addResult = (test: string, success: boolean, data?: any, error?: any) => {
     setResults(prev => [...prev, {

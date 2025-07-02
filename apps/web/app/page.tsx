@@ -3,7 +3,10 @@ import { cookies } from 'next/headers'
 import { createServerClient } from '@supabase/ssr'
 
 export default async function Page() {
-  // Check if this is a password reset flow
+  // This handles the root /pulse path
+  // Always redirect to either login or dashboard based on auth status
+  // Note: Due to basePath="/pulse", this actually handles /pulse not /
+  
   const cookieStore = await cookies()
   
   const supabase = createServerClient(
@@ -20,22 +23,30 @@ export default async function Page() {
               cookieStore.set(name, value, options)
             )
           } catch {
-            // Handle cookie errors
+            // Handle cookie errors gracefully
           }
         },
       },
     }
   )
 
-  // Check if user just came from a password reset link
-  const { data: { user } } = await supabase.auth.getUser()
-  
-  if (user) {
-    // Check if this is a fresh session that might be from password reset
-    // For now, redirect authenticated users from root to dashboard
+  try {
+    // Check if user is authenticated
+    const { data: { user }, error } = await supabase.auth.getUser()
+    
+    // If there's an auth error or no user, redirect to login
+    if (error || !user) {
+      console.log('Root page: No authenticated user, redirecting to login')
+      redirect('/login')
+    }
+    
+    // User is authenticated, redirect to dashboard
+    console.log('Root page: User authenticated, redirecting to dashboard')
     redirect('/dashboard')
-  } else {
-    // No user, redirect to login
+    
+  } catch (error) {
+    // On any error, default to login
+    console.error('Root page: Error checking auth status:', error)
     redirect('/login')
   }
 }

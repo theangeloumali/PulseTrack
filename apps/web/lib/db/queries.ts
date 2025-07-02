@@ -83,6 +83,7 @@ export const ticketBasicFields = `
   estimated_hours,
   actual_hours,
   due_date,
+  sort_order,
   created_at,
   updated_at
 `;

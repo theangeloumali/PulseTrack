@@ -44,14 +44,14 @@ export function useCompanyUsers() {
   const { user } = useAuthStore();
   const { setUsers, setUsersLoading, setUsersError } = useCompanyStore();
 
-  const query = useQuery({
+  const query = useSessionAwareQuery({
     queryKey: userKeys.companyUsers(user?.company_id || ''),
     queryFn: async () => {
       if (!user?.company_id) throw new Error('No company ID available');
       return getCompanyUsers(user.company_id);
     },
     enabled: !!user?.company_id,
-    staleTime: 1000 * 60 * 5, // 5 minutes
+    staleTime: 1000 * 60 * 2, // 2 minutes
   });
 
   // Handle state updates in useEffect-like pattern

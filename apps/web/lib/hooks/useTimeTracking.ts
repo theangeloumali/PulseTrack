@@ -66,7 +66,7 @@ export function useTotalTimeByTicket(ticketId: string) {
     queryKey: timeEntryKeys.totalByTicket(ticketId),
     queryFn: () => getTotalTimeByTicket(ticketId),
     enabled: !!ticketId,
-    staleTime: 1000 * 60 * 5, // 5 minutes
+    staleTime: 1000 * 60 * 2, // 2 minutes
   })
 }
 
@@ -78,7 +78,7 @@ export function useTotalTimeByUser(dateFrom?: string, dateTo?: string) {
     queryKey: timeEntryKeys.totalByUser(user?.id || '', dateFrom, dateTo),
     queryFn: () => getTotalTimeByUser(user?.id || '', dateFrom, dateTo),
     enabled: !!user?.id,
-    staleTime: 1000 * 60 * 5, // 5 minutes
+    staleTime: 1000 * 60 * 2, // 2 minutes
   })
 }
 
