@@ -21,6 +21,7 @@ export interface AuthState {
 	supabaseUser: SupabaseUser | null;
 	session: Session | null;
 	isLoading: boolean;
+	isInitializing: boolean;
 
 	// Actions
 	setUser: (user: User | null) => void;
@@ -39,6 +40,7 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
 			supabaseUser: null,
 			session: null,
 			isLoading: true,
+			isInitializing: false,
 
 			setUser: (user) => set({ user }),
 			setSupabaseUser: (user) => set({ supabaseUser: user }),
@@ -272,113 +274,101 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
 			},
 
 			initialize: async () => {
+				const { isInitializing } = get();
+				
+				// Prevent multiple simultaneous initialization calls
+				if (isInitializing) {
+					console.log('🔄 Auth Store: Initialization already in progress, waiting...');
+					// Wait for current initialization to complete
+					let attempts = 0;
+					while (get().isInitializing && attempts < 30) {
+						await new Promise(resolve => setTimeout(resolve, 100));
+						attempts++;
+					}
+					return;
+				}
+
 				try {
-					// console.log('🔄 Auth Store: Starting initialization...');
+					set({ isInitializing: true });
+					console.log('🔄 Auth Store: Starting initialization...');
 					
-					// First, check if we have a valid session
-					const {
-						data: { user },
-						error,
-					} = await supabase.auth.getUser();
-
-					// console.log('🔄 Auth Store: Got user:', { 
-					//	userExists: !!user,
-					//	userId: user?.id,
-					//	userEmail: user?.email,
-					//	error: error?.message 
-					// });
-
-					// If there's an error getting the session (e.g., invalid refresh token), 
-					// only clear for auth-specific errors, not network issues
-					if (error) {
-						console.error('❌ Auth Store: Error getting user:', error);
-						
-						// Check if it's a refresh token error and clear corrupted state
-						if (isRefreshTokenError(error)) {
-							// console.log('🧹 Auth Store: Refresh token error detected, clearing corrupted state');
+					// Get current session first
+					const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+					
+					if (sessionError) {
+						console.error('❌ Auth Store: Error getting session:', sessionError);
+						if (isRefreshTokenError(sessionError)) {
+							console.log('🧹 Auth Store: Refresh token error detected, clearing corrupted state');
 							clearAuthState();
-							await supabase.auth.signOut(); // Clear any invalid tokens
-							set({ isLoading: false, session: null, supabaseUser: null, user: null });
+							await supabase.auth.signOut();
+							set({ session: null, supabaseUser: null, user: null, isLoading: false, isInitializing: false });
 							return;
 						}
 						
-						// For other errors (network issues), don't immediately clear session
-						console.warn('❌ Auth Store: Non-auth error during initialization, keeping partial state');
-						set({ isLoading: false, user: null });
+						console.warn('❌ Auth Store: Non-auth error during session check, keeping partial state');
+						set({ isLoading: false, user: null, isInitializing: false });
 						return;
 					}
 
-					if (user) {
-							// console.log('🔄 Auth Store: User found, setting supabaseUser...');
-							set({
-								supabaseUser: user,
-							});
+					if (session?.user) {
+						console.log('🔄 Auth Store: Valid session found, setting session and user...');
+						set({
+							session,
+							supabaseUser: session.user,
+						});
 
-							// console.log('🔄 Auth Store: Fetching user from database...');
-							// Get user from database
-							try {
-								const dbUser = await getUserById(user.id);
-								if (dbUser) {
-									// console.log('✅ Auth Store: Database user found:', { 
-									//	id: dbUser.id, 
-									//	email: dbUser.email, 
-									//	companyId: dbUser.company_id,
-									//	firstName: dbUser.first_name 
-									// });
-									set({ user: dbUser, isLoading: false });
-								} else {
-									// console.log('❌ Auth Store: No database user found for:', user.id);
-									// Keep Supabase session but clear user profile - allows for retry
-									set({ user: null, isLoading: false });
-								}
-							} catch (dbError) {
-								console.error('❌ Auth Store: Error fetching user from database:', dbError);
-								// For database connection issues, keep Supabase session but clear user profile
-								// This allows the app to retry fetching the profile later
-								set({ user: null, isLoading: false });
+						// Fetch user from database
+						try {
+							const dbUser = await getUserById(session.user.id);
+							if (dbUser) {
+								console.log('✅ Auth Store: Database user found:', dbUser.email);
+								set({ user: dbUser, isLoading: false, isInitializing: false });
+							} else {
+								console.log('❌ Auth Store: No database user found for:', session.user.id);
+								set({ user: null, isLoading: false, isInitializing: false });
 							}
-						} else {
-							// console.log('🔄 Auth Store: No user found');
-							set({ session: null, supabaseUser: null, user: null, isLoading: false });
+						} catch (dbError) {
+							console.error('❌ Auth Store: Error fetching user from database:', dbError);
+							set({ user: null, isLoading: false, isInitializing: false });
 						}
+					} else {
+						console.log('🔄 Auth Store: No valid session found');
+						set({ session: null, supabaseUser: null, user: null, isLoading: false, isInitializing: false });
+					}
 
-						// console.log('🔄 Auth Store: Setting up auth state change listener...');
-						const {
-							data: { subscription },
-						} = supabase.auth.onAuthStateChange(async (event, session) => {
-							// console.log('🔄 Auth Store: Auth state changed:', event, session?.user?.id);
+					// Set up auth state change listener (only once)
+					if (!get().session) {
+						console.log('🔄 Auth Store: Setting up auth state change listener...');
+						const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, newSession) => {
+							console.log('🔄 Auth Store: Auth state changed:', event, newSession?.user?.id);
 
-							// Handle specific auth events
-							if (event === 'TOKEN_REFRESHED') {
-								// console.log('🔄 Auth Store: Token refreshed successfully');
-							} else if (event === 'SIGNED_OUT') {
-								// console.log('🔄 Auth Store: User signed out');
+							if (event === 'SIGNED_OUT') {
+								console.log('🔄 Auth Store: User signed out');
 								set({ session: null, supabaseUser: null, user: null, isLoading: false });
 								return;
 							}
 
-							if (session?.user) {
-								// console.log('🔄 Auth Store: Setting session from auth change...');
+							if (newSession?.user) {
+								console.log('🔄 Auth Store: Setting session from auth change...');
 								set({
-									session,
-									supabaseUser: session.user,
+									session: newSession,
+									supabaseUser: newSession.user,
 								});
 
 								try {
-									const dbUser = await getUserById(session.user.id);
+									const dbUser = await getUserById(newSession.user.id);
 									if (dbUser) {
-										// console.log('🔄 Auth Store: User updated from auth change:', dbUser.email);
+										console.log('🔄 Auth Store: User updated from auth change:', dbUser.email);
 										set({ user: dbUser, isLoading: false });
 									} else {
-										// console.log('❌ Auth Store: No user found on auth change');
+										console.log('❌ Auth Store: No user found on auth change');
 										set({ user: null, isLoading: false });
 									}
 								} catch (error) {
 									console.error('❌ Auth Store: Error fetching user on auth change:', error);
 									
-									// If it's a refresh token error, clear state
 									if (isRefreshTokenError(error)) {
-										// console.log('🧹 Auth Store: Refresh token error in auth change, clearing state');
+										console.log('🧹 Auth Store: Refresh token error in auth change, clearing state');
 										clearAuthState();
 										await supabase.auth.signOut();
 										set({ session: null, supabaseUser: null, user: null, isLoading: false });
@@ -388,17 +378,17 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
 									set({ user: null, isLoading: false });
 								}
 							} else {
-								// console.log('🔄 Auth Store: Session cleared from auth change');
+								console.log('🔄 Auth Store: Session cleared from auth change');
 								set({ session: null, supabaseUser: null, user: null, isLoading: false });
 							}
 						});
+					}
 
-					// console.log('✅ Auth Store: Initialization complete');
+					console.log('✅ Auth Store: Initialization complete');
 				} catch (error) {
 					console.error('❌ Auth Store: Error in initialize:', error);
-					// Clear any potentially corrupted state
 					await supabase.auth.signOut();
-					set({ session: null, supabaseUser: null, user: null, isLoading: false });
+					set({ session: null, supabaseUser: null, user: null, isLoading: false, isInitializing: false });
 				}
 			},
 		})

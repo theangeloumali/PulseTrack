@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { ThemeProvider as NextThemesProvider } from "next-themes"
-import { AuthInitializer } from "./auth-initializer"
+import { AuthGate } from "./auth-gate"
 import { QueryProvider } from "./query-provider"
 import { SidebarLayout } from "./sidebar-layout"
 import { ThemeProvider } from "./theme-provider"
@@ -19,11 +19,12 @@ export function Providers({ children }: { children: React.ReactNode }) {
         enableColorScheme
       >
         <ThemeProvider />
-        <AuthInitializer />
         <SessionInitializer />
-        <SidebarLayout>
-          {children}
-        </SidebarLayout>
+        <AuthGate>
+          <SidebarLayout>
+            {children}
+          </SidebarLayout>
+        </AuthGate>
       </NextThemesProvider>
     </QueryProvider>
   )

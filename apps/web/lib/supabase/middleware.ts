@@ -92,8 +92,13 @@ export async function updateSession(request: NextRequest) {
 			return supabaseResponse
 		}
 
-		if (!user && !isLogin && !isSignup && !isVerifyEmail && !isAuthDiagnostic && !isAuthRoute && !isForgotPassword && !isResetPassword) {
-			console.log('Middleware - Redirecting to login, no user found for path:', request.nextUrl.pathname);
+		// Only redirect for specific protected routes to reduce flash effect
+		// Let client-side AuthGate handle most route protection for smoother UX
+		const specificProtectedRoutes = ['/admin', '/settings'];
+		const needsProtection = specificProtectedRoutes.some(route => request.nextUrl.pathname.startsWith(route));
+		
+		if (!user && needsProtection) {
+			console.log('Middleware - Redirecting to login for protected route:', request.nextUrl.pathname);
 			// no user, redirect to login page
 			const url = request.nextUrl.clone();
 			

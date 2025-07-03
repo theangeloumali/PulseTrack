@@ -39,6 +39,9 @@ export function AuthInitializer() {
 			if (isDevelopment) {
 				console.log('🔄 AuthInitializer: Starting auth initialization...');
 			}
+			
+			let unsubscribe: (() => void) | undefined;
+			
 			// Dynamically import the auth store only on the client
 			import('@/lib/stores/auth').then(async ({ useAuthStore }) => {
 				const store = useAuthStore.getState();
@@ -46,45 +49,58 @@ export function AuthInitializer() {
 				if (isDevelopment) {
 					console.log('🔄 AuthInitializer: Store imported, current user:', store.user);
 					console.log('🔄 AuthInitializer: Store isLoading:', store.isLoading);
+					console.log('🔄 AuthInitializer: Store isInitializing:', store.isInitializing);
 				}
 				
-				// Initialize auth
-				if (isDevelopment) {
-					console.log('🔄 AuthInitializer: Calling store.initialize()...');
-				}
-				try {
-					await store.initialize();
-					if (isDevelopment) {
-						console.log('🔄 AuthInitializer: Initialize completed');
-					}
-				} catch (error) {
-					if (isDevelopment) {
-						console.error('❌ AuthInitializer: Initialize failed:', error);
-					}
-				}
-				
-				// Set up subscription to auth state changes
-				const unsubscribe = useAuthStore.subscribe(
+				// Set up subscription to auth state changes FIRST
+				unsubscribe = useAuthStore.subscribe(
 					(state) => {
 						if (isDevelopment) {
-							console.log(`🔄 AuthInitializer: Store state changed - user: ${state.user ? `${state.user.first_name} (${state.user.email})` : 'null'}, isLoading: ${state.isLoading}, hasSupabaseUser: ${!!state.supabaseUser}, hasSession: ${!!state.session}`);
+							console.log(`🔄 AuthInitializer: Store state changed - user: ${state.user ? `${state.user.first_name} (${state.user.email})` : 'null'}, isLoading: ${state.isLoading}, isInitializing: ${state.isInitializing}, hasSupabaseUser: ${!!state.supabaseUser}, hasSession: ${!!state.session}`);
 						}
 						setUser(state.user);
-						setIsInitialized(true);
+						// Only mark as initialized when not loading and not initializing
+						if (!state.isLoading && !state.isInitializing) {
+							setIsInitialized(true);
+						}
 					}
 				);
 
-				// Set initial user state
-				if (isDevelopment) {
-					console.log('🔄 AuthInitializer: Setting initial user state...');
-				}
+				// Set initial user state from current store
 				const currentState = useAuthStore.getState();
 				setUser(currentState.user);
-				setIsInitialized(true);
-
-				// Cleanup subscription on unmount
-				return unsubscribe;
+				if (!currentState.isLoading && !currentState.isInitializing) {
+					setIsInitialized(true);
+				}
+				
+				// Initialize auth only if not already initializing or initialized
+				if (!currentState.isInitializing && (currentState.isLoading || (!currentState.session && !currentState.user))) {
+					if (isDevelopment) {
+						console.log('🔄 AuthInitializer: Calling store.initialize()...');
+					}
+					try {
+						await store.initialize();
+						if (isDevelopment) {
+							console.log('🔄 AuthInitializer: Initialize completed');
+						}
+					} catch (error) {
+						if (isDevelopment) {
+							console.error('❌ AuthInitializer: Initialize failed:', error);
+						}
+					}
+				} else {
+					if (isDevelopment) {
+						console.log('🔄 AuthInitializer: Skipping initialization - already done or in progress');
+					}
+				}
 			});
+
+			// Cleanup function
+			return () => {
+				if (unsubscribe) {
+					unsubscribe();
+				}
+			};
 		}
 	}, [mounted]);
 

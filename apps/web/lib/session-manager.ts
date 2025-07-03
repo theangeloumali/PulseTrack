@@ -9,9 +9,12 @@ class SessionManager {
   private isRefreshing = false;
 
   constructor() {
+    // Disabled to prevent conflicts with auth store session management
+    // Auth store now handles all session management through Supabase's built-in mechanisms
     if (typeof window !== 'undefined') {
-      this.startPeriodicRefresh();
-      this.setupVisibilityListener();
+      console.log('SessionManager: Disabled to prevent conflicts with auth store');
+      // this.startPeriodicRefresh();
+      // this.setupVisibilityListener();
     }
   }
 
