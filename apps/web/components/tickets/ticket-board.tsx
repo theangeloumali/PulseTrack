@@ -318,20 +318,26 @@ function SortableTicketCard({
       {...attributes}
       {...listeners}
       data-ticket-id={ticket.id}
-      className={`relative bg-white hover:shadow-md transition-all duration-200 cursor-grab active:cursor-grabbing border border-gray-200 ${
-        isDragging ? 'shadow-lg ring-2 ring-blue-300 z-50' : 'z-10'
+      className={`relative bg-white hover:shadow-md transition-all duration-200 border border-gray-200 ${
+        isDragging ? 'shadow-lg ring-2 ring-blue-300 z-50 cursor-grabbing' : 'z-10 hover:cursor-grab'
       }`}
     >
       <CardContent className="p-3">
         <div className="flex items-start justify-between mb-2">
           <div className="flex items-start gap-2 flex-1 min-w-0">
-            <div className="text-gray-400 mt-1 flex-shrink-0">
+            <div 
+              className="text-gray-400 mt-1 flex-shrink-0 hover:text-gray-600 transition-colors duration-150"
+              title="Drag to reorder"
+            >
               <GripVertical className="h-4 w-4" />
             </div>
             <Link
               href={`/projects/${ticket.project_id}/tickets/${ticket.id}`}
-              className="flex-1 min-w-0"
-              onClick={(e) => e.stopPropagation()}
+              className="flex-1 min-w-0 hover:text-blue-600 transition-colors duration-150"
+              onPointerDown={(e) => {
+                // Prevent drag when clicking on link
+                e.stopPropagation();
+              }}
             >
               <h4 className="font-medium text-sm text-gray-900 truncate">
                 {ticket.title}
@@ -346,6 +352,10 @@ function SortableTicketCard({
               onClick={(e) => {
                 e.stopPropagation();
                 onExpandDropdown(expandedDropdown === ticket.id ? null : ticket.id);
+              }}
+              onPointerDown={(e) => {
+                // Prevent drag when clicking on more button
+                e.stopPropagation();
               }}
               className="h-6 w-6 p-0 text-gray-400"
             >
@@ -423,6 +433,10 @@ function SortableTicketCard({
                 e.stopPropagation();
                 onExpandPriority(expandedPriority === ticket.id ? null : ticket.id);
               }}
+              onPointerDown={(e) => {
+                // Prevent drag when clicking on priority badge
+                e.stopPropagation();
+              }}
               title="Click to change priority"
             >
               {getPriorityIcon(ticket.priority)}
@@ -466,6 +480,10 @@ function SortableTicketCard({
               onClick={(e) => {
                 e.stopPropagation();
                 onExpandAssignment(expandedAssignment === ticket.id ? null : ticket.id);
+              }}
+              onPointerDown={(e) => {
+                // Prevent drag when clicking on assignee section
+                e.stopPropagation();
               }}
               title="Click to assign user"
             >
@@ -573,7 +591,7 @@ export function TicketBoard({ tickets: serverTickets, isLoading }: TicketBoardPr
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 3, // Reduced distance for more responsive dragging
+        distance: 8, // Require 8px movement to start drag (allows immediate clicks)
       },
     })
   );

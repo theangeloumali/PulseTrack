@@ -586,6 +586,90 @@ if (!user && needsProtection) {
 
 This global auth gate pattern provides a smooth, professional first-load experience that never shows the wrong content to users! 🚀
 
+### 🎯 **Case Study: Drag-and-Drop Navigation Interference Fix (July 2025)**
+
+**Issue**: Clicking on ticket titles in the kanban board didn't immediately navigate - there was a noticeable delay before the link activated, creating poor user experience.
+
+**Root Causes Found**:
+1. **Drag Sensor Activation Delay**: `PointerSensor` with `activationConstraint: { distance: 3 }` required 3px movement before determining click vs drag intent
+2. **Entire Card as Drag Target**: Drag listeners (`{...listeners}`) applied to the whole card intercepted all click events
+3. **Event Handler Competition**: Link clicks competed with drag detection, causing delays while the system determined user intent
+
+**Solution Pattern - Dedicated Drag Handle**:
+```typescript
+// ❌ WRONG: Entire card has drag listeners causing click delays
+<Card 
+  {...attributes}
+  {...listeners} // This intercepts ALL clicks on the card
+  className="cursor-grab active:cursor-grabbing"
+>
+  <Link href="/ticket/123">Click me</Link> // Delayed by drag detection
+</Card>
+
+// ✅ CORRECT: Only grip handle has drag listeners
+<Card 
+  {...attributes}
+  className="cursor-default" // Normal cursor for card
+>
+  <div 
+    {...listeners} // Only the grip handle is draggable
+    className="cursor-grab active:cursor-grabbing hover:text-gray-600"
+    title="Drag to reorder"
+  >
+    <GripVertical className="h-4 w-4" />
+  </div>
+  <Link 
+    href="/ticket/123"
+    className="cursor-pointer hover:text-blue-600" // Immediate navigation
+  >
+    Click me
+  </Link>
+</Card>
+
+// Improved sensor configuration for remaining drag interactions
+const sensors = useSensors(
+  useSensor(PointerSensor, {
+    activationConstraint: {
+      delay: 100, // Time-based instead of distance-based
+      tolerance: 5, // Allow slight movement during delay
+    },
+  })
+);
+```
+
+**Key Technical Concepts**:
+- **Dedicated Drag Handle**: Only specific UI elements (grip icons) trigger drag operations
+- **Time-Based Activation**: Use delay instead of distance for more predictable behavior
+- **Event Separation**: Separate click and drag event handlers to prevent interference
+- **Clear UX Patterns**: Visual indication of draggable vs clickable areas
+
+**When to Use This Pattern**:
+1. **Click Delays in Draggable Items**: When clickable content within draggable containers feels sluggish
+2. **Mixed Interaction Patterns**: When same element needs both click and drag functionality
+3. **Poor User Feedback**: When users are unsure if clicks registered or drag will activate
+4. **Complex Interactive Cards**: When cards have multiple interactive elements (links, buttons, etc.)
+
+**Implementation Checklist**:
+- [ ] Move drag listeners from container to dedicated handle element
+- [ ] Use time-based activation instead of distance-based
+- [ ] Add visual indicators for draggable areas (grip icons, cursor changes)
+- [ ] Remove `cursor-grab` from main content areas
+- [ ] Test click responsiveness on all interactive elements
+- [ ] Ensure drag functionality still works smoothly
+- [ ] Add hover states for better UX feedback
+
+**Files Updated**:
+- `components/tickets/ticket-board.tsx:573-580` - Improved sensor configuration with delay-based activation
+- `components/tickets/ticket-board.tsx:315-341` - Moved drag listeners to grip handle only
+
+**Key Lesson**: When clickable elements in draggable containers feel sluggish, look for:
+- Drag listeners applied too broadly (entire container vs specific handle)
+- Distance-based activation constraints causing delays
+- Competing event handlers for same interaction area
+- Missing visual separation between clickable and draggable areas
+
+This dedicated drag handle pattern provides immediate click responsiveness while maintaining smooth drag functionality! 🎯
+
 ## Development Efficiency Memories
 
 ### Parallel Tool Invocation
