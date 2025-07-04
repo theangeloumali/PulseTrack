@@ -133,7 +133,7 @@ export default function ProjectTicketsPage({ params }: Props) {
 
 	if (isLoading) {
 		return (
-			<div className="min-h-screen bg-gray-50">
+			<div className="min-h-screen bg-background">
 				<div className="flex items-center justify-center py-12">
 					<Loader2 className="h-8 w-8 animate-spin" />
 				</div>
@@ -143,7 +143,7 @@ export default function ProjectTicketsPage({ params }: Props) {
 
 	if (isProjectError || isTicketsError || !project) {
 		return (
-			<div className="min-h-screen bg-gray-50">
+			<div className="min-h-screen bg-background">
 				<div className="flex items-center justify-center py-12">
 					<Card className="w-96">
 						<CardHeader>
@@ -164,9 +164,9 @@ export default function ProjectTicketsPage({ params }: Props) {
 	}
 
 	return (
-		<div className="min-h-screen bg-gray-50">
+		<div className="min-h-screen bg-background">
 			{/* Header */}
-			<header className="bg-white shadow">
+			<header className="bg-card border-b shadow-sm">
 				<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 					<div className="flex items-center justify-between py-6">
 						<div className="flex items-center space-x-4">
@@ -177,8 +177,8 @@ export default function ProjectTicketsPage({ params }: Props) {
 								</Button>
 							</Link>
 							<div>
-								<h1 className="text-3xl font-bold text-gray-900">Tickets</h1>
-								<p className="text-gray-600">Manage tickets for "{project.name}"</p>
+								<h1 className="text-3xl font-bold text-foreground">Tickets</h1>
+								<p className="text-muted-foreground">Manage tickets for "{project.name}"</p>
 							</div>
 						</div>
 						<Button onClick={() => setShowCreateTicketModal(true)}>
@@ -202,7 +202,7 @@ export default function ProjectTicketsPage({ params }: Props) {
 								<div className="space-y-2">
 									<label className="text-sm font-medium">Search</label>
 									<div className="relative">
-										<Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+										<Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
 										<Input
 											placeholder="Search tickets..."
 											value={searchTerm}
@@ -252,7 +252,7 @@ export default function ProjectTicketsPage({ params }: Props) {
 						{filteredTickets.length === 0 ? (
 							<Card>
 								<CardContent className="py-12">
-									<div className="text-center text-gray-500">
+									<div className="text-center text-muted-foreground">
 										<FileText className="mx-auto h-12 w-12 mb-4 opacity-50" />
 										{tickets.length === 0 ? (
 											<>
@@ -279,7 +279,7 @@ export default function ProjectTicketsPage({ params }: Props) {
 														{getPriorityIcon(ticket.priority)}
 														<Link 
 															href={`/projects/${project.id}/tickets/${ticket.id}`}
-															className="text-lg font-semibold text-gray-900 hover:text-blue-600"
+															className="text-lg font-semibold text-foreground hover:text-primary"
 														>
 															{ticket.title}
 														</Link>
@@ -295,12 +295,12 @@ export default function ProjectTicketsPage({ params }: Props) {
 												</div>
 												
 												{ticket.description && (
-													<p className="text-gray-600 text-sm line-clamp-2">
+													<p className="text-muted-foreground text-sm line-clamp-2">
 														{ticket.description}
 													</p>
 												)}
 
-												<div className="flex items-center space-x-4 text-sm text-gray-500">
+												<div className="flex items-center space-x-4 text-sm text-muted-foreground">
 													<div className="flex items-center space-x-1">
 														<Calendar className="h-4 w-4" />
 														<span>Created {new Date(ticket.created_at).toLocaleDateString()}</span>
@@ -328,27 +328,27 @@ export default function ProjectTicketsPage({ params }: Props) {
 							</CardHeader>
 							<CardContent>
 								<div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-									<div className="text-center p-4 bg-gray-50 rounded-lg">
-										<div className="text-2xl font-bold text-gray-900">{tickets.length}</div>
-										<div className="text-sm text-gray-500">Total Tickets</div>
+									<div className="text-center p-4 bg-muted rounded-lg">
+										<div className="text-2xl font-bold text-foreground">{tickets.length}</div>
+										<div className="text-sm text-muted-foreground">Total Tickets</div>
 									</div>
-									<div className="text-center p-4 bg-gray-50 rounded-lg">
+									<div className="text-center p-4 bg-muted rounded-lg">
 										<div className="text-2xl font-bold text-green-600">
 											{tickets.filter(t => t.status === 'done').length}
 										</div>
-										<div className="text-sm text-gray-500">Completed</div>
+										<div className="text-sm text-muted-foreground">Completed</div>
 									</div>
-									<div className="text-center p-4 bg-gray-50 rounded-lg">
+									<div className="text-center p-4 bg-muted rounded-lg">
 										<div className="text-2xl font-bold text-blue-600">
 											{tickets.filter(t => t.status === 'in_progress').length}
 										</div>
-										<div className="text-sm text-gray-500">In Progress</div>
+										<div className="text-sm text-muted-foreground">In Progress</div>
 									</div>
-									<div className="text-center p-4 bg-gray-50 rounded-lg">
+									<div className="text-center p-4 bg-muted rounded-lg">
 										<div className="text-2xl font-bold text-red-600">
 											{tickets.filter(t => t.priority === 'critical' || t.priority === 'high').length}
 										</div>
-										<div className="text-sm text-gray-500">High Priority</div>
+										<div className="text-sm text-muted-foreground">High Priority</div>
 									</div>
 								</div>
 							</CardContent>

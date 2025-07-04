@@ -8,6 +8,7 @@ import { Button } from '@workspace/ui/components/button';
 import { Input } from '@workspace/ui/components/input';
 import { Ticket, TicketStatus } from '@/lib/db/schema';
 import { DeleteTicketModal } from '@/components/modals/delete-ticket-modal';
+import { stripMarkdown } from '@/components/ui/markdown-viewer';
 import { TimeTrackingModal } from '@/components/modals/time-tracking-modal';
 import { useUpdateTicket, useUpdateTicketSortOrders } from '@/lib/hooks/useTickets';
 import { useAssignableUsers } from '@/lib/hooks/useUsers';
@@ -418,8 +419,8 @@ function SortableTicketCard({
         </div>
         
         {ticket.description && (
-          <p className="text-xs text-muted-foreground mb-2 line-clamp-2">
-            {ticket.description}
+          <p className="text-xs text-muted-foreground mb-2 line-clamp-2" title={stripMarkdown(ticket.description)}>
+            {stripMarkdown(ticket.description)}
           </p>
         )}
         

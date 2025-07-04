@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@workspace/ui/components/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@workspace/ui/components/card';
+import { MarkdownViewer } from '@/components/ui/markdown-viewer';
 import { Badge } from '@workspace/ui/components/badge';
 import { useAuthStore } from '@/lib/stores/auth';
 import { useTicketStore } from '@/lib/stores/ticket';
@@ -126,7 +127,7 @@ export default function TicketDetailPage({ params }: Props) {
 
 	if (!user || isLoading) {
 		return (
-			<div className="min-h-screen bg-gray-50">
+			<div className="min-h-screen bg-background">
 				<div className="flex items-center justify-center py-12">
 					<Loader2 className="h-8 w-8 animate-spin" />
 				</div>
@@ -136,7 +137,7 @@ export default function TicketDetailPage({ params }: Props) {
 
 	if (error || !ticket) {
 		return (
-			<div className="min-h-screen bg-gray-50">
+			<div className="min-h-screen bg-background">
 				<div className="flex items-center justify-center py-12">
 					<Card className="w-96">
 						<CardHeader>
@@ -155,9 +156,9 @@ export default function TicketDetailPage({ params }: Props) {
 	}
 
 	return (
-		<div className="min-h-screen bg-gray-50">
+		<div className="min-h-screen bg-background">
 			{/* Header */}
-			<header className="bg-white shadow">
+			<header className="bg-card border-b shadow-sm">
 				<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 					<div className="flex items-center justify-between py-6">
 						<div className="flex items-center space-x-4">
@@ -171,7 +172,7 @@ export default function TicketDetailPage({ params }: Props) {
 								<div className="flex items-center space-x-3">
 									<div className="flex items-center space-x-2">
 										{getPriorityIcon(ticket.priority)}
-										<h1 className="text-3xl font-bold text-gray-900">{ticket.title}</h1>
+										<h1 className="text-3xl font-bold text-foreground">{ticket.title}</h1>
 									</div>
 									<div className="flex items-center space-x-2">
 										<Badge className={`${getStatusColor(ticket.status)} border-0`}>
@@ -182,7 +183,7 @@ export default function TicketDetailPage({ params }: Props) {
 										</Badge>
 									</div>
 								</div>
-								<p className="text-gray-600 mt-1">
+								<p className="text-muted-foreground mt-1">
 									Project: {ticket.projects?.name || 'Unknown Project'}
 								</p>
 							</div>
@@ -211,13 +212,11 @@ export default function TicketDetailPage({ params }: Props) {
 									<CardTitle>Description</CardTitle>
 								</CardHeader>
 								<CardContent>
-									{ticket.description ? (
-										<div className="prose max-w-none">
-											<p className="text-gray-700 whitespace-pre-wrap">{ticket.description}</p>
-										</div>
-									) : (
-										<p className="text-gray-500 italic">No description provided</p>
-									)}
+									<MarkdownViewer 
+										content={ticket.description || ''} 
+										mode="full" 
+										className="max-w-none" 
+									/>
 								</CardContent>
 							</Card>
 
@@ -233,7 +232,7 @@ export default function TicketDetailPage({ params }: Props) {
 									<CardTitle>Comments</CardTitle>
 								</CardHeader>
 								<CardContent>
-									<div className="text-center py-8 text-gray-500">
+									<div className="text-center py-8 text-muted-foreground">
 										<FileText className="mx-auto h-8 w-8 mb-2 opacity-50" />
 										<p>No comments yet</p>
 									</div>
@@ -253,7 +252,7 @@ export default function TicketDetailPage({ params }: Props) {
 								</CardHeader>
 								<CardContent className="space-y-4">
 									<div>
-										<dt className="text-sm font-medium text-gray-500">Status</dt>
+										<dt className="text-sm font-medium text-muted-foreground">Status</dt>
 										<dd className="mt-1">
 											<Badge className={`${getStatusColor(ticket.status)} border-0`}>
 												{ticket.status.replace('_', ' ')}
@@ -261,7 +260,7 @@ export default function TicketDetailPage({ params }: Props) {
 										</dd>
 									</div>
 									<div>
-										<dt className="text-sm font-medium text-gray-500">Priority</dt>
+										<dt className="text-sm font-medium text-muted-foreground">Priority</dt>
 										<dd className="mt-1">
 											<Badge className={`${getPriorityColor(ticket.priority)} border-0`}>
 												{ticket.priority}
@@ -269,19 +268,19 @@ export default function TicketDetailPage({ params }: Props) {
 										</dd>
 									</div>
 									<div>
-										<dt className="text-sm font-medium text-gray-500">Assignee</dt>
-										<dd className="mt-1 text-sm text-gray-900 flex items-center">
+										<dt className="text-sm font-medium text-muted-foreground">Assignee</dt>
+										<dd className="mt-1 text-sm text-foreground flex items-center">
 											<User className="h-4 w-4 mr-2" />
 											{ticket.assignee ? (
 												<span>{ticket.assignee.first_name} {ticket.assignee.last_name}</span>
 											) : (
-												<span className="text-gray-500">Unassigned</span>
+												<span className="text-muted-foreground">Unassigned</span>
 											)}
 										</dd>
 									</div>
 									<div>
-										<dt className="text-sm font-medium text-gray-500">Reporter</dt>
-										<dd className="mt-1 text-sm text-gray-900 flex items-center">
+										<dt className="text-sm font-medium text-muted-foreground">Reporter</dt>
+										<dd className="mt-1 text-sm text-foreground flex items-center">
 											<User className="h-4 w-4 mr-2" />
 											{ticket.reporter ? (
 												<span>{ticket.reporter.first_name} {ticket.reporter.last_name}</span>
@@ -291,23 +290,23 @@ export default function TicketDetailPage({ params }: Props) {
 										</dd>
 									</div>
 									<div>
-										<dt className="text-sm font-medium text-gray-500">Created</dt>
-										<dd className="mt-1 text-sm text-gray-900 flex items-center">
+										<dt className="text-sm font-medium text-muted-foreground">Created</dt>
+										<dd className="mt-1 text-sm text-foreground flex items-center">
 											<Calendar className="h-4 w-4 mr-2" />
 											{new Date(ticket.created_at).toLocaleDateString()}
 										</dd>
 									</div>
 									<div>
-										<dt className="text-sm font-medium text-gray-500">Last Updated</dt>
-										<dd className="mt-1 text-sm text-gray-900 flex items-center">
+										<dt className="text-sm font-medium text-muted-foreground">Last Updated</dt>
+										<dd className="mt-1 text-sm text-foreground flex items-center">
 											<Calendar className="h-4 w-4 mr-2" />
 											{new Date(ticket.updated_at).toLocaleDateString()}
 										</dd>
 									</div>
 									{ticket.estimated_hours && (
 										<div>
-											<dt className="text-sm font-medium text-gray-500">Estimated Hours</dt>
-											<dd className="mt-1 text-sm text-gray-900 flex items-center">
+											<dt className="text-sm font-medium text-muted-foreground">Estimated Hours</dt>
+											<dd className="mt-1 text-sm text-foreground flex items-center">
 												<Clock className="h-4 w-4 mr-2" />
 												{ticket.estimated_hours}h
 											</dd>
@@ -315,8 +314,8 @@ export default function TicketDetailPage({ params }: Props) {
 									)}
 									{ticket.due_date && (
 										<div>
-											<dt className="text-sm font-medium text-gray-500">Due Date</dt>
-											<dd className="mt-1 text-sm text-gray-900 flex items-center">
+											<dt className="text-sm font-medium text-muted-foreground">Due Date</dt>
+											<dd className="mt-1 text-sm text-foreground flex items-center">
 												<Calendar className="h-4 w-4 mr-2" />
 												{new Date(ticket.due_date).toLocaleDateString()}
 											</dd>

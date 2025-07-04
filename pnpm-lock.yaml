@@ -108,6 +108,9 @@ importers:
       '@tanstack/react-query-devtools':
         specifier: ^5.81.2
         version: 5.81.2(@tanstack/react-query@5.81.2(react@19.0.0))(react@19.0.0)
+      '@uiw/react-markdown-preview':
+        specifier: ^5.1.4
+        version: 5.1.4(@types/react@19.0.10)(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
       '@uiw/react-md-editor':
         specifier: ^4.0.7
         version: 4.0.7(@types/react@19.0.10)(react-dom@19.0.0(react@19.0.0))(react@19.0.0)

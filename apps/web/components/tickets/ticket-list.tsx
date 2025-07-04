@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Ticket, TicketStatus } from '@/lib/db/schema';
 import { DeleteTicketModal } from '@/components/modals/delete-ticket-modal';
 import { TimeTrackingModal } from '@/components/modals/time-tracking-modal';
+import { stripMarkdown } from '@/components/ui/markdown-viewer';
 import { useUpdateTicket } from '@/lib/hooks/useTickets';
 import { 
   MoreVertical, 
@@ -142,8 +143,11 @@ export function TicketList({ tickets, isLoading }: TicketListProps) {
                       {ticket.title}
                     </h4>
                     {ticket.description && (
-                      <p className="text-xs text-gray-600 truncate mt-1">
-                        {ticket.description}
+                      <p 
+                        className="text-xs text-gray-600 truncate mt-1" 
+                        title={stripMarkdown(ticket.description)}
+                      >
+                        {stripMarkdown(ticket.description)}
                       </p>
                     )}
                   </Link>
