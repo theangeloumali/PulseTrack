@@ -15,6 +15,7 @@ import type { BillingFrequency, NewBillingRate } from '@/lib/db/schema';
 import { startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfYear, endOfYear, format } from 'date-fns';
 import { Clock, DollarSign, Calendar, Users, Settings } from 'lucide-react';
 import { DateRangePicker } from '@/components/ui/date-range-picker';
+import { BillingFilters, getDefaultBillingFilters, saveBillingFiltersToStorage, loadBillingFiltersFromStorage } from '@/lib/utils';
 
 const currencies = ['USD', 'EUR', 'GBP', 'JPY', 'AUD', 'CAD', 'CHF', 'CNY', 'SEK', 'NZD'];
 
@@ -42,15 +43,12 @@ const BillingPage = () => {
 	const [billingFrequency, setBillingFrequency] = useState<BillingFrequency | undefined>(undefined);
 	const [invoicePrefix, setInvoicePrefix] = useState('');
 
-	const [reportFilter, setReportFilter] = useState('weekly');
-	const [reportStartDate, setReportStartDate] = useState('');
-	const [reportEndDate, setReportEndDate] = useState('');
+	const [filters, setFilters] = useState<BillingFilters>(getDefaultBillingFilters());
+	const [isInitialized, setIsInitialized] = useState(false);
 	const [showReport, setShowReport] = useState(false);
 	const [activeTab, setActiveTab] = useState('timesheet');
-	// Set default user selection based on role
-	const [selectedUserId, setSelectedUserId] = useState(isAdmin ? 'all' : user?.id || '');
 
-	const { data: billingReport, isLoading: isReportLoading, isError: isReportError, error: reportError } = useBillingReport(companyId || '', reportStartDate, reportEndDate);
+	const { data: billingReport, isLoading: isReportLoading, isError: isReportError, error: reportError } = useBillingReport(companyId || '', filters.reportStartDate, filters.reportEndDate);
 
 	const { data: billingRates, isLoading: isRatesLoading, isError: isRatesError } = useBillingRates(companyId || '');
 	const { mutate: createRate, isPending: isCreatingRate } = useCreateBillingRate(companyId || '');
@@ -61,11 +59,11 @@ const BillingPage = () => {
 	console.log('BillingPage rendered with companyId:',  billingReport);
 	const filteredBillingReport = React.useMemo(() => {
 		if (!billingReport) return null;
-		if (isAdmin && selectedUserId === 'all') {
+		if (isAdmin && filters.selectedUserId === 'all') {
 			return billingReport;
 		}
 		const filteredReport: typeof billingReport = {};
-		const targetUserId = isAdmin ? selectedUserId : user?.id || '';
+		const targetUserId = isAdmin ? filters.selectedUserId : user?.id || '';
 		
 		for (const date in billingReport) {
 			if (billingReport[date][targetUserId]) {
@@ -75,7 +73,7 @@ const BillingPage = () => {
 			}
 		}
 		return filteredReport;
-	}, [billingReport, selectedUserId, isAdmin, user?.id]);
+	}, [billingReport, filters.selectedUserId, isAdmin, user?.id]);
 
 	// Calculate dashboard statistics
 	const dashboardStats = React.useMemo(() => {
@@ -164,7 +162,7 @@ const BillingPage = () => {
 		let start: Date;
 		let end: Date;
 
-		switch (reportFilter) {
+		switch (filters.reportFilter) {
 			case 'weekly':
 				start = startOfWeek(today, { weekStartsOn: 1 }); // Monday
 				end = endOfWeek(today, { weekStartsOn: 1 });
@@ -194,9 +192,9 @@ const BillingPage = () => {
 				break;
 			default:
 				// Validate custom dates, fallback to this week if invalid
-				if (reportStartDate && reportEndDate) {
-					const startDate = new Date(reportStartDate);
-					const endDate = new Date(reportEndDate);
+				if (filters.reportStartDate && filters.reportEndDate) {
+					const startDate = new Date(filters.reportStartDate);
+					const endDate = new Date(filters.reportEndDate);
 					if (!isNaN(startDate.getTime()) && !isNaN(endDate.getTime())) {
 						start = startDate;
 						end = endDate;
@@ -214,19 +212,43 @@ const BillingPage = () => {
 		}
 
 		try {
-			setReportStartDate(format(start, 'yyyy-MM-dd'));
-			setReportEndDate(format(end, 'yyyy-MM-dd'));
+			setFilters(prev => ({
+				...prev,
+				reportStartDate: format(start, 'yyyy-MM-dd'),
+				reportEndDate: format(end, 'yyyy-MM-dd')
+			}));
 			setShowReport(true);
 		} catch (error) {
 			console.error('Error formatting dates:', error);
 			// Fallback to this week on error
 			const fallbackStart = startOfWeek(today, { weekStartsOn: 1 });
 			const fallbackEnd = endOfWeek(today, { weekStartsOn: 1 });
-			setReportStartDate(format(fallbackStart, 'yyyy-MM-dd'));
-			setReportEndDate(format(fallbackEnd, 'yyyy-MM-dd'));
+			setFilters(prev => ({
+				...prev,
+				reportStartDate: format(fallbackStart, 'yyyy-MM-dd'),
+				reportEndDate: format(fallbackEnd, 'yyyy-MM-dd')
+			}));
 			setShowReport(true);
 		}
 	};
+
+	// Load filters from localStorage on mount
+	useEffect(() => {
+		const storedFilters = loadBillingFiltersFromStorage();
+		// Set default user selection based on role if not already set
+		if (!storedFilters.selectedUserId || storedFilters.selectedUserId === 'all') {
+			storedFilters.selectedUserId = isAdmin ? 'all' : user?.id || 'all';
+		}
+		setFilters(storedFilters);
+		setIsInitialized(true);
+	}, [isAdmin, user?.id]);
+
+	// Save filters to localStorage when they change (after initialization)
+	useEffect(() => {
+		if (isInitialized) {
+			saveBillingFiltersToStorage(filters);
+		}
+	}, [filters, isInitialized]);
 
 	useEffect(() => {
 		if (settings) {
@@ -238,12 +260,12 @@ const BillingPage = () => {
 		}
 	}, [settings]);
 
-	// Generate report on initial load and when reportFilter changes
+	// Generate report on initial load and when filters change
 	useEffect(() => {
-		if (companyId) {
+		if (companyId && isInitialized) {
 			handleGenerateReport();
 		}
-    }, [companyId, reportFilter]); // Re-run when companyId or reportFilter changes
+    }, [companyId, filters.reportFilter, isInitialized]); // Re-run when companyId or reportFilter changes
     
 	if (isLoading) return <div className="min-h-screen bg-background flex items-center justify-center text-muted-foreground">Loading...</div>;
 	if (isError) return <div className="min-h-screen bg-background flex items-center justify-center text-red-600 dark:text-red-400">Error loading billing settings.</div>;
@@ -269,7 +291,7 @@ console.log('filteredBillingReport:', filteredBillingReport);
 					<CardContent>
 						<div className="text-2xl font-bold font-mono">{formatDuration(dashboardStats.totalHours)}</div>
 						<p className="text-xs text-muted-foreground">
-							{reportFilter} period
+							{filters.reportFilter} period
 						</p>
 					</CardContent>
 				</Card>
@@ -283,7 +305,7 @@ console.log('filteredBillingReport:', filteredBillingReport);
 							{settings?.currency || '$'}{dashboardStats.totalAmount.toFixed(2)}
 						</div>
 						<p className="text-xs text-muted-foreground">
-							{reportFilter} period
+							{filters.reportFilter} period
 						</p>
 					</CardContent>
 				</Card>
@@ -365,7 +387,7 @@ console.log('filteredBillingReport:', filteredBillingReport);
 											<div className="flex gap-4 items-end flex-wrap">
 												<div>
 													<Label htmlFor='reportFilter'>Quick Periods</Label>
-													<Select value={reportFilter} onValueChange={setReportFilter}>
+													<Select value={filters.reportFilter} onValueChange={(value) => setFilters(prev => ({ ...prev, reportFilter: value }))}>
 														<SelectTrigger id='reportFilter' className="w-36">
 															<SelectValue />
 														</SelectTrigger>
@@ -382,8 +404,8 @@ console.log('filteredBillingReport:', filteredBillingReport);
 												<div className="text-sm text-muted-foreground bg-card px-3 py-2 rounded border border-border">
 													<div className="flex items-center gap-2">
 														<span className="font-medium">Current Range:</span>
-														<span>{reportStartDate && reportEndDate ? 
-															`${format(new Date(reportStartDate), 'MMM dd')} - ${format(new Date(reportEndDate), 'MMM dd, yyyy')}` : 
+														<span>{filters.reportStartDate && filters.reportEndDate ? 
+															`${format(new Date(filters.reportStartDate), 'MMM dd')} - ${format(new Date(filters.reportEndDate), 'MMM dd, yyyy')}` : 
 															'Loading...'}</span>
 													</div>
 												</div>
@@ -392,20 +414,16 @@ console.log('filteredBillingReport:', filteredBillingReport);
 											{/* Combined Date Range Picker */}
 											<div className="max-w-xs">
 												<DateRangePicker
-													startDate={reportStartDate}
-													endDate={reportEndDate}
+													startDate={filters.reportStartDate}
+													endDate={filters.reportEndDate}
 													onStartDateChange={(date) => {
-														setReportStartDate(date);
-														setReportFilter('custom');
+														setFilters(prev => ({ ...prev, reportStartDate: date, reportFilter: 'custom' }));
 													}}
 													onEndDateChange={(date) => {
-														setReportEndDate(date);
-														setReportFilter('custom');
+														setFilters(prev => ({ ...prev, reportEndDate: date, reportFilter: 'custom' }));
 													}}
 													onRangeChange={(startDate, endDate) => {
-														setReportStartDate(startDate);
-														setReportEndDate(endDate);
-														setReportFilter('custom');
+														setFilters(prev => ({ ...prev, reportStartDate: startDate, reportEndDate: endDate, reportFilter: 'custom' }));
 														// Auto-refresh the report when range is applied
 														setTimeout(() => {
 															handleGenerateReport();
@@ -416,7 +434,7 @@ console.log('filteredBillingReport:', filteredBillingReport);
 											{isAdmin && (
 												<div>
 													<Label htmlFor='userFilter'>User</Label>
-													<Select value={selectedUserId} onValueChange={setSelectedUserId}>
+													<Select value={filters.selectedUserId} onValueChange={(value) => setFilters(prev => ({ ...prev, selectedUserId: value }))}>
 														<SelectTrigger id='userFilter' className="w-40">
 															<SelectValue />
 														</SelectTrigger>

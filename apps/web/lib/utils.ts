@@ -220,3 +220,61 @@ export function getActiveFiltersCount(filters: TicketFilters): number {
   if (filters.companyFilter !== 'all') count++;
   return count;
 }
+
+// Filter utilities for billing page
+export interface BillingFilters {
+  reportFilter: string;
+  reportStartDate: string;
+  reportEndDate: string;
+  selectedUserId: string;
+}
+
+export function getDefaultBillingFilters(): BillingFilters {
+  return {
+    reportFilter: 'weekly',
+    reportStartDate: '',
+    reportEndDate: '',
+    selectedUserId: 'all'
+  };
+}
+
+export function saveBillingFiltersToStorage(filters: BillingFilters): void {
+  if (typeof window !== 'undefined') {
+    try {
+      localStorage.setItem('billing-filters', JSON.stringify(filters));
+    } catch (error) {
+      console.warn('Failed to save billing filters to localStorage:', error);
+    }
+  }
+}
+
+export function loadBillingFiltersFromStorage(): BillingFilters {
+  if (typeof window !== 'undefined') {
+    try {
+      const stored = localStorage.getItem('billing-filters');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        // Ensure all required properties exist with fallbacks
+        return {
+          reportFilter: parsed.reportFilter || 'weekly',
+          reportStartDate: parsed.reportStartDate || '',
+          reportEndDate: parsed.reportEndDate || '',
+          selectedUserId: parsed.selectedUserId || 'all'
+        };
+      }
+    } catch (error) {
+      console.warn('Failed to load billing filters from localStorage:', error);
+    }
+  }
+  return getDefaultBillingFilters();
+}
+
+export function clearBillingFiltersFromStorage(): void {
+  if (typeof window !== 'undefined') {
+    try {
+      localStorage.removeItem('billing-filters');
+    } catch (error) {
+      console.warn('Failed to clear billing filters from localStorage:', error);
+    }
+  }
+}
