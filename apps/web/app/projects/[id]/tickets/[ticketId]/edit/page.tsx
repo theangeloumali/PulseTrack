@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { Button } from '@workspace/ui/components/button';
 import { Input } from '@workspace/ui/components/input';
 import { Label } from '@workspace/ui/components/label';
-import { Textarea } from '@workspace/ui/components/textarea';
+import { RichTextEditor } from '@/components/ui/rich-text-editor';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@workspace/ui/components/card';
 import { useAuthStore } from '@/lib/stores/auth';
 import { useTicketStore } from '@/lib/stores/ticket';
@@ -114,6 +114,13 @@ function EditTicketContent({ params }: Props) {
 		setFormData(prev => ({
 			...prev,
 			[field]: value
+		}));
+	};
+
+	const handleDescriptionChange = (value: string) => {
+		setFormData(prev => ({
+			...prev,
+			description: value
 		}));
 	};
 
@@ -253,14 +260,19 @@ function EditTicketContent({ params }: Props) {
 
 									<div className="md:col-span-2">
 										<Label htmlFor="description">Description</Label>
-										<Textarea
-											id="description"
-											value={formData.description}
-											onChange={(e) => handleInputChange('description', e.target.value)}
-											placeholder="Enter ticket description"
-											rows={6}
-											className="mt-1"
-										/>
+										<div className="mt-1">
+											<RichTextEditor
+												id="description"
+												value={formData.description}
+												onChange={handleDescriptionChange}
+												placeholder="Enter ticket description. You can use **markdown** formatting!"
+												height={200}
+												preview="edit"
+											/>
+										</div>
+										<p className="text-xs text-muted-foreground mt-2">
+											Supports markdown formatting: **bold**, *italic*, `code`, [links](url), lists, and more.
+										</p>
 									</div>
 								</div>
 

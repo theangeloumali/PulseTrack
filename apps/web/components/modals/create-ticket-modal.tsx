@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { Button } from '@workspace/ui/components/button';
 import { Input } from '@workspace/ui/components/input';
 import { Label } from '@workspace/ui/components/label';
-import { Textarea } from '@workspace/ui/components/textarea';
+import { RichTextEditor } from '@/components/ui/rich-text-editor';
 import { Modal } from '@/components/ui/modal';
 import { useCreateTicketMutation } from '@/lib/hooks/useTickets';
 import { useProjectsQuery } from '@/lib/hooks/useProjects';
@@ -42,6 +42,13 @@ export function CreateTicketModal({
     setFormData(prev => ({
       ...prev,
       [name]: value,
+    }));
+  };
+
+  const handleDescriptionChange = (value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      description: value,
     }));
   };
 
@@ -174,15 +181,19 @@ export function CreateTicketModal({
         {/* Ticket Description */}
         <div className="space-y-2">
           <Label htmlFor="description">Description</Label>
-          <Textarea
+          <RichTextEditor
             id="description"
             name="description"
-            placeholder="Describe the ticket in detail (optional)"
+            placeholder="Describe the ticket in detail (optional). You can use **markdown** formatting!"
             value={formData.description}
-            onChange={handleInputChange}
+            onChange={handleDescriptionChange}
             disabled={createTicketMutation.isPending}
-            rows={4}
+            height={150}
+            preview="edit"
           />
+          <p className="text-xs text-muted-foreground">
+            Supports markdown formatting: **bold**, *italic*, `code`, [links](url), lists, and more.
+          </p>
         </div>
 
         <div className="grid grid-cols-2 gap-4">
