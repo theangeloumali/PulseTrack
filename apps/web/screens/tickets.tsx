@@ -129,7 +129,7 @@ export default function TicketsPage() {
 
 	if (ticketsLoading) {
 		return (
-			<div className="min-h-screen bg-gray-50">
+			<div className="min-h-screen bg-background">
 				<div className="flex items-center justify-center py-12">
 					<Loader2 className="h-8 w-8 animate-spin" />
 				</div>
@@ -139,7 +139,7 @@ export default function TicketsPage() {
 
 	if (isTicketsError || !user) {
 		return (
-			<div className="min-h-screen bg-gray-50">
+			<div className="min-h-screen bg-background">
 				<div className="flex items-center justify-center py-12">
 					<Card className="w-96">
 						<CardHeader>
@@ -160,7 +160,7 @@ export default function TicketsPage() {
 	}
 
 	return (
-		<div className="h-full bg-gray-50">
+		<div className="h-full bg-background">
 			{/* Auto-refresh component for tickets data */}
 			<AutoRefresh 
 				queryKeys={user?.company_id && user?.id && user?.role ? [
@@ -172,8 +172,8 @@ export default function TicketsPage() {
 				{/* Header */}
 				<div className="flex justify-between items-center mb-4">
 					<div>
-						<h1 className="text-3xl font-bold text-gray-900">All Tickets</h1>
-						<p className="text-gray-600 mt-1">
+						<h1 className="text-3xl font-bold text-foreground">All Tickets</h1>
+						<p className="text-muted-foreground mt-1">
 							Manage all tickets across your projects
 						</p>
 					</div>
@@ -196,7 +196,7 @@ export default function TicketsPage() {
 						</Button>
 
 						{/* View Toggle */}
-						<div className="flex bg-gray-100 rounded-lg p-1">
+						<div className="flex bg-muted rounded-lg p-1">
 							<Button
 								variant={filters.viewMode === 'board' ? 'default' : 'ghost'}
 								size="sm"
@@ -231,7 +231,7 @@ export default function TicketsPage() {
 							<div className="flex flex-col lg:flex-row gap-4">
 								<div className="flex-1 flex gap-2">
 									<div className="relative flex-1">
-										<Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+										<Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
 										<Input
 											placeholder="Search tickets..."
 											value={filters.searchTerm}
@@ -244,7 +244,7 @@ export default function TicketsPage() {
 											variant="outline"
 											size="sm"
 											onClick={resetFilters}
-											className="h-10 px-3 text-gray-600 hover:text-gray-900 border-gray-300"
+											className="h-10 px-3 text-muted-foreground hover:text-foreground border-border"
 										>
 											<X className="h-4 w-4 mr-1" />
 											Reset
@@ -255,7 +255,7 @@ export default function TicketsPage() {
 									<select
 										value={filters.statusFilter}
 										onChange={(e) => updateFilter('statusFilter', e.target.value)}
-										className="px-3 py-2 border border-gray-300 rounded-md text-sm min-h-[40px]"
+										className="px-3 py-2 border border-border bg-background text-foreground rounded-md text-sm min-h-[40px]"
 									>
 										<option value="all">All Status</option>
 										<option value="new">New</option>
@@ -266,7 +266,7 @@ export default function TicketsPage() {
 									<select
 										value={filters.priorityFilter}
 										onChange={(e) => updateFilter('priorityFilter', e.target.value)}
-										className="px-3 py-2 border border-gray-300 rounded-md text-sm min-h-[40px]"
+										className="px-3 py-2 border border-border bg-background text-foreground rounded-md text-sm min-h-[40px]"
 									>
 										<option value="all">All Priority</option>
 										<option value="low">Low</option>
@@ -277,7 +277,7 @@ export default function TicketsPage() {
 									<select
 										value={filters.projectFilter}
 										onChange={(e) => updateFilter('projectFilter', e.target.value)}
-										className="px-3 py-2 border border-gray-300 rounded-md text-sm min-h-[40px]"
+										className="px-3 py-2 border border-border bg-background text-foreground rounded-md text-sm min-h-[40px]"
 									>
 										<option value="all">All Projects</option>
 										{availableProjects.map((project) => (
@@ -289,7 +289,7 @@ export default function TicketsPage() {
 									<select
 										value={filters.companyFilter}
 										onChange={(e) => updateFilter('companyFilter', e.target.value)}
-										className="px-3 py-2 border border-gray-300 rounded-md text-sm min-h-[40px]"
+										className="px-3 py-2 border border-border bg-background text-foreground rounded-md text-sm min-h-[40px]"
 									>
 										<option value="all">All Companies</option>
 										{availableCompanies.map((company) => (
@@ -306,10 +306,10 @@ export default function TicketsPage() {
 						<div className={`sm:hidden transition-all duration-200 overflow-hidden ${
 							showMobileFilters ? 'max-h-screen opacity-100' : 'max-h-0 opacity-0'
 						}`}>
-							<div className="space-y-4 pt-4 border-t border-gray-200">
+							<div className="space-y-4 pt-4 border-t border-border">
 								{/* Mobile Search */}
 								<div className="relative">
-									<Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+									<Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
 									<Input
 										placeholder="Search tickets..."
 										value={filters.searchTerm}
@@ -323,7 +323,7 @@ export default function TicketsPage() {
 									<select
 										value={filters.statusFilter}
 										onChange={(e) => updateFilter('statusFilter', e.target.value)}
-										className="w-full px-4 py-3 border border-gray-300 rounded-md text-sm min-h-[44px]"
+										className="w-full px-4 py-3 border border-border bg-background text-foreground rounded-md text-sm min-h-[44px]"
 									>
 										<option value="all">All Status</option>
 										<option value="new">New</option>
@@ -334,7 +334,7 @@ export default function TicketsPage() {
 									<select
 										value={filters.priorityFilter}
 										onChange={(e) => updateFilter('priorityFilter', e.target.value)}
-										className="w-full px-4 py-3 border border-gray-300 rounded-md text-sm min-h-[44px]"
+										className="w-full px-4 py-3 border border-border bg-background text-foreground rounded-md text-sm min-h-[44px]"
 									>
 										<option value="all">All Priority</option>
 										<option value="low">Low</option>
@@ -345,7 +345,7 @@ export default function TicketsPage() {
 									<select
 										value={filters.projectFilter}
 										onChange={(e) => updateFilter('projectFilter', e.target.value)}
-										className="w-full px-4 py-3 border border-gray-300 rounded-md text-sm min-h-[44px]"
+										className="w-full px-4 py-3 border border-border bg-background text-foreground rounded-md text-sm min-h-[44px]"
 									>
 										<option value="all">All Projects</option>
 										{availableProjects.map((project) => (
@@ -357,7 +357,7 @@ export default function TicketsPage() {
 									<select
 										value={filters.companyFilter}
 										onChange={(e) => updateFilter('companyFilter', e.target.value)}
-										className="w-full px-4 py-3 border border-gray-300 rounded-md text-sm min-h-[44px]"
+										className="w-full px-4 py-3 border border-border bg-background text-foreground rounded-md text-sm min-h-[44px]"
 									>
 										<option value="all">All Companies</option>
 										{availableCompanies.map((company) => (
@@ -374,7 +374,7 @@ export default function TicketsPage() {
 										variant="outline"
 										size="sm"
 										onClick={resetFilters}
-										className="w-full h-12 text-gray-600 hover:text-gray-900 border-gray-300"
+										className="w-full h-12 text-muted-foreground hover:text-foreground border-border"
 									>
 										<X className="h-4 w-4 mr-2" />
 										Reset All Filters
@@ -389,9 +389,9 @@ export default function TicketsPage() {
 				{filteredTickets.length === 0 && !ticketsLoading ? (
 					<Card>
 						<CardContent className="flex flex-col items-center justify-center py-12">
-							<FileText className="h-12 w-12 text-gray-400 mb-4" />
-							<h3 className="text-lg font-medium text-gray-900 mb-2">No tickets found</h3>
-							<p className="text-gray-500 text-center mb-4">
+							<FileText className="h-12 w-12 text-muted-foreground mb-4" />
+							<h3 className="text-lg font-medium text-foreground mb-2">No tickets found</h3>
+							<p className="text-muted-foreground text-center mb-4">
 								{filtersActive
 									? 'Try adjusting your search or filters.'
 									: 'Get started by creating your first ticket.'}

@@ -134,7 +134,7 @@ export default function EditProjectPage({ params }: Props) {
 
 	if (!user || isLoading) {
 		return (
-			<div className="min-h-screen bg-gray-50">
+			<div className="min-h-screen bg-background">
 				<div className="flex items-center justify-center py-12">
 					<Loader2 className="h-8 w-8 animate-spin" />
 				</div>
@@ -144,7 +144,7 @@ export default function EditProjectPage({ params }: Props) {
 
 	if (error || !project) {
 		return (
-			<div className="min-h-screen bg-gray-50">
+			<div className="min-h-screen bg-background">
 				<div className="flex items-center justify-center py-12">
 					<Card className="w-96">
 						<CardHeader>
@@ -163,9 +163,9 @@ export default function EditProjectPage({ params }: Props) {
 	}
 
 	return (
-		<div className="min-h-screen bg-gray-50">
+		<div className="min-h-screen bg-background">
 			{/* Header */}
-			<header className="bg-white shadow">
+			<header className="bg-card border-b border-border">
 				<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 					<div className="flex items-center py-6">
 						<Link href={`/projects/${project.id}`} className="mr-4">
@@ -175,8 +175,8 @@ export default function EditProjectPage({ params }: Props) {
 							</Button>
 						</Link>
 						<div>
-							<h1 className="text-3xl font-bold text-gray-900">Edit Project</h1>
-							<p className="text-gray-600">Update project information and settings</p>
+							<h1 className="text-3xl font-bold text-foreground">Edit Project</h1>
+							<p className="text-muted-foreground">Update project information and settings</p>
 						</div>
 					</div>
 				</div>
@@ -194,7 +194,7 @@ export default function EditProjectPage({ params }: Props) {
 						<CardContent>
 							<form onSubmit={handleSubmit} className="space-y-6">
 								{error && (
-									<div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md text-sm">
+									<div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 text-red-700 dark:text-red-400 px-4 py-3 rounded-md text-sm">
 										{error}
 									</div>
 								)}
@@ -245,7 +245,7 @@ export default function EditProjectPage({ params }: Props) {
 										<option value="archived">Archived</option>
 										<option value="completed">Completed</option>
 									</select>
-									<p className="text-xs text-gray-500">
+									<p className="text-xs text-muted-foreground">
 										Change the project status to reflect its current state
 									</p>
 								</div>
@@ -290,7 +290,7 @@ export default function EditProjectPage({ params }: Props) {
 
 					{/* Delete Confirmation Modal */}
 					{showDeleteConfirm && (
-						<div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50">
+						<div className="fixed inset-0 bg-black/50 dark:bg-black/75 flex items-center justify-center z-50">
 							<Card className="w-96">
 								<CardHeader>
 									<CardTitle className="text-red-600">Delete Project</CardTitle>

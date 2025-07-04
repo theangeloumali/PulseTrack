@@ -36,7 +36,23 @@ export const useThemeStore = create<ThemeState>()(
       
       toggleMode: () => {
         const currentMode = get().mode
-        const newMode = currentMode === 'light' ? 'dark' : 'light'
+        let newMode: ThemeMode
+        
+        // Cycle through: light → dark → system → light
+        switch (currentMode) {
+          case 'light':
+            newMode = 'dark'
+            break
+          case 'dark':
+            newMode = 'system'
+            break
+          case 'system':
+            newMode = 'light'
+            break
+          default:
+            newMode = 'light'
+        }
+        
         get().setMode(newMode)
       },
     }),
