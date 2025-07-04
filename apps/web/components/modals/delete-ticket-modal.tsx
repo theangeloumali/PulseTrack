@@ -36,7 +36,7 @@ export function DeleteTicketModal({ isOpen, onClose, ticket, onSuccess }: Delete
   if (!isOpen || !ticket) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div className="fixed inset-0 bg-black/50 dark:bg-black/75 flex items-center justify-center z-50">
       <Card className="w-full max-w-md mx-4">
         <CardHeader>
           <div className="flex items-center gap-3">
@@ -46,13 +46,13 @@ export function DeleteTicketModal({ isOpen, onClose, ticket, onSuccess }: Delete
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
-            <p className="text-sm text-gray-600 mb-2">
+            <p className="text-sm text-muted-foreground mb-2">
               Are you sure you want to delete this ticket? This action cannot be undone.
             </p>
-            <div className="bg-gray-50 p-3 rounded-md">
+            <div className="bg-muted/50 p-3 rounded-md">
               <p className="font-medium text-sm">{ticket.title}</p>
               {ticket.description && (
-                <p className="text-xs text-gray-600 mt-1 truncate">
+                <p className="text-xs text-muted-foreground mt-1 truncate">
                   {ticket.description}
                 </p>
               )}

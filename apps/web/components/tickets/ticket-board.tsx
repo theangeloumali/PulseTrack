@@ -106,10 +106,10 @@ type SortOption = 'priority' | 'created_at' | 'due_date' | 'assignee' | 'title';
 type SortDirection = 'asc' | 'desc';
 
 const defaultColumns: Column[] = [
-  { id: 'new', title: 'To Do', color: 'bg-gray-50 border-gray-200' },
-  { id: 'in_progress', title: 'In Progress', color: 'bg-blue-50 border-blue-200' },
-  { id: 'review', title: 'Review', color: 'bg-yellow-50 border-yellow-200' },
-  { id: 'done', title: 'Done', color: 'bg-green-50 border-green-200' },
+  { id: 'new', title: 'To Do', color: 'bg-gray-50 dark:bg-gray-900/20 border-gray-200 dark:border-gray-700' },
+  { id: 'in_progress', title: 'In Progress', color: 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-700' },
+  { id: 'review', title: 'Review', color: 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-700' },
+  { id: 'done', title: 'Done', color: 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-700' },
 ];
 
 interface SortableTicketCardProps {
@@ -183,15 +183,15 @@ function DroppableColumn({
                   variant="ghost"
                   size="sm"
                   onClick={() => setShowSortMenu(!showSortMenu)}
-                  className={`h-6 w-6 p-0 hover:text-gray-600 border border-dashed hover:border-solid transition-all ${
-                    sortOption !== 'created_at' ? 'text-blue-600 border-blue-200' : 'text-gray-400 border-gray-200'
+                  className={`h-6 w-6 p-0 hover:text-muted-foreground border border-dashed hover:border-solid transition-all ${
+                    sortOption !== 'created_at' ? 'text-blue-600 border-blue-200 dark:border-blue-700' : 'text-muted-foreground border-border'
                   }`}
                   title={`Sort by ${sortOption} (${sortDirection}) - Click to change`}
                 >
                   {getSortIcon()}
                 </Button>
                 {showSortMenu && (
-                  <div className="absolute right-0 top-7 bg-white border rounded-md shadow-lg z-[9999] py-1 min-w-[140px]">
+                  <div className="absolute right-0 top-7 bg-card border border-border rounded-md shadow-lg z-[9999] py-1 min-w-[140px]">
                     {sortOptions.map((option) => (
                       <button
                         key={option.value}
@@ -199,8 +199,8 @@ function DroppableColumn({
                           onSort(column.id, option.value);
                           setShowSortMenu(false);
                         }}
-                        className={`flex items-center justify-between px-3 py-2 text-sm hover:bg-gray-50 w-full text-left ${
-                          sortOption === option.value ? 'bg-blue-50 text-blue-600' : ''
+                        className={`flex items-center justify-between px-3 py-2 text-sm hover:bg-muted/50 w-full text-left ${
+                          sortOption === option.value ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400' : 'text-foreground'
                         }`}
                       >
                         <span>{option.label}</span>
@@ -217,7 +217,7 @@ function DroppableColumn({
                   variant="ghost"
                   size="sm"
                   onClick={() => onRemoveColumn(column.id)}
-                  className="h-6 w-6 p-0 text-gray-400 hover:text-red-500"
+                  className="h-6 w-6 p-0 text-muted-foreground hover:text-red-500"
                 >
                   <X className="h-4 w-4" />
                 </Button>
@@ -276,15 +276,15 @@ function SortableTicketCard({
   const getPriorityColor = (priority: string) => {
     switch (priority) {
       case 'low':
-        return 'bg-green-100 text-green-800';
+        return 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400';
       case 'medium':
-        return 'bg-yellow-100 text-yellow-800';
+        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400';
       case 'high':
-        return 'bg-orange-100 text-orange-800';
+        return 'bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-400';
       case 'critical':
-        return 'bg-red-100 text-red-800';
+        return 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-gray-100 text-gray-800 dark:bg-gray-800/20 dark:text-gray-400';
     }
   };
 
@@ -303,10 +303,10 @@ function SortableTicketCard({
   };
 
   const priorityOptions = [
-    { value: 'low', label: 'Low', color: 'bg-green-100 text-green-800' },
-    { value: 'medium', label: 'Medium', color: 'bg-yellow-100 text-yellow-800' },
-    { value: 'high', label: 'High', color: 'bg-orange-100 text-orange-800' },
-    { value: 'critical', label: 'Critical', color: 'bg-red-100 text-red-800' },
+    { value: 'low', label: 'Low', color: 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400' },
+    { value: 'medium', label: 'Medium', color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400' },
+    { value: 'high', label: 'High', color: 'bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-400' },
+    { value: 'critical', label: 'Critical', color: 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400' },
   ];
 
   const assignedUser = users.find(user => user.id === ticket.assignee_id);
@@ -318,15 +318,15 @@ function SortableTicketCard({
       {...attributes}
       {...listeners}
       data-ticket-id={ticket.id}
-      className={`relative bg-white hover:shadow-md transition-all duration-200 border border-gray-200 ${
-        isDragging ? 'shadow-lg ring-2 ring-blue-300 z-50 cursor-grabbing' : 'z-10 hover:cursor-grab'
+      className={`relative bg-card hover:shadow-md transition-all duration-200 border border-border ${
+        isDragging ? 'shadow-lg ring-2 ring-blue-300 dark:ring-blue-500 z-50 cursor-grabbing' : 'z-10 hover:cursor-grab'
       }`}
     >
       <CardContent className="p-3">
         <div className="flex items-start justify-between mb-2">
           <div className="flex items-start gap-2 flex-1 min-w-0">
             <div 
-              className="text-gray-400 mt-1 flex-shrink-0 hover:text-gray-600 transition-colors duration-150"
+              className="text-muted-foreground mt-1 flex-shrink-0 hover:text-foreground transition-colors duration-150"
               title="Drag to reorder"
             >
               <GripVertical className="h-4 w-4" />
@@ -339,7 +339,7 @@ function SortableTicketCard({
                 e.stopPropagation();
               }}
             >
-              <h4 className="font-medium text-sm text-gray-900 truncate">
+              <h4 className="font-medium text-sm text-foreground truncate">
                 {ticket.title}
               </h4>
             </Link>
@@ -357,7 +357,7 @@ function SortableTicketCard({
                 // Prevent drag when clicking on more button
                 e.stopPropagation();
               }}
-              className="h-6 w-6 p-0 text-gray-400"
+              className="h-6 w-6 p-0 text-muted-foreground"
             >
               <MoreVertical className="h-4 w-4" />
             </Button>
@@ -366,14 +366,14 @@ function SortableTicketCard({
               triggerRef={moreButtonRef}
               position="bottom-right"
             >
-              <div className="bg-white border rounded-md shadow-lg py-1 min-w-[180px]">
+              <div className="bg-card border border-border rounded-md shadow-lg py-1 min-w-[180px]">
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
                     onExpandAssignment(expandedAssignment === ticket.id ? null : ticket.id);
                     onExpandDropdown(null);
                   }}
-                  className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-gray-50 w-full text-left"
+                  className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-muted/50 w-full text-left text-foreground"
                 >
                   <UserPlus className="h-4 w-4" />
                   Assign to User
@@ -384,7 +384,7 @@ function SortableTicketCard({
                     onExpandPriority(expandedPriority === ticket.id ? null : ticket.id);
                     onExpandDropdown(null);
                   }}
-                  className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-gray-50 w-full text-left"
+                  className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-muted/50 w-full text-left text-foreground"
                 >
                   <AlertCircle className="h-4 w-4" />
                   Set Priority
@@ -396,7 +396,7 @@ function SortableTicketCard({
                     onTimeTrack(ticket);
                     onExpandDropdown(null);
                   }}
-                  className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-gray-50 w-full text-left"
+                  className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-muted/50 w-full text-left text-foreground"
                 >
                   <Clock className="h-4 w-4" />
                   Time Tracking
@@ -418,7 +418,7 @@ function SortableTicketCard({
         </div>
         
         {ticket.description && (
-          <p className="text-xs text-gray-600 mb-2 line-clamp-2">
+          <p className="text-xs text-muted-foreground mb-2 line-clamp-2">
             {ticket.description}
           </p>
         )}
@@ -448,7 +448,7 @@ function SortableTicketCard({
               triggerRef={priorityRef}
               position="bottom-left"
             >
-              <div className="bg-white border rounded-md shadow-lg py-1 min-w-[120px]">
+              <div className="bg-card border border-border rounded-md shadow-lg py-1 min-w-[120px]">
                 {priorityOptions.map((priority) => (
                   <button
                     key={priority.value}
@@ -457,8 +457,8 @@ function SortableTicketCard({
                       onUpdatePriority(ticket, priority.value);
                       onExpandPriority(null);
                     }}
-                    className={`flex items-center gap-2 px-3 py-2 text-sm hover:bg-gray-50 w-full text-left ${
-                      ticket.priority === priority.value ? 'bg-blue-50' : ''
+                    className={`flex items-center gap-2 px-3 py-2 text-sm hover:bg-muted/50 w-full text-left ${
+                      ticket.priority === priority.value ? 'bg-blue-50 dark:bg-blue-900/20' : ''
                     }`}
                   >
                     <Badge className={`${priority.color} text-xs`}>
@@ -471,12 +471,12 @@ function SortableTicketCard({
           </div>
         </div>
 
-        <div className="flex items-center justify-between text-xs text-gray-500">
+        <div className="flex items-center justify-between text-xs text-muted-foreground">
           {/* Assignee with Dropdown */}
           <div className="relative z-[200]">
             <div 
               ref={assigneeRef}
-              className="flex items-center gap-1 cursor-pointer hover:bg-gray-100 rounded px-2 py-1 border border-dashed border-gray-300 hover:border-solid transition-all"
+              className="flex items-center gap-1 cursor-pointer hover:bg-muted/50 rounded px-2 py-1 border border-dashed border-border hover:border-solid transition-all"
               onClick={(e) => {
                 e.stopPropagation();
                 onExpandAssignment(expandedAssignment === ticket.id ? null : ticket.id);
@@ -498,7 +498,7 @@ function SortableTicketCard({
               triggerRef={assigneeRef}
               position="bottom-left"
             >
-              <div className="bg-white border rounded-md shadow-lg py-1 min-w-[180px] max-h-40 overflow-y-auto">
+              <div className="bg-card border border-border rounded-md shadow-lg py-1 min-w-[180px] max-h-40 overflow-y-auto">
                 {/* Unassign option */}
                 <button
                   onClick={(e) => {
@@ -506,17 +506,17 @@ function SortableTicketCard({
                     onAssign(ticket, null);
                     onExpandAssignment(null);
                   }}
-                  className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-gray-50 w-full text-left"
+                  className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-muted/50 w-full text-left text-foreground"
                 >
-                  <div className="w-5 h-5 rounded-full bg-gray-200 flex items-center justify-center">
-                    <User className="w-3 h-3 text-gray-500" />
+                  <div className="w-5 h-5 rounded-full bg-muted flex items-center justify-center">
+                    <User className="w-3 h-3 text-muted-foreground" />
                   </div>
                   <span>Unassigned</span>
                 </button>
                 
                 {/* User options */}
                 {usersLoading ? (
-                  <div className="px-3 py-2 text-sm text-gray-500">Loading...</div>
+                  <div className="px-3 py-2 text-sm text-muted-foreground">Loading...</div>
                 ) : (
                   users.map((user) => (
                     <button
@@ -526,12 +526,12 @@ function SortableTicketCard({
                         onAssign(ticket, user.id);
                         onExpandAssignment(null);
                       }}
-                      className={`flex items-center gap-2 px-3 py-2 text-sm hover:bg-gray-50 w-full text-left ${
-                        user.id === ticket.assignee_id ? 'bg-blue-50' : ''
+                      className={`flex items-center gap-2 px-3 py-2 text-sm hover:bg-muted/50 w-full text-left text-foreground ${
+                        user.id === ticket.assignee_id ? 'bg-blue-50 dark:bg-blue-900/20' : ''
                       }`}
                     >
-                      <div className="w-5 h-5 rounded-full bg-blue-100 flex items-center justify-center">
-                        <User className="w-3 h-3 text-blue-600" />
+                      <div className="w-5 h-5 rounded-full bg-blue-100 dark:bg-blue-900/20 flex items-center justify-center">
+                        <User className="w-3 h-3 text-blue-600 dark:text-blue-400" />
                       </div>
                       <span className="truncate">{user.first_name} {user.last_name}</span>
                     </button>
@@ -849,7 +849,7 @@ export function TicketBoard({ tickets: serverTickets, isLoading }: TicketBoardPr
     const newColumn: Column = {
       id: newColumnTitle.toLowerCase().replace(/\s+/g, '_') as TicketStatus,
       title: newColumnTitle,
-      color: 'bg-purple-50 border-purple-200'
+      color: 'bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-700'
     };
     
     setColumns([...columns, newColumn]);
@@ -975,7 +975,7 @@ export function TicketBoard({ tickets: serverTickets, isLoading }: TicketBoardPr
                 </SortableContext>
                 
                 {columnTickets.length === 0 && (
-                  <div className="text-center py-8 text-gray-400">
+                  <div className="text-center py-8 text-muted-foreground">
                     <FileText className="h-8 w-8 mx-auto mb-2 opacity-50" />
                     <p className="text-sm">No tickets</p>
                   </div>
@@ -990,7 +990,7 @@ export function TicketBoard({ tickets: serverTickets, isLoading }: TicketBoardPr
             <Button
               variant="outline"
               onClick={() => setIsAddingColumn(true)}
-              className="w-full h-12 border-dashed border-2 text-gray-400 hover:text-gray-600 hover:border-gray-300"
+              className="w-full h-12 border-dashed border-2 text-muted-foreground hover:text-foreground hover:border-border"
             >
               <Plus className="h-4 w-4 mr-2" />
               Add Column

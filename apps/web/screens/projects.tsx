@@ -62,13 +62,13 @@ function ProjectsContent() {
 	const getStatusColor = (status: string) => {
 		switch (status) {
 			case 'active':
-				return 'bg-green-100 text-green-800';
+				return 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400';
 			case 'archived':
-				return 'bg-yellow-100 text-yellow-800';
+				return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400';
 			case 'completed':
-				return 'bg-blue-100 text-blue-800';
+				return 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400';
 			default:
-				return 'bg-gray-100 text-gray-800';
+				return 'bg-gray-100 text-gray-800 dark:bg-gray-800/50 dark:text-gray-300';
 		}
 	};
 
@@ -82,10 +82,10 @@ function ProjectsContent() {
 
 	if (isError) {
 		return (
-			<div className="h-full bg-gray-50 flex items-center justify-center">
+			<div className="h-full bg-background flex items-center justify-center">
 				<Card className="w-96">
 					<CardHeader>
-						<CardTitle className="flex items-center text-red-600">
+						<CardTitle className="flex items-center text-red-600 dark:text-red-400">
 							<AlertCircle className="h-5 w-5 mr-2" />
 							Error
 						</CardTitle>
@@ -105,7 +105,7 @@ function ProjectsContent() {
 	}
 
 	return (
-		<div className="h-full bg-gray-50">
+		<div className="h-full bg-background">
 			{/* Auto-refresh component for projects data */}
 			<AutoRefresh 
 				queryKeys={user?.company_id && user?.id && user?.role ? [
@@ -114,12 +114,12 @@ function ProjectsContent() {
 			/>
 			
 			{/* Header */}
-			<header className="bg-white shadow-sm">
+			<header className="bg-card shadow-sm border-b border-border">
 				<div className="px-4">
 					<div className="flex items-center justify-between py-4">
 						<div>
-							<h1 className="text-3xl font-bold text-gray-900">Projects</h1>
-							<p className="text-gray-600">
+							<h1 className="text-3xl font-bold text-foreground">Projects</h1>
+							<p className="text-muted-foreground">
 								Manage your team's projects and track progress
 							</p>
 						</div>
@@ -138,7 +138,7 @@ function ProjectsContent() {
 				<div className="mb-4 flex flex-col sm:flex-row gap-4">
 						{/* Search */}
 						<div className="flex-1 relative">
-							<Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+							<Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
 							<Input
 								type="text"
 								placeholder="Search projects by name or description..."
@@ -168,11 +168,11 @@ function ProjectsContent() {
 						</div>
 					) : sortedProjects.length === 0 ? (
 						<div className="text-center py-12">
-							<FolderOpen className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-							<h3 className="text-lg font-medium text-gray-900 mb-2">
+							<FolderOpen className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+							<h3 className="text-lg font-medium text-foreground mb-2">
 								{(projects || []).length === 0 ? 'No projects yet' : 'No projects match your search'}
 							</h3>
-							<p className="text-gray-500 mb-6">
+							<p className="text-muted-foreground mb-6">
 								{(projects || []).length === 0 
 									? 'Get started by creating your first project'
 									: 'Try adjusting your search criteria'
@@ -194,7 +194,7 @@ function ProjectsContent() {
 									<CardHeader>
 										<div className="flex items-start justify-between">
 											<Link href={`/projects/${project.id}`} className="flex-1">
-												<CardTitle className="text-lg hover:text-blue-600 transition-colors">
+												<CardTitle className="text-lg hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
 													{project.name}
 												</CardTitle>
 											</Link>
@@ -204,14 +204,14 @@ function ProjectsContent() {
 										</div>
 										{project.description && (
 											<Link href={`/projects/${project.id}`}>
-												<CardDescription className="line-clamp-2 hover:text-gray-700 transition-colors">
+												<CardDescription className="line-clamp-2 hover:text-gray-700 dark:hover:text-gray-300 transition-colors">
 													{project.description}
 												</CardDescription>
 											</Link>
 										)}
 									</CardHeader>
 									<CardContent>
-										<div className="flex items-center justify-between text-sm text-gray-500 mb-4">
+										<div className="flex items-center justify-between text-sm text-muted-foreground mb-4">
 											<div className="flex items-center">
 												<Calendar className="h-4 w-4 mr-1" />
 												{new Date(project.created_at).toLocaleDateString()}
@@ -271,7 +271,7 @@ function ProjectsContent() {
 export default function ProjectsPage() {
 	return (
 		<Suspense fallback={
-			<div className="h-full flex items-center justify-center">
+			<div className="h-full flex items-center justify-center bg-background">
 				<Loader2 className="h-8 w-8 animate-spin" />
 			</div>
 		}>

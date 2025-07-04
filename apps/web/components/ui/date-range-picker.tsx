@@ -108,7 +108,7 @@ export function DateRangePicker({
 
       {/* Dropdown Calendar */}
       {isOpen && (
-        <div className="absolute top-full left-0 mt-2 bg-white border rounded-lg shadow-lg z-[9999] p-4 min-w-[320px]">
+        <div className="absolute top-full left-0 mt-2 bg-card border border-border rounded-lg shadow-lg z-[9999] p-4 min-w-[320px]">
           {/* Manual Date Inputs */}
           <div className="flex gap-2 mb-4">
             <div className="flex-1">
@@ -166,7 +166,7 @@ export function DateRangePicker({
           {/* Weekday Headers */}
           <div className="grid grid-cols-7 gap-1 mb-2">
             {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day) => (
-              <div key={day} className="p-2 text-xs font-medium text-gray-500 text-center">
+              <div key={day} className="p-2 text-xs font-medium text-muted-foreground text-center">
                 {day}
               </div>
             ))}
@@ -186,10 +186,10 @@ export function DateRangePicker({
                   onClick={() => handleDateClick(day)}
                   className={`
                     p-2 text-xs rounded-md transition-colors
-                    ${!isCurrentMonth ? 'text-gray-300' : 'text-gray-900'}
-                    ${isStart || isEnd ? 'bg-blue-500 text-white' : ''}
-                    ${inRange && !isStart && !isEnd ? 'bg-blue-100' : ''}
-                    ${!inRange && !isStart && !isEnd && isCurrentMonth ? 'hover:bg-gray-100' : ''}
+                    ${!isCurrentMonth ? 'text-muted-foreground/50' : 'text-foreground'}
+                    ${isStart || isEnd ? 'bg-blue-500 text-white dark:bg-blue-600' : ''}
+                    ${inRange && !isStart && !isEnd ? 'bg-blue-100 dark:bg-blue-900/20' : ''}
+                    ${!inRange && !isStart && !isEnd && isCurrentMonth ? 'hover:bg-muted/50' : ''}
                     ${!isCurrentMonth ? 'cursor-default' : 'cursor-pointer'}
                   `}
                   disabled={!isCurrentMonth}
@@ -201,7 +201,7 @@ export function DateRangePicker({
           </div>
 
           {/* Action Buttons */}
-          <div className="flex gap-2 mt-4 pt-4 border-t">
+          <div className="flex gap-2 mt-4 pt-4 border-t border-border">
             <Button
               variant="outline"
               size="sm"
@@ -230,10 +230,10 @@ export function DateRangePicker({
           </div>
 
           {/* Instructions */}
-          <div className="mt-2 text-xs text-gray-500 text-center">
+          <div className="mt-2 text-xs text-muted-foreground text-center">
             {!selecting && !startDate && 'Click a date to start selecting range'}
             {!selecting && startDate && endDate && endDate !== '' && (
-              <span className="text-green-600 font-medium">
+              <span className="text-green-600 dark:text-green-400 font-medium">
                 Range selected! Click "Apply Range" to confirm.
               </span>
             )}

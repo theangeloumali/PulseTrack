@@ -245,13 +245,13 @@ const BillingPage = () => {
 		}
     }, [companyId, reportFilter]); // Re-run when companyId or reportFilter changes
     
-	if (isLoading) return <div>Loading...</div>;
-	if (isError) return <div>Error loading billing settings.</div>;
+	if (isLoading) return <div className="min-h-screen bg-background flex items-center justify-center text-muted-foreground">Loading...</div>;
+	if (isError) return <div className="min-h-screen bg-background flex items-center justify-center text-red-600 dark:text-red-400">Error loading billing settings.</div>;
 console.log('filteredBillingReport:', filteredBillingReport);
 	return (
-		<div className='p-4 space-y-4'>
+		<div className='p-4 space-y-4 bg-background min-h-screen'>
 			<div className='flex justify-between items-center'>
-				<h1 className='text-3xl font-bold text-gray-900'>
+				<h1 className='text-3xl font-bold text-foreground'>
 					{isAdmin ? 'Company Billing Dashboard' : 'My Timesheet'}
 				</h1>
 				<Badge variant="outline" className="text-sm">
@@ -318,22 +318,22 @@ console.log('filteredBillingReport:', filteredBillingReport);
 			</div>
 
 			{/* Navigation Tabs */}
-			<div className="flex border-b border-gray-200 mb-6">
+			<div className="flex border-b border-border mb-6">
 				<button 
-					className={`px-4 py-2 font-medium ${activeTab === 'timesheet' ? 'border-b-2 border-blue-500 text-blue-600' : 'text-gray-600 hover:text-gray-900'}`}
+					className={`px-4 py-2 font-medium ${activeTab === 'timesheet' ? 'border-b-2 border-blue-500 text-blue-600 dark:text-blue-400' : 'text-muted-foreground hover:text-foreground'}`}
 					onClick={() => setActiveTab('timesheet')}
 				>
 					Timesheet
 				</button>
 				<button 
-					className={`px-4 py-2 font-medium ml-4 ${activeTab === 'rates' ? 'border-b-2 border-blue-500 text-blue-600' : 'text-gray-600 hover:text-gray-900'}`}
+					className={`px-4 py-2 font-medium ml-4 ${activeTab === 'rates' ? 'border-b-2 border-blue-500 text-blue-600 dark:text-blue-400' : 'text-muted-foreground hover:text-foreground'}`}
 					onClick={() => setActiveTab('rates')}
 				>
 					Billing Rates
 				</button>
 				{isAdmin && (
 					<button 
-						className={`px-4 py-2 font-medium ml-4 ${activeTab === 'settings' ? 'border-b-2 border-blue-500 text-blue-600' : 'text-gray-600 hover:text-gray-900'}`}
+						className={`px-4 py-2 font-medium ml-4 ${activeTab === 'settings' ? 'border-b-2 border-blue-500 text-blue-600 dark:text-blue-400' : 'text-muted-foreground hover:text-foreground'}`}
 						onClick={() => setActiveTab('settings')}
 					>
 						Settings
@@ -355,8 +355,8 @@ console.log('filteredBillingReport:', filteredBillingReport);
 								</div>
 								<div className="flex flex-col gap-4">
 									{/* Date Range Filter Section */}
-									<div className="bg-gray-50 p-4 rounded-lg border">
-										<h4 className="text-sm font-medium text-gray-900 mb-3 flex items-center gap-2">
+									<div className="bg-muted/50 p-4 rounded-lg border border-border">
+										<h4 className="text-sm font-medium text-foreground mb-3 flex items-center gap-2">
 											<Calendar className="h-4 w-4" />
 											Date Range Filter
 										</h4>
@@ -379,7 +379,7 @@ console.log('filteredBillingReport:', filteredBillingReport);
 														</SelectContent>
 													</Select>
 												</div>
-												<div className="text-sm text-gray-600 bg-white px-3 py-2 rounded border">
+												<div className="text-sm text-muted-foreground bg-card px-3 py-2 rounded border border-border">
 													<div className="flex items-center gap-2">
 														<span className="font-medium">Current Range:</span>
 														<span>{reportStartDate && reportEndDate ? 
@@ -443,15 +443,15 @@ console.log('filteredBillingReport:', filteredBillingReport);
 							{isReportLoading ? (
 								<div className="flex items-center justify-center py-8">
 									<div className="text-center">
-										<div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto mb-2"></div>
-										<p className="text-sm text-gray-600">Loading timesheet data...</p>
+										<div className="animate-spin rounded-full h-8 w-8 border-b-2 border-foreground mx-auto mb-2"></div>
+										<p className="text-sm text-muted-foreground">Loading timesheet data...</p>
 									</div>
 								</div>
 							) : isReportError ? (
 								<div className="text-center py-8">
-									<p className="text-sm text-red-600">Error loading timesheet data.</p>
+									<p className="text-sm text-red-600 dark:text-red-400">Error loading timesheet data.</p>
 									{reportError && (
-										<p className="text-xs text-gray-500 mt-2">
+										<p className="text-xs text-muted-foreground mt-2">
 											{(reportError as Error).message || 'Unknown error occurred'}
 										</p>
 									)}
@@ -468,51 +468,51 @@ console.log('filteredBillingReport:', filteredBillingReport);
 								<div className="space-y-6">
 									{/* Timesheet Table */}
 									<div className="overflow-x-auto">
-										<table className="min-w-full divide-y divide-gray-200">
-											<thead className="bg-gray-50">
+										<table className="min-w-full divide-y divide-border">
+											<thead className="bg-muted/50">
 												<tr>
-													<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-													{isAdmin && <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>}
-													<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Project</th>
-													<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ticket</th>
-													<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Hours</th>
-													<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rate</th>
-													<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
-													<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
+													<th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Date</th>
+													{isAdmin && <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">User</th>}
+													<th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Project</th>
+													<th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Ticket</th>
+													<th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Hours</th>
+													<th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Rate</th>
+													<th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Amount</th>
+													<th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Description</th>
 												</tr>
 											</thead>
-											<tbody className="bg-white divide-y divide-gray-200">
+											<tbody className="bg-card divide-y divide-border">
 												{Object.entries(filteredBillingReport).map(([date, usersData]: [string, any]) =>
 													Object.entries(usersData).map(([userId, userData]: [string, any]) =>
 														Object.entries(userData.projects).map(([projectId, projectData]: [string, any]) =>
 															projectData.tickets.map((ticket: any, ticketIndex: number) => (
-																<tr key={`${date}-${userId}-${projectId}-${ticketIndex}`} className="hover:bg-gray-50">
-																	<td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+																<tr key={`${date}-${userId}-${projectId}-${ticketIndex}`} className="hover:bg-muted/50">
+																	<td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-foreground">
 																		{format(new Date(date), 'MMM dd')}
 																	</td>
 																	{isAdmin && (
-																		<td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+																		<td className="px-6 py-4 whitespace-nowrap text-sm text-foreground">
 																			{userData.userFirstName} {userData.userLastName}
 																		</td>
 																	)}
-																	<td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+																	<td className="px-6 py-4 whitespace-nowrap text-sm text-foreground">
 																		<div className="font-medium">{projectData.projectName}</div>
 																	</td>
-																	<td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+																	<td className="px-6 py-4 whitespace-nowrap text-sm text-foreground">
 																		<div className="font-medium">{ticket.ticketTitle}</div>
 																	</td>
-																	<td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-																		<span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium font-mono bg-gray-100 text-gray-800">
+																	<td className="px-6 py-4 whitespace-nowrap text-sm text-foreground">
+																		<span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium font-mono bg-muted text-foreground">
 																			{formatDuration(ticket.hours)}
 																		</span>
 																	</td>
-																	<td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+																	<td className="px-6 py-4 whitespace-nowrap text-sm text-foreground">
 																		{settings?.currency || '$'}{(ticket.amount / ticket.hours).toFixed(2)}/hr
 																	</td>
-																	<td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+																	<td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-foreground">
 																		{settings?.currency || '$'}{ticket.amount.toFixed(2)}
 																	</td>
-																	<td className="px-6 py-4 text-sm text-gray-600 max-w-xs truncate">
+																	<td className="px-6 py-4 text-sm text-muted-foreground max-w-xs truncate">
 																		{ticket.description || '-'}
 																	</td>
 																</tr>
@@ -535,7 +535,7 @@ console.log('filteredBillingReport:', filteredBillingReport);
 															<h5 className="font-medium">{weeklyData.userName}</h5>
 															<div className="mt-2 space-y-1">
 																<div className="text-2xl font-bold font-mono">{formatDuration(weeklyData.totalHours)}</div>
-																<div className="text-lg font-semibold text-green-600">
+																<div className="text-lg font-semibold text-green-600 dark:text-green-400">
 																	{settings?.currency || '$'}{weeklyData.totalAmount.toFixed(2)}
 																</div>
 															</div>
@@ -548,8 +548,8 @@ console.log('filteredBillingReport:', filteredBillingReport);
 								</div>
 							) : (
 								<div className="text-center py-8">
-									<p className="text-sm text-gray-600">No time entries found for the selected period.</p>
-									<p className="text-xs text-gray-500 mt-1">Try selecting a different date range or period.</p>
+									<p className="text-sm text-muted-foreground">No time entries found for the selected period.</p>
+									<p className="text-xs text-muted-foreground mt-1">Try selecting a different date range or period.</p>
 								</div>
 							)}
 						</CardContent>
@@ -647,40 +647,40 @@ console.log('filteredBillingReport:', filteredBillingReport);
 								{isRatesLoading ? (
 									<div className="text-center py-4">Loading rates...</div>
 								) : isRatesError ? (
-									<div className="text-center py-4 text-red-600">Error loading rates.</div>
+									<div className="text-center py-4 text-red-600 dark:text-red-400">Error loading rates.</div>
 								) : billingRates && billingRates.length > 0 ? (
 									<div className="overflow-x-auto">
-										<table className="min-w-full divide-y divide-gray-200">
-											<thead className="bg-gray-50">
+										<table className="min-w-full divide-y divide-border">
+											<thead className="bg-muted/50">
 												<tr>
-													<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
-													<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Target</th>
-													<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rate</th>
-													<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Effective Period</th>
-													<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+													<th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Type</th>
+													<th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Target</th>
+													<th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Rate</th>
+													<th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Effective Period</th>
+													<th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Actions</th>
 												</tr>
 											</thead>
-											<tbody className="bg-white divide-y divide-gray-200">
+											<tbody className="bg-card divide-y divide-border">
 												{billingRates.map((rate) => (
-													<tr key={rate.id} className="hover:bg-gray-50">
-														<td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-															<span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 border border-gray-300">
+													<tr key={rate.id} className="hover:bg-muted/50">
+														<td className="px-6 py-4 whitespace-nowrap text-sm text-foreground">
+															<span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-muted text-foreground border border-border">
 																{rate.project_id ? 'Project' : rate.user_id ? 'User' : 'Company'}
 															</span>
 														</td>
-														<td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+														<td className="px-6 py-4 whitespace-nowrap text-sm text-foreground">
 															{rate.project_id && projects?.find((p) => p.id === rate.project_id)?.name}
 															{rate.user_id && `${users?.find((u) => u.id === rate.user_id)?.first_name} ${users?.find((u) => u.id === rate.user_id)?.last_name}`}
 															{!rate.project_id && !rate.user_id && 'Default Rate'}
 														</td>
-														<td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+														<td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-foreground">
 															{settings?.currency || '$'}{rate.hourly_rate}/hr
 														</td>
-														<td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+														<td className="px-6 py-4 whitespace-nowrap text-sm text-foreground">
 															{format(new Date(rate.effective_from), 'MMM dd, yyyy')}
 															{rate.effective_to && ` - ${format(new Date(rate.effective_to), 'MMM dd, yyyy')}`}
 														</td>
-														<td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+														<td className="px-6 py-4 whitespace-nowrap text-sm text-foreground">
 															<Button 
 																variant="destructive" 
 																size="sm" 
@@ -699,7 +699,7 @@ console.log('filteredBillingReport:', filteredBillingReport);
 										</table>
 									</div>
 								) : (
-									<div className="text-center py-8 text-gray-600">No billing rates configured.</div>
+									<div className="text-center py-8 text-muted-foreground">No billing rates configured.</div>
 								)}
 							</div>
 						</CardContent>

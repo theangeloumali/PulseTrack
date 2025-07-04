@@ -312,20 +312,20 @@ export default function DiagnosticsPage() {
 			case 'error':
 				return <AlertCircle className='h-4 w-4 text-red-600' />;
 			default:
-				return <Activity className='h-4 w-4 text-gray-600' />;
+				return <Activity className='h-4 w-4 text-muted-foreground' />;
 		}
 	};
 
 	const getStatusColor = (status: string) => {
 		switch (status) {
 			case 'success':
-				return 'bg-green-100 text-green-800';
+				return 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400';
 			case 'warning':
-				return 'bg-yellow-100 text-yellow-800';
+				return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400';
 			case 'error':
-				return 'bg-red-100 text-red-800';
+				return 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400';
 			default:
-				return 'bg-gray-100 text-gray-800';
+				return 'bg-muted text-foreground';
 		}
 	};
 
@@ -411,38 +411,38 @@ export default function DiagnosticsPage() {
 					<div className='space-y-4'>
 						<div className='grid gap-4 md:grid-cols-2'>
 							<div>
-								<dt className='text-sm font-medium text-gray-500'>User ID</dt>
-								<dd className='mt-1 text-sm text-gray-900 font-mono'>{user.id}</dd>
+								<dt className='text-sm font-medium text-muted-foreground'>User ID</dt>
+								<dd className='mt-1 text-sm text-foreground font-mono'>{user.id}</dd>
 							</div>
 							<div>
-								<dt className='text-sm font-medium text-gray-500'>Email</dt>
-								<dd className='mt-1 text-sm text-gray-900'>{user.email}</dd>
+								<dt className='text-sm font-medium text-muted-foreground'>Email</dt>
+								<dd className='mt-1 text-sm text-foreground'>{user.email}</dd>
 							</div>
 							<div>
-								<dt className='text-sm font-medium text-gray-500'>Name</dt>
-								<dd className='mt-1 text-sm text-gray-900'>
+								<dt className='text-sm font-medium text-muted-foreground'>Name</dt>
+								<dd className='mt-1 text-sm text-foreground'>
 									{user.first_name} {user.last_name}
 								</dd>
 							</div>
 							<div>
-								<dt className='text-sm font-medium text-gray-500'>Role</dt>
-								<dd className='mt-1 text-sm text-gray-900'>{user.role}</dd>
+								<dt className='text-sm font-medium text-muted-foreground'>Role</dt>
+								<dd className='mt-1 text-sm text-foreground'>{user.role}</dd>
 							</div>
 							<div>
-								<dt className='text-sm font-medium text-gray-500'>Company ID</dt>
-								<dd className='mt-1 text-sm text-gray-900 font-mono'>{user.company_id}</dd>
+								<dt className='text-sm font-medium text-muted-foreground'>Company ID</dt>
+								<dd className='mt-1 text-sm text-foreground font-mono'>{user.company_id}</dd>
 							</div>
 							<div>
-								<dt className='text-sm font-medium text-gray-500'>Created</dt>
-								<dd className='mt-1 text-sm text-gray-900'>{new Date(user.created_at).toLocaleString()}</dd>
+								<dt className='text-sm font-medium text-muted-foreground'>Created</dt>
+								<dd className='mt-1 text-sm text-foreground'>{new Date(user.created_at).toLocaleString()}</dd>
 							</div>
 						</div>
 					</div>
 				) : (
 					<div className='text-center py-8'>
-						<Users className='mx-auto h-12 w-12 text-gray-400' />
-						<h3 className='mt-2 text-sm font-medium text-gray-900'>Not authenticated</h3>
-						<p className='mt-1 text-sm text-gray-500'>Please log in to view authentication details</p>
+						<Users className='mx-auto h-12 w-12 text-muted-foreground' />
+						<h3 className='mt-2 text-sm font-medium text-foreground'>Not authenticated</h3>
+						<p className='mt-1 text-sm text-muted-foreground'>Please log in to view authentication details</p>
 					</div>
 				)}
 			</CardContent>
@@ -463,7 +463,7 @@ export default function DiagnosticsPage() {
 								<FolderOpen className='h-5 w-5' />
 								<div>
 									<div className='font-medium'>Projects Query</div>
-									<div className='text-sm text-gray-500'>Basic project data</div>
+									<div className='text-sm text-muted-foreground'>Basic project data</div>
 								</div>
 							</div>
 							<div className='flex items-center space-x-2'>
@@ -477,7 +477,7 @@ export default function DiagnosticsPage() {
 								<FolderOpen className='h-5 w-5' />
 								<div>
 									<div className='font-medium'>Projects with Ticket Counts</div>
-									<div className='text-sm text-gray-500'>Aggregated project data</div>
+									<div className='text-sm text-muted-foreground'>Aggregated project data</div>
 								</div>
 							</div>
 							<div className='flex items-center space-x-2'>
@@ -491,7 +491,7 @@ export default function DiagnosticsPage() {
 								<FileText className='h-5 w-5' />
 								<div>
 									<div className='font-medium'>Tickets Query</div>
-									<div className='text-sm text-gray-500'>Company tickets</div>
+									<div className='text-sm text-muted-foreground'>Company tickets</div>
 								</div>
 							</div>
 							<div className='flex items-center space-x-2'>
@@ -515,7 +515,7 @@ export default function DiagnosticsPage() {
 								<div key={project.id} className='flex items-center justify-between p-3 border rounded'>
 									<div>
 										<div className='font-medium'>{project.name}</div>
-										<div className='text-sm text-gray-500'>{project.id}</div>
+										<div className='text-sm text-muted-foreground'>{project.id}</div>
 									</div>
 									<Badge variant='outline'>{project.ticket_count} tickets</Badge>
 								</div>
@@ -537,7 +537,7 @@ export default function DiagnosticsPage() {
 				<div className='space-y-4'>
 					<div className='text-sm'>
 						<strong>Projects Query:</strong>
-						<pre className='mt-2 p-3 bg-gray-100 rounded text-xs overflow-x-auto'>
+						<pre className='mt-2 p-3 bg-muted rounded text-xs overflow-x-auto'>
 							{JSON.stringify(
 								{
 									loading: projectsLoading,
@@ -552,7 +552,7 @@ export default function DiagnosticsPage() {
 
 					<div className='text-sm'>
 						<strong>Tickets Query:</strong>
-						<pre className='mt-2 p-3 bg-gray-100 rounded text-xs overflow-x-auto'>
+						<pre className='mt-2 p-3 bg-muted rounded text-xs overflow-x-auto'>
 							{JSON.stringify(
 								{
 									loading: ticketsLoading,
@@ -567,7 +567,7 @@ export default function DiagnosticsPage() {
 
 					<div className='text-sm'>
 						<strong>Projects with Counts Query:</strong>
-						<pre className='mt-2 p-3 bg-gray-100 rounded text-xs overflow-x-auto'>
+						<pre className='mt-2 p-3 bg-muted rounded text-xs overflow-x-auto'>
 							{JSON.stringify(
 								{
 									loading: projectsWithCountsLoading,
@@ -626,7 +626,7 @@ export default function DiagnosticsPage() {
 							</Button>
 						</div>
 
-						{!user && <p className='text-sm text-gray-500 text-center'>Please log in to run diagnostic tests</p>}
+						{!user && <p className='text-sm text-muted-foreground text-center'>Please log in to run diagnostic tests</p>}
 					</div>
 				</CardContent>
 			</Card>
@@ -641,30 +641,30 @@ export default function DiagnosticsPage() {
 					<CardContent>
 						<div className='space-y-2 max-h-96 overflow-auto'>
 							{isRunningTests && (
-								<div className='flex items-center text-blue-600 p-3 bg-blue-50 rounded-lg'>
+								<div className='flex items-center text-blue-600 dark:text-blue-400 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg'>
 									<Loader2 className='h-4 w-4 animate-spin mr-2' />
 									Running detailed tests...
 								</div>
 							)}
 							{detailedResults.map((result, index) => (
-								<div key={index} className={`p-3 rounded-lg border ${result.success ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
+								<div key={index} className={`p-3 rounded-lg border ${result.success ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-700' : 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-700'}`}>
 									<div className='font-medium flex justify-between items-start'>
 										<span className='flex-1'>{result.test}</span>
 										<div className='flex items-center space-x-2'>
-											<span className={`text-xs px-2 py-1 rounded ${result.success ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>{result.success ? 'PASS' : 'FAIL'}</span>
-											<span className='text-xs text-gray-500'>{result.timestamp}</span>
+											<span className={`text-xs px-2 py-1 rounded ${result.success ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400' : 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400'}`}>{result.success ? 'PASS' : 'FAIL'}</span>
+											<span className='text-xs text-muted-foreground'>{result.timestamp}</span>
 										</div>
 									</div>
 
 									{result.data && (
 										<details className='mt-2'>
-											<summary className='text-sm text-gray-600 cursor-pointer hover:text-gray-800'>View Details</summary>
-											<pre className='text-xs mt-2 bg-gray-100 p-2 rounded overflow-auto max-h-32'>{JSON.stringify(result.data, null, 2)}</pre>
+											<summary className='text-sm text-muted-foreground cursor-pointer hover:text-foreground'>View Details</summary>
+											<pre className='text-xs mt-2 bg-muted p-2 rounded overflow-auto max-h-32'>{JSON.stringify(result.data, null, 2)}</pre>
 										</details>
 									)}
 
 									{result.error && (
-										<div className='text-red-600 text-sm mt-2 p-2 bg-red-100 rounded'>
+										<div className='text-red-600 dark:text-red-400 text-sm mt-2 p-2 bg-red-100 dark:bg-red-900/20 rounded'>
 											<strong>Error:</strong> {result.error}
 										</div>
 									)}
@@ -693,11 +693,11 @@ export default function DiagnosticsPage() {
 											<Badge className={getStatusColor(result.status)}>{result.status}</Badge>
 										</div>
 									</div>
-									<p className='text-sm text-gray-600 mb-2'>{result.message}</p>
+									<p className='text-sm text-muted-foreground mb-2'>{result.message}</p>
 									{result.details && (
 										<details>
-											<summary className='text-sm text-gray-500 cursor-pointer hover:text-gray-700'>Technical Details</summary>
-											<pre className='text-xs bg-gray-100 p-2 rounded overflow-x-auto mt-2'>{JSON.stringify(result.details, null, 2)}</pre>
+											<summary className='text-sm text-muted-foreground cursor-pointer hover:text-foreground'>Technical Details</summary>
+											<pre className='text-xs bg-muted p-2 rounded overflow-x-auto mt-2'>{JSON.stringify(result.details, null, 2)}</pre>
 										</details>
 									)}
 								</div>
@@ -710,19 +710,19 @@ export default function DiagnosticsPage() {
 	);
 
 	return (
-		<div className='min-h-screen bg-gray-50'>
+		<div className='min-h-screen bg-background'>
 			<div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8'>
 				{/* Header */}
 				<div className='mb-8'>
 					<div className='flex items-center space-x-3 mb-2'>
 						<Bug className='h-8 w-8 text-blue-600' />
-						<h1 className='text-3xl font-bold text-gray-900'>System Diagnostics</h1>
+						<h1 className='text-3xl font-bold text-foreground'>System Diagnostics</h1>
 					</div>
-					<p className='text-gray-600'>Monitor system health, test functionality, and debug issues</p>
+					<p className='text-muted-foreground'>Monitor system health, test functionality, and debug issues</p>
 				</div>
 
 				{/* Tabs */}
-				<div className='border-b border-gray-200 mb-6'>
+				<div className='border-b border-border mb-6'>
 					<nav className='-mb-px flex space-x-8'>
 						{tabs.map((tab) => {
 							const Icon = tab.icon;
@@ -730,7 +730,7 @@ export default function DiagnosticsPage() {
 								<button
 									key={tab.id}
 									onClick={() => setActiveTab(tab.id)}
-									className={`py-2 px-1 border-b-2 font-medium text-sm flex items-center space-x-2 ${activeTab === tab.id ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
+									className={`py-2 px-1 border-b-2 font-medium text-sm flex items-center space-x-2 ${activeTab === tab.id ? 'border-blue-500 text-blue-600' : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'}`}
 								>
 									<Icon className='h-4 w-4' />
 									<span>{tab.label}</span>
