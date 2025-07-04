@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Button } from '@workspace/ui/components/button';
 import { Input } from '@workspace/ui/components/input';
@@ -24,19 +24,55 @@ import {
 	CheckCircle2,
 	FolderOpen,
 	LayoutGrid,
-	List
+	List,
+	X,
+	ChevronDown,
+	ChevronUp
 } from 'lucide-react';
+import { 
+	TicketFilters, 
+	getDefaultFilters, 
+	loadFiltersFromStorage, 
+	saveFiltersToStorage, 
+	clearFiltersFromStorage, 
+	isFiltersActive, 
+	getActiveFiltersCount 
+} from '@/lib/utils';
 
 export default function TicketsPage() {
 	const [showCreateTicketModal, setShowCreateTicketModal] = useState(false);
-	const [searchTerm, setSearchTerm] = useState('');
-	const [statusFilter, setStatusFilter] = useState('all');
-	const [priorityFilter, setPriorityFilter] = useState('all');
-	const [projectFilter, setProjectFilter] = useState('all');
-	const [companyFilter, setCompanyFilter] = useState('all');
-	const [viewMode, setViewMode] = useState<'board' | 'list'>('board');
+	const [filters, setFilters] = useState<TicketFilters>(getDefaultFilters());
+	const [showMobileFilters, setShowMobileFilters] = useState(false);
+	const [isInitialized, setIsInitialized] = useState(false);
 	
 	const { user } = useAuthStore();
+
+	// Load filters from localStorage on mount (only once)
+	useEffect(() => {
+		const storedFilters = loadFiltersFromStorage();
+		setFilters(storedFilters);
+		setIsInitialized(true);
+	}, []);
+
+	// Save filters to localStorage only after initialization and when filters change
+	useEffect(() => {
+		if (isInitialized) {
+			saveFiltersToStorage(filters);
+		}
+	}, [filters, isInitialized]);
+
+	// Helper function to update filters
+	const updateFilter = (key: keyof TicketFilters, value: any) => {
+		setFilters(prev => ({ ...prev, [key]: value }));
+	};
+
+	// Reset all filters to defaults
+	const resetFilters = () => {
+		const defaultFilters = getDefaultFilters();
+		setFilters(defaultFilters);
+		clearFiltersFromStorage();
+		setShowMobileFilters(false);
+	};
 
 	// Use React Query for tickets data
 	const {
@@ -70,21 +106,25 @@ export default function TicketsPage() {
 
 	// Filter tickets based on search and filters
 	const filteredTickets = (tickets || []).filter(ticket => {
-		const matchesSearch = !searchTerm || 
-			ticket.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-			(ticket.description && ticket.description.toLowerCase().includes(searchTerm.toLowerCase()));
+		const matchesSearch = !filters.searchTerm || 
+			ticket.title.toLowerCase().includes(filters.searchTerm.toLowerCase()) ||
+			(ticket.description && ticket.description.toLowerCase().includes(filters.searchTerm.toLowerCase()));
 		
-		const matchesStatus = statusFilter === 'all' || ticket.status === statusFilter;
-		const matchesPriority = priorityFilter === 'all' || ticket.priority === priorityFilter;
+		const matchesStatus = filters.statusFilter === 'all' || ticket.status === filters.statusFilter;
+		const matchesPriority = filters.priorityFilter === 'all' || ticket.priority === filters.priorityFilter;
 		
 		const project = Array.isArray(ticket.projects) ? ticket.projects[0] : ticket.projects;
 		const company = Array.isArray(project?.companies) ? project?.companies[0] : project?.companies;
 		
-		const matchesProject = projectFilter === 'all' || project?.id === projectFilter;
-		const matchesCompany = companyFilter === 'all' || company?.id === companyFilter;
+		const matchesProject = filters.projectFilter === 'all' || project?.id === filters.projectFilter;
+		const matchesCompany = filters.companyFilter === 'all' || company?.id === filters.companyFilter;
 		
 		return matchesSearch && matchesStatus && matchesPriority && matchesProject && matchesCompany;
 	});
+
+	// Check if any filters are active
+	const filtersActive = isFiltersActive(filters);
+	const activeFiltersCount = getActiveFiltersCount(filters);
 
 
 	if (ticketsLoading) {
@@ -138,25 +178,42 @@ export default function TicketsPage() {
 						</p>
 					</div>
 					<div className="flex items-center gap-3">
+						{/* Mobile Filters Toggle - Only visible on mobile */}
+						<Button
+							variant="outline"
+							size="sm"
+							onClick={() => setShowMobileFilters(!showMobileFilters)}
+							className="sm:hidden h-8 px-3 relative"
+						>
+							<Filter className="h-4 w-4 mr-1" />
+							Filters
+							{activeFiltersCount > 0 && (
+								<Badge className="ml-1 h-5 w-5 rounded-full p-0 text-xs bg-blue-600 text-white">
+									{activeFiltersCount}
+								</Badge>
+							)}
+							{showMobileFilters ? <ChevronUp className="h-4 w-4 ml-1" /> : <ChevronDown className="h-4 w-4 ml-1" />}
+						</Button>
+
 						{/* View Toggle */}
 						<div className="flex bg-gray-100 rounded-lg p-1">
 							<Button
-								variant={viewMode === 'board' ? 'default' : 'ghost'}
+								variant={filters.viewMode === 'board' ? 'default' : 'ghost'}
 								size="sm"
-								onClick={() => setViewMode('board')}
+								onClick={() => updateFilter('viewMode', 'board')}
 								className="h-8 px-3"
 							>
 								<LayoutGrid className="h-4 w-4 mr-1" />
-								Board
+								<span className="hidden sm:inline">Board</span>
 							</Button>
 							<Button
-								variant={viewMode === 'list' ? 'default' : 'ghost'}
+								variant={filters.viewMode === 'list' ? 'default' : 'ghost'}
 								size="sm"
-								onClick={() => setViewMode('list')}
+								onClick={() => updateFilter('viewMode', 'list')}
 								className="h-8 px-3"
 							>
 								<List className="h-4 w-4 mr-1" />
-								List
+								<span className="hidden sm:inline">List</span>
 							</Button>
 						</div>
 						<Button onClick={() => setShowCreateTicketModal(true)}>
@@ -167,67 +224,162 @@ export default function TicketsPage() {
 				</div>
 
 				{/* Filters */}
-				<Card className="mb-4">
+				<Card className={`mb-4 transition-all duration-200 ${showMobileFilters || !showMobileFilters ? '' : 'sm:block'}`}>
 					<CardContent className="p-4">
-						<div className="flex flex-col sm:flex-row gap-4">
-							<div className="flex-1">
+						{/* Desktop Filters - Always visible on desktop */}
+						<div className="hidden sm:block">
+							<div className="flex flex-col lg:flex-row gap-4">
+								<div className="flex-1 flex gap-2">
+									<div className="relative flex-1">
+										<Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+										<Input
+											placeholder="Search tickets..."
+											value={filters.searchTerm}
+											onChange={(e) => updateFilter('searchTerm', e.target.value)}
+											className="pl-10"
+										/>
+									</div>
+									{filtersActive && (
+										<Button
+											variant="outline"
+											size="sm"
+											onClick={resetFilters}
+											className="h-10 px-3 text-gray-600 hover:text-gray-900 border-gray-300"
+										>
+											<X className="h-4 w-4 mr-1" />
+											Reset
+										</Button>
+									)}
+								</div>
+								<div className="flex flex-wrap gap-2">
+									<select
+										value={filters.statusFilter}
+										onChange={(e) => updateFilter('statusFilter', e.target.value)}
+										className="px-3 py-2 border border-gray-300 rounded-md text-sm min-h-[40px]"
+									>
+										<option value="all">All Status</option>
+										<option value="new">New</option>
+										<option value="in_progress">In Progress</option>
+										<option value="review">Review</option>
+										<option value="done">Done</option>
+									</select>
+									<select
+										value={filters.priorityFilter}
+										onChange={(e) => updateFilter('priorityFilter', e.target.value)}
+										className="px-3 py-2 border border-gray-300 rounded-md text-sm min-h-[40px]"
+									>
+										<option value="all">All Priority</option>
+										<option value="low">Low</option>
+										<option value="medium">Medium</option>
+										<option value="high">High</option>
+										<option value="critical">Critical</option>
+									</select>
+									<select
+										value={filters.projectFilter}
+										onChange={(e) => updateFilter('projectFilter', e.target.value)}
+										className="px-3 py-2 border border-gray-300 rounded-md text-sm min-h-[40px]"
+									>
+										<option value="all">All Projects</option>
+										{availableProjects.map((project) => (
+											<option key={project.id} value={project.id}>
+												{project.name}
+											</option>
+										))}
+									</select>
+									<select
+										value={filters.companyFilter}
+										onChange={(e) => updateFilter('companyFilter', e.target.value)}
+										className="px-3 py-2 border border-gray-300 rounded-md text-sm min-h-[40px]"
+									>
+										<option value="all">All Companies</option>
+										{availableCompanies.map((company) => (
+											<option key={company.id} value={company.id}>
+												{company.name}
+											</option>
+										))}
+									</select>
+								</div>
+							</div>
+						</div>
+
+						{/* Mobile Filters - Collapsible */}
+						<div className={`sm:hidden transition-all duration-200 overflow-hidden ${
+							showMobileFilters ? 'max-h-screen opacity-100' : 'max-h-0 opacity-0'
+						}`}>
+							<div className="space-y-4 pt-4 border-t border-gray-200">
+								{/* Mobile Search */}
 								<div className="relative">
 									<Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
 									<Input
 										placeholder="Search tickets..."
-										value={searchTerm}
-										onChange={(e) => setSearchTerm(e.target.value)}
-										className="pl-10"
+										value={filters.searchTerm}
+										onChange={(e) => updateFilter('searchTerm', e.target.value)}
+										className="pl-10 h-12"
 									/>
 								</div>
-							</div>
-							<div className="flex flex-wrap gap-2">
-								<select
-									value={statusFilter}
-									onChange={(e) => setStatusFilter(e.target.value)}
-									className="px-3 py-2 border border-gray-300 rounded-md text-sm"
-								>
-									<option value="all">All Status</option>
-									<option value="new">New</option>
-									<option value="in_progress">In Progress</option>
-									<option value="review">Review</option>
-									<option value="done">Done</option>
-								</select>
-								<select
-									value={priorityFilter}
-									onChange={(e) => setPriorityFilter(e.target.value)}
-									className="px-3 py-2 border border-gray-300 rounded-md text-sm"
-								>
-									<option value="all">All Priority</option>
-									<option value="low">Low</option>
-									<option value="medium">Medium</option>
-									<option value="high">High</option>
-									<option value="critical">Critical</option>
-								</select>
-								<select
-									value={projectFilter}
-									onChange={(e) => setProjectFilter(e.target.value)}
-									className="px-3 py-2 border border-gray-300 rounded-md text-sm"
-								>
-									<option value="all">All Projects</option>
-									{availableProjects.map((project) => (
-										<option key={project.id} value={project.id}>
-											{project.name}
-										</option>
-									))}
-								</select>
-								<select
-									value={companyFilter}
-									onChange={(e) => setCompanyFilter(e.target.value)}
-									className="px-3 py-2 border border-gray-300 rounded-md text-sm"
-								>
-									<option value="all">All Companies</option>
-									{availableCompanies.map((company) => (
-										<option key={company.id} value={company.id}>
-											{company.name}
-										</option>
-									))}
-								</select>
+								
+								{/* Mobile Filter Selects */}
+								<div className="grid grid-cols-1 gap-3">
+									<select
+										value={filters.statusFilter}
+										onChange={(e) => updateFilter('statusFilter', e.target.value)}
+										className="w-full px-4 py-3 border border-gray-300 rounded-md text-sm min-h-[44px]"
+									>
+										<option value="all">All Status</option>
+										<option value="new">New</option>
+										<option value="in_progress">In Progress</option>
+										<option value="review">Review</option>
+										<option value="done">Done</option>
+									</select>
+									<select
+										value={filters.priorityFilter}
+										onChange={(e) => updateFilter('priorityFilter', e.target.value)}
+										className="w-full px-4 py-3 border border-gray-300 rounded-md text-sm min-h-[44px]"
+									>
+										<option value="all">All Priority</option>
+										<option value="low">Low</option>
+										<option value="medium">Medium</option>
+										<option value="high">High</option>
+										<option value="critical">Critical</option>
+									</select>
+									<select
+										value={filters.projectFilter}
+										onChange={(e) => updateFilter('projectFilter', e.target.value)}
+										className="w-full px-4 py-3 border border-gray-300 rounded-md text-sm min-h-[44px]"
+									>
+										<option value="all">All Projects</option>
+										{availableProjects.map((project) => (
+											<option key={project.id} value={project.id}>
+												{project.name}
+											</option>
+										))}
+									</select>
+									<select
+										value={filters.companyFilter}
+										onChange={(e) => updateFilter('companyFilter', e.target.value)}
+										className="w-full px-4 py-3 border border-gray-300 rounded-md text-sm min-h-[44px]"
+									>
+										<option value="all">All Companies</option>
+										{availableCompanies.map((company) => (
+											<option key={company.id} value={company.id}>
+												{company.name}
+											</option>
+										))}
+									</select>
+								</div>
+
+								{/* Mobile Reset Button */}
+								{filtersActive && (
+									<Button
+										variant="outline"
+										size="sm"
+										onClick={resetFilters}
+										className="w-full h-12 text-gray-600 hover:text-gray-900 border-gray-300"
+									>
+										<X className="h-4 w-4 mr-2" />
+										Reset All Filters
+									</Button>
+								)}
 							</div>
 						</div>
 					</CardContent>
@@ -240,7 +392,7 @@ export default function TicketsPage() {
 							<FileText className="h-12 w-12 text-gray-400 mb-4" />
 							<h3 className="text-lg font-medium text-gray-900 mb-2">No tickets found</h3>
 							<p className="text-gray-500 text-center mb-4">
-								{searchTerm || statusFilter !== 'all' || priorityFilter !== 'all' || projectFilter !== 'all' || companyFilter !== 'all'
+								{filtersActive
 									? 'Try adjusting your search or filters.'
 									: 'Get started by creating your first ticket.'}
 							</p>
@@ -252,7 +404,7 @@ export default function TicketsPage() {
 					</Card>
 				) : (
 					<>
-						{viewMode === 'board' ? (
+						{filters.viewMode === 'board' ? (
 							<TicketBoard tickets={filteredTickets} isLoading={ticketsLoading} />
 						) : (
 							<TicketList tickets={filteredTickets} isLoading={ticketsLoading} />

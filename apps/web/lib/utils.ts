@@ -135,3 +135,88 @@ export function getStatusColor(status: string): string {
       return 'bg-gray-100 text-gray-800 border-gray-200'
   }
 }
+
+// Filter utilities for tickets page
+export interface TicketFilters {
+  searchTerm: string;
+  statusFilter: string;
+  priorityFilter: string;
+  projectFilter: string;
+  companyFilter: string;
+  viewMode: 'board' | 'list';
+}
+
+export function getDefaultFilters(): TicketFilters {
+  return {
+    searchTerm: '',
+    statusFilter: 'all',
+    priorityFilter: 'all',
+    projectFilter: 'all',
+    companyFilter: 'all',
+    viewMode: 'board'
+  };
+}
+
+export function saveFiltersToStorage(filters: TicketFilters): void {
+  if (typeof window !== 'undefined') {
+    try {
+      localStorage.setItem('tickets-filters', JSON.stringify(filters));
+    } catch (error) {
+      console.warn('Failed to save filters to localStorage:', error);
+    }
+  }
+}
+
+export function loadFiltersFromStorage(): TicketFilters {
+  if (typeof window !== 'undefined') {
+    try {
+      const stored = localStorage.getItem('tickets-filters');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        // Ensure all required properties exist with fallbacks
+        return {
+          searchTerm: parsed.searchTerm || '',
+          statusFilter: parsed.statusFilter || 'all',
+          priorityFilter: parsed.priorityFilter || 'all',
+          projectFilter: parsed.projectFilter || 'all',
+          companyFilter: parsed.companyFilter || 'all',
+          viewMode: parsed.viewMode || 'board'
+        };
+      }
+    } catch (error) {
+      console.warn('Failed to load filters from localStorage:', error);
+    }
+  }
+  return getDefaultFilters();
+}
+
+export function clearFiltersFromStorage(): void {
+  if (typeof window !== 'undefined') {
+    try {
+      localStorage.removeItem('tickets-filters');
+    } catch (error) {
+      console.warn('Failed to clear filters from localStorage:', error);
+    }
+  }
+}
+
+export function isFiltersActive(filters: TicketFilters): boolean {
+  const defaultFilters = getDefaultFilters();
+  return (
+    filters.searchTerm !== defaultFilters.searchTerm ||
+    filters.statusFilter !== defaultFilters.statusFilter ||
+    filters.priorityFilter !== defaultFilters.priorityFilter ||
+    filters.projectFilter !== defaultFilters.projectFilter ||
+    filters.companyFilter !== defaultFilters.companyFilter
+  );
+}
+
+export function getActiveFiltersCount(filters: TicketFilters): number {
+  let count = 0;
+  if (filters.searchTerm) count++;
+  if (filters.statusFilter !== 'all') count++;
+  if (filters.priorityFilter !== 'all') count++;
+  if (filters.projectFilter !== 'all') count++;
+  if (filters.companyFilter !== 'all') count++;
+  return count;
+}
