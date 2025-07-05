@@ -1,7 +1,7 @@
 import { supabase } from '@/lib/db';
-import type { NewBillingPeriod, NewBillingRate, NewCompanyBillingSettings, NewTimeEntryBilling } from '@/lib/db/schema';
+import type { NewBillingPeriod, NewBillingRate, NewCompanyBillingSettings, NewTimeEntryBilling, PaymentStatus, BillingFrequency, NewPaymentHistory } from '@/lib/db/schema';
 import { getTimeEntriesForBilling } from './service';
-import { format } from 'date-fns';
+import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, addDays, addWeeks, addMonths } from 'date-fns';
 
 // Helper function to calculate billing for a single time entry
 export async function calculateTimeEntryBilling(timeEntryId: string, companyId: string) {
@@ -269,6 +269,249 @@ export async function createTimeEntryBilling(data: NewTimeEntryBilling) {
         .single();
     if (error) throw error;
     return result;
+}
+
+// Payment Status Management Functions
+
+export async function updateBillingPeriodPaymentStatus(
+    billingPeriodId: string, 
+    paymentStatus: PaymentStatus,
+    additionalData?: {
+        payment_amount?: number;
+        payment_reference?: string;
+        payment_due_date?: string;
+        invoice_sent_date?: string;
+        notes?: string;
+    }
+) {
+    const updateData: any = { payment_status: paymentStatus };
+    
+    // Add payment received date when status is set to paid
+    if (paymentStatus === 'paid') {
+        updateData.payment_received_date = new Date().toISOString();
+    }
+    
+    // Add invoice sent date when status is set to sent
+    if (paymentStatus === 'sent' && !additionalData?.invoice_sent_date) {
+        updateData.invoice_sent_date = new Date().toISOString();
+    }
+    
+    // Add any additional data
+    if (additionalData) {
+        Object.assign(updateData, additionalData);
+    }
+    
+    const { data, error } = await supabase
+        .from('billing_periods')
+        .update(updateData)
+        .eq('id', billingPeriodId)
+        .select()
+        .single();
+        
+    if (error) throw error;
+    return data;
+}
+
+export async function getOutstandingPayments(companyId: string) {
+    const { data, error } = await supabase
+        .from('billing_periods')
+        .select(`
+            *,
+            users!billing_periods_created_by_fkey(first_name, last_name, email)
+        `)
+        .eq('company_id', companyId)
+        .in('payment_status', ['pending', 'sent', 'overdue'])
+        .order('payment_due_date', { ascending: true, nullsLast: true });
+        
+    if (error) throw error;
+    return data || [];
+}
+
+export async function getOverduePayments(companyId: string) {
+    const { data, error } = await supabase
+        .from('billing_periods')
+        .select(`
+            *,
+            users!billing_periods_created_by_fkey(first_name, last_name, email)
+        `)
+        .eq('company_id', companyId)
+        .eq('payment_status', 'overdue')
+        .order('payment_due_date', { ascending: true });
+        
+    if (error) throw error;
+    return data || [];
+}
+
+export async function getPaymentHistory(billingPeriodId: string) {
+    const { data, error } = await supabase
+        .from('payment_history')
+        .select(`
+            *,
+            users(first_name, last_name, email)
+        `)
+        .eq('billing_period_id', billingPeriodId)
+        .order('created_at', { ascending: false });
+        
+    if (error) throw error;
+    return data || [];
+}
+
+export async function createPaymentHistoryEntry(data: NewPaymentHistory) {
+    const { data: result, error } = await supabase
+        .from('payment_history')
+        .insert(data)
+        .select()
+        .single();
+        
+    if (error) throw error;
+    return result;
+}
+
+// Billing Cycle Generation Functions
+
+export async function generateBillingPeriodForCycle(
+    companyId: string,
+    frequency: BillingFrequency,
+    startDate?: Date,
+    userId?: string
+) {
+    const baseDate = startDate || new Date();
+    let start: Date;
+    let end: Date;
+    let name: string;
+    
+    switch (frequency) {
+        case 'weekly':
+            start = startOfWeek(baseDate, { weekStartsOn: 1 }); // Monday start
+            end = endOfWeek(baseDate, { weekStartsOn: 1 }); // Sunday end
+            name = `Week of ${format(start, 'MMM dd, yyyy')}`;
+            break;
+            
+        case 'bi_monthly':
+            const day = baseDate.getDate();
+            if (day <= 15) {
+                start = startOfMonth(baseDate);
+                end = new Date(baseDate.getFullYear(), baseDate.getMonth(), 15);
+                name = `${format(start, 'MMM yyyy')} (1st Half)`;
+            } else {
+                start = new Date(baseDate.getFullYear(), baseDate.getMonth(), 16);
+                end = endOfMonth(baseDate);
+                name = `${format(start, 'MMM yyyy')} (2nd Half)`;
+            }
+            break;
+            
+        case 'monthly':
+            start = startOfMonth(baseDate);
+            end = endOfMonth(baseDate);
+            name = format(start, 'MMM yyyy');
+            break;
+            
+        default:
+            throw new Error(`Invalid billing frequency: ${frequency}`);
+    }
+    
+    const billingPeriodData: NewBillingPeriod = {
+        company_id: companyId,
+        name,
+        start_date: start.toISOString(),
+        end_date: end.toISOString(),
+        frequency,
+        status: 'active',
+        payment_status: 'pending',
+        created_by: userId || null, // Set to provided userId or null if not provided
+    };
+    
+    return await createBillingPeriod(billingPeriodData);
+}
+
+export async function generateNextBillingPeriod(companyId: string, currentPeriodId: string, userId?: string) {
+    // Get the current period to determine frequency and dates
+    const currentPeriod = await getBillingPeriodById(currentPeriodId);
+    if (!currentPeriod) {
+        throw new Error('Current billing period not found');
+    }
+    
+    const currentEnd = new Date(currentPeriod.end_date);
+    let nextStart: Date;
+    
+    switch (currentPeriod.frequency) {
+        case 'weekly':
+            nextStart = addWeeks(currentEnd, 1);
+            break;
+        case 'bi_monthly':
+            // For bi-monthly, the next period starts the day after current ends
+            nextStart = addDays(currentEnd, 1);
+            break;
+        case 'monthly':
+            nextStart = addMonths(startOfMonth(currentEnd), 1);
+            break;
+        default:
+            throw new Error(`Invalid billing frequency: ${currentPeriod.frequency}`);
+    }
+    
+    return await generateBillingPeriodForCycle(companyId, currentPeriod.frequency, nextStart, userId);
+}
+
+export async function getBillingCycleStats(companyId: string, year?: number) {
+    const targetYear = year || new Date().getFullYear();
+    
+    const { data, error } = await supabase
+        .from('billing_periods')
+        .select('*')
+        .eq('company_id', companyId)
+        .gte('start_date', `${targetYear}-01-01`)
+        .lt('start_date', `${targetYear + 1}-01-01`);
+        
+    if (error) throw error;
+    
+    const periods = data || [];
+    const stats = {
+        total: periods.length,
+        pending: periods.filter(p => p.payment_status === 'pending').length,
+        sent: periods.filter(p => p.payment_status === 'sent').length,
+        paid: periods.filter(p => p.payment_status === 'paid').length,
+        overdue: periods.filter(p => p.payment_status === 'overdue').length,
+        cancelled: periods.filter(p => p.payment_status === 'cancelled').length,
+        totalPaid: periods
+            .filter(p => p.payment_status === 'paid')
+            .reduce((sum, p) => sum + (p.payment_amount || 0), 0),
+    };
+    
+    return { periods, stats };
+}
+
+export async function markInvoiceAsSent(billingPeriodId: string, dueDate?: string) {
+    const updateData: any = {
+        payment_status: 'sent',
+        invoice_sent_date: new Date().toISOString(),
+    };
+    
+    if (dueDate) {
+        updateData.payment_due_date = dueDate;
+    }
+    
+    return await updateBillingPeriod(billingPeriodId, updateData);
+}
+
+export async function markPaymentAsReceived(
+    billingPeriodId: string, 
+    amount?: number, 
+    reference?: string
+) {
+    const updateData: any = {
+        payment_status: 'paid',
+        payment_received_date: new Date().toISOString(),
+    };
+    
+    if (amount) {
+        updateData.payment_amount = amount;
+    }
+    
+    if (reference) {
+        updateData.payment_reference = reference;
+    }
+    
+    return await updateBillingPeriod(billingPeriodId, updateData);
 }
 
 export async function generateBillingReport(companyId: string, startDate: string, endDate: string) {
