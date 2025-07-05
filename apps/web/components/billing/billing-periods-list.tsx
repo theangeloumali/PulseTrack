@@ -6,10 +6,14 @@ import { Button } from '@workspace/ui/components/button';
 import { Badge } from '@workspace/ui/components/badge';
 import { PaymentStatusBadge } from '@/components/payments/payment-status-badge';
 import { InvoiceGenerator } from './invoice-generator';
+import { UserSelector } from './user-selector';
+import { DeleteConfirmationModal } from './delete-confirmation-modal';
+import { PDFExporter } from './pdf-exporter';
 import { 
   useBillingPeriods, 
   useGenerateBillingPeriod, 
-  useGenerateNextBillingPeriod 
+  useGenerateNextBillingPeriod,
+  useDeleteBillingPeriod
 } from '@/lib/hooks/usePayments';
 import { useBillingSettings, useBillingReport } from '@/lib/hooks/useBilling';
 import type { BillingPeriod, BillingFrequency } from '@/lib/db/schema';
@@ -23,7 +27,9 @@ import {
   Loader2,
   AlertCircle,
   Receipt,
-  Clock
+  Clock,
+  Trash2,
+  Download
 } from 'lucide-react';
 
 interface BillingPeriodsListProps {
@@ -36,11 +42,17 @@ export function BillingPeriodsList({ companyId, isAdmin }: BillingPeriodsListPro
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [invoicePeriod, setInvoicePeriod] = useState<BillingPeriod | null>(null);
   const [showInvoiceGenerator, setShowInvoiceGenerator] = useState(false);
+  const [showUserSelector, setShowUserSelector] = useState(false);
+  const [deleteCandidate, setDeleteCandidate] = useState<BillingPeriod | null>(null);
+  const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
+  const [pdfExportPeriod, setPdfExportPeriod] = useState<BillingPeriod | null>(null);
+  const [showPdfExporter, setShowPdfExporter] = useState(false);
 
   const { data: billingPeriods, isLoading, isError, refetch } = useBillingPeriods(companyId);
   const { data: companySettings } = useBillingSettings(companyId);
   const generatePeriodMutation = useGenerateBillingPeriod(companyId);
   const generateNextMutation = useGenerateNextBillingPeriod(companyId);
+  const deletePeriodMutation = useDeleteBillingPeriod(companyId);
 
   // Fetch billing report for selected period details
   const { data: periodReport } = useBillingReport(
@@ -87,6 +99,41 @@ export function BillingPeriodsList({ companyId, isAdmin }: BillingPeriodsListPro
     setInvoicePeriod(null);
     setShowInvoiceGenerator(false);
     refetch(); // Refresh data in case payment status was updated
+  };
+
+  const handleDeleteClick = (period: BillingPeriod) => {
+    setDeleteCandidate(period);
+    setShowDeleteConfirmation(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteCandidate) return;
+
+    try {
+      await deletePeriodMutation.mutateAsync(deleteCandidate.id);
+      alert('Billing period deleted successfully!');
+      setShowDeleteConfirmation(false);
+      setDeleteCandidate(null);
+      refetch();
+    } catch (error) {
+      console.error('Error deleting billing period:', error);
+      alert(error instanceof Error ? error.message : 'Failed to delete billing period');
+    }
+  };
+
+  const handleDeleteCancel = () => {
+    setShowDeleteConfirmation(false);
+    setDeleteCandidate(null);
+  };
+
+  const handlePdfExport = (period: BillingPeriod) => {
+    setPdfExportPeriod(period);
+    setShowPdfExporter(true);
+  };
+
+  const handleClosePdfExporter = () => {
+    setPdfExportPeriod(null);
+    setShowPdfExporter(false);
   };
 
   const formatCurrency = (amount: number | null) => {
@@ -162,6 +209,14 @@ export function BillingPeriodsList({ companyId, isAdmin }: BillingPeriodsListPro
                 <Plus className="h-4 w-4" />
               )}
               Generate New Period
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => setShowUserSelector(true)}
+              className="flex items-center gap-2"
+            >
+              <Plus className="h-4 w-4" />
+              Generate for User
             </Button>
           </div>
         )}
@@ -263,6 +318,28 @@ export function BillingPeriodsList({ companyId, isAdmin }: BillingPeriodsListPro
                         >
                           <Receipt className="h-3 w-3" />
                           Generate Invoice
+                        </Button>
+                      )}
+
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handlePdfExport(period)}
+                        className="flex items-center gap-1"
+                      >
+                        <Download className="h-3 w-3" />
+                        Export PDF
+                      </Button>
+
+                      {isAdmin && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleDeleteClick(period)}
+                          className="flex items-center gap-1 text-destructive hover:text-destructive"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                          Delete
                         </Button>
                       )}
                     </div>
@@ -440,6 +517,32 @@ export function BillingPeriodsList({ companyId, isAdmin }: BillingPeriodsListPro
           companyId={companyId}
           isOpen={showInvoiceGenerator}
           onClose={handleCloseInvoiceGenerator}
+        />
+      )}
+
+      {/* User Selector Modal */}
+      <UserSelector
+        companyId={companyId}
+        isOpen={showUserSelector}
+        onClose={() => setShowUserSelector(false)}
+      />
+
+      {/* Delete Confirmation Modal */}
+      <DeleteConfirmationModal
+        billingPeriod={deleteCandidate}
+        isOpen={showDeleteConfirmation}
+        onClose={handleDeleteCancel}
+        onConfirm={handleDeleteConfirm}
+        isDeleting={deletePeriodMutation.isPending}
+      />
+
+      {/* PDF Exporter */}
+      {pdfExportPeriod && (
+        <PDFExporter
+          billingPeriod={pdfExportPeriod}
+          companyId={companyId}
+          isOpen={showPdfExporter}
+          onClose={handleClosePdfExporter}
         />
       )}
     </div>

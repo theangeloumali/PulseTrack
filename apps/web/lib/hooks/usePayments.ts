@@ -278,6 +278,66 @@ export function useGenerateNextBillingPeriod(companyId: string) {
   });
 }
 
+export function useGenerateBillingPeriodForUser(companyId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      target_user_id,
+      frequency,
+      start_date,
+    }: {
+      target_user_id: string;
+      frequency: BillingFrequency;
+      start_date?: string;
+    }) => {
+      const response = await fetch(getApiPath('billing/periods'), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'generate_for_user',
+          target_user_id,
+          frequency,
+          start_date,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to generate billing period for user');
+      }
+
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: paymentKeys.periods(companyId) });
+    },
+  });
+}
+
+export function useDeleteBillingPeriod(companyId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (billingPeriodId: string) => {
+      const response = await fetch(getApiPath(`billing/periods?id=${billingPeriodId}`), {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to delete billing period');
+      }
+
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: paymentKeys.periods(companyId) });
+    },
+  });
+}
+
 export function useCreatePaymentHistoryEntry(billingPeriodId: string) {
   const queryClient = useQueryClient();
 
@@ -315,6 +375,82 @@ export function useCreatePaymentHistoryEntry(billingPeriodId: string) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: paymentKeys.history(billingPeriodId) });
+    },
+  });
+}
+
+// Payment deletion mutations
+export function useDeletePaymentHistory(companyId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (paymentHistoryId: string) => {
+      const response = await fetch(
+        getApiPath(`billing/payments?action=delete_payment_history&payment_history_id=${paymentHistoryId}`), 
+        { method: 'DELETE' }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to delete payment history');
+      }
+
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: paymentKeys.all });
+      queryClient.invalidateQueries({ queryKey: paymentKeys.periods(companyId) });
+    },
+  });
+}
+
+export function useResetPaymentStatus(companyId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (billingPeriodId: string) => {
+      const response = await fetch(
+        getApiPath(`billing/payments?action=reset_payment_status&billing_period_id=${billingPeriodId}`), 
+        { method: 'DELETE' }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to reset payment status');
+      }
+
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: paymentKeys.all });
+      queryClient.invalidateQueries({ queryKey: paymentKeys.periods(companyId) });
+      queryClient.invalidateQueries({ queryKey: paymentKeys.outstanding(companyId) });
+      queryClient.invalidateQueries({ queryKey: paymentKeys.overdue(companyId) });
+      queryClient.invalidateQueries({ queryKey: paymentKeys.stats(companyId) });
+    },
+  });
+}
+
+export function useDeleteAllPaymentHistory(companyId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (billingPeriodId: string) => {
+      const response = await fetch(
+        getApiPath(`billing/payments?action=delete_all_payment_history&billing_period_id=${billingPeriodId}`), 
+        { method: 'DELETE' }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to delete all payment history');
+      }
+
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: paymentKeys.all });
+      queryClient.invalidateQueries({ queryKey: paymentKeys.periods(companyId) });
     },
   });
 }

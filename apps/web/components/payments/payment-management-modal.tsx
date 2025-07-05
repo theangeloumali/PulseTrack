@@ -7,7 +7,14 @@ import { Label } from '@workspace/ui/components/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@workspace/ui/components/select';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@workspace/ui/components/card';
 import { PaymentStatusBadge } from './payment-status-badge';
-import { useUpdatePaymentStatus, useMarkInvoiceSent, useMarkPaymentReceived } from '@/lib/hooks/usePayments';
+import { 
+  useUpdatePaymentStatus, 
+  useMarkInvoiceSent, 
+  useMarkPaymentReceived,
+  useDeletePaymentHistory,
+  useResetPaymentStatus,
+  useDeleteAllPaymentHistory
+} from '@/lib/hooks/usePayments';
 import type { BillingPeriod, PaymentStatus } from '@/lib/db/schema';
 import { format } from 'date-fns';
 import { 
@@ -17,7 +24,8 @@ import {
   Calendar, 
   DollarSign, 
   FileText,
-  AlertTriangle 
+  AlertTriangle,
+  Trash2 
 } from 'lucide-react';
 
 interface PaymentManagementModalProps {
@@ -33,7 +41,7 @@ export function PaymentManagementModal({
   onClose, 
   companyId 
 }: PaymentManagementModalProps) {
-  const [action, setAction] = useState<'status' | 'send' | 'receive'>('status');
+  const [action, setAction] = useState<'status' | 'send' | 'receive' | 'delete'>('status');
   const [paymentStatus, setPaymentStatus] = useState<PaymentStatus>(billingPeriod.payment_status);
   const [dueDate, setDueDate] = useState(
     billingPeriod.payment_due_date ? 
@@ -51,6 +59,9 @@ export function PaymentManagementModal({
   const updateStatusMutation = useUpdatePaymentStatus(companyId);
   const markSentMutation = useMarkInvoiceSent(companyId);
   const markReceivedMutation = useMarkPaymentReceived(companyId);
+  const deletePaymentHistoryMutation = useDeletePaymentHistory(companyId);
+  const resetPaymentStatusMutation = useResetPaymentStatus(companyId);
+  const deleteAllPaymentHistoryMutation = useDeleteAllPaymentHistory(companyId);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -90,7 +101,10 @@ export function PaymentManagementModal({
 
   const isLoading = updateStatusMutation.isPending || 
                    markSentMutation.isPending || 
-                   markReceivedMutation.isPending;
+                   markReceivedMutation.isPending ||
+                   deletePaymentHistoryMutation.isPending ||
+                   resetPaymentStatusMutation.isPending ||
+                   deleteAllPaymentHistoryMutation.isPending;
 
   if (!isOpen) return null;
 
@@ -122,7 +136,7 @@ export function PaymentManagementModal({
           </div>
 
           {/* Action Selector */}
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-2 gap-2">
             <Button
               variant={action === 'status' ? 'default' : 'outline'}
               size="sm"
@@ -151,6 +165,15 @@ export function PaymentManagementModal({
             >
               <CheckCircle2 className="h-4 w-4" />
               Mark Paid
+            </Button>
+            <Button
+              variant={action === 'delete' ? 'destructive' : 'outline'}
+              size="sm"
+              onClick={() => setAction('delete')}
+              className="flex items-center gap-2"
+            >
+              <Trash2 className="h-4 w-4" />
+              Delete/Reset
             </Button>
           </div>
 
@@ -272,25 +295,108 @@ export function PaymentManagementModal({
               </>
             )}
 
+            {/* Delete/Reset Payment Form */}
+            {action === 'delete' && (
+              <>
+                <div className="p-3 bg-destructive/10 border border-destructive rounded-lg">
+                  <div className="flex items-center gap-2 text-destructive">
+                    <Trash2 className="h-4 w-4" />
+                    <span className="text-sm font-medium">Payment Deletion Options</span>
+                  </div>
+                  <p className="text-xs text-destructive/80 mt-1">
+                    Choose how to handle payment data for this billing period.
+                  </p>
+                </div>
+
+                <div className="space-y-3">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={async () => {
+                      if (window.confirm('Reset payment status to pending and clear all payment data?')) {
+                        await resetPaymentStatusMutation.mutateAsync(billingPeriod.id);
+                        onClose();
+                      }
+                    }}
+                    disabled={isLoading}
+                    className="w-full justify-start"
+                  >
+                    <AlertTriangle className="h-4 w-4 mr-2" />
+                    Reset Payment Status
+                    <span className="ml-auto text-xs text-muted-foreground">
+                      Clear all payment data
+                    </span>
+                  </Button>
+
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={async () => {
+                      if (window.confirm('Delete ALL payment history entries for this period? This cannot be undone.')) {
+                        await deleteAllPaymentHistoryMutation.mutateAsync(billingPeriod.id);
+                        onClose();
+                      }
+                    }}
+                    disabled={isLoading}
+                    className="w-full justify-start text-destructive hover:text-destructive"
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Delete All Payment History
+                    <span className="ml-auto text-xs text-muted-foreground">
+                      Remove audit trail
+                    </span>
+                  </Button>
+                </div>
+
+                {billingPeriod.payment_status === 'paid' && (
+                  <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg dark:bg-yellow-950 dark:border-yellow-800">
+                    <div className="flex items-center gap-2 text-yellow-700 dark:text-yellow-300">
+                      <AlertTriangle className="h-4 w-4" />
+                      <span className="text-sm font-medium">Warning</span>
+                    </div>
+                    <p className="text-xs text-yellow-600 dark:text-yellow-400 mt-1">
+                      This period is marked as PAID. Resetting will require careful review of financial records.
+                    </p>
+                  </div>
+                )}
+              </>
+            )}
+
             {/* Action Buttons */}
-            <div className="flex gap-2 pt-4">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={onClose}
-                disabled={isLoading}
-                className="flex-1"
-              >
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                disabled={isLoading}
-                className="flex-1"
-              >
-                {isLoading ? 'Updating...' : 'Update Payment'}
-              </Button>
-            </div>
+            {action !== 'delete' && (
+              <div className="flex gap-2 pt-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={onClose}
+                  disabled={isLoading}
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={isLoading}
+                  className="flex-1"
+                >
+                  {isLoading ? 'Updating...' : 'Update Payment'}
+                </Button>
+              </div>
+            )}
+
+            {/* Close Button for Delete Mode */}
+            {action === 'delete' && (
+              <div className="flex justify-end pt-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={onClose}
+                  disabled={isLoading}
+                >
+                  Close
+                </Button>
+              </div>
+            )}
           </form>
 
           {/* Payment Information */}

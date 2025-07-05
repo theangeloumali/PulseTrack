@@ -1,3 +1,4 @@
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { supabase } from '@/lib/db';
 import type { NewBillingPeriod, NewBillingRate, NewCompanyBillingSettings, NewTimeEntryBilling, PaymentStatus, BillingFrequency, NewPaymentHistory } from '@/lib/db/schema';
 import { getTimeEntriesForBilling } from './service';
@@ -148,7 +149,7 @@ export async function getBillingPeriodsByCompany(companyId: string) {
     return data || [];
 }
 
-export async function createBillingPeriod(data: NewBillingPeriod) {
+export async function createBillingPeriod(supabase: SupabaseClient, data: NewBillingPeriod) {
     const { data: result, error } = await supabase
         .from('billing_periods')
         .insert(data)
@@ -167,6 +168,36 @@ export async function updateBillingPeriod(id: string, updates: Partial<NewBillin
         .single();
     if (error) throw error;
     return data;
+}
+
+export async function deleteBillingPeriod(supabase: SupabaseClient, billingPeriodId: string) {
+    // First check if billing period exists and get its details
+    const { data: billingPeriod, error: fetchError } = await supabase
+        .from('billing_periods')
+        .select('id, name, payment_status')
+        .eq('id', billingPeriodId)
+        .single();
+    
+    if (fetchError) {
+        throw new Error('Billing period not found');
+    }
+    
+    // Check if it's safe to delete (not paid)
+    if (billingPeriod.payment_status === 'paid') {
+        throw new Error('Cannot delete a billing period that has been paid');
+    }
+    
+    // Delete the billing period (cascade will handle payment_history deletion)
+    const { error: deleteError } = await supabase
+        .from('billing_periods')
+        .delete()
+        .eq('id', billingPeriodId);
+    
+    if (deleteError) {
+        throw new Error(`Failed to delete billing period: ${deleteError.message}`);
+    }
+    
+    return { success: true, deletedPeriod: billingPeriod };
 }
 
 // Billing Rate operations
@@ -370,6 +401,7 @@ export async function createPaymentHistoryEntry(data: NewPaymentHistory) {
 // Billing Cycle Generation Functions
 
 export async function generateBillingPeriodForCycle(
+    supabase: SupabaseClient,
     companyId: string,
     frequency: BillingFrequency,
     startDate?: Date,
@@ -421,10 +453,10 @@ export async function generateBillingPeriodForCycle(
         created_by: userId || null, // Set to provided userId or null if not provided
     };
     
-    return await createBillingPeriod(billingPeriodData);
+    return await createBillingPeriod(supabase, billingPeriodData);
 }
 
-export async function generateNextBillingPeriod(companyId: string, currentPeriodId: string, userId?: string) {
+export async function generateNextBillingPeriod(supabase: SupabaseClient, companyId: string, currentPeriodId: string, userId?: string) {
     // Get the current period to determine frequency and dates
     const currentPeriod = await getBillingPeriodById(currentPeriodId);
     if (!currentPeriod) {
@@ -449,7 +481,78 @@ export async function generateNextBillingPeriod(companyId: string, currentPeriod
             throw new Error(`Invalid billing frequency: ${currentPeriod.frequency}`);
     }
     
-    return await generateBillingPeriodForCycle(companyId, currentPeriod.frequency, nextStart, userId);
+    return await generateBillingPeriodForCycle(supabase, companyId, currentPeriod.frequency, nextStart, userId);
+}
+
+export async function generateBillingPeriodForUser(
+    supabase: SupabaseClient,
+    companyId: string,
+    targetUserId: string,
+    frequency: BillingFrequency,
+    startDate?: Date,
+    createdByUserId?: string
+) {
+    // Validate that target user exists and belongs to the company
+    const { data: targetUser, error: userError } = await supabase
+        .from('users')
+        .select('id, company_id, first_name, last_name')
+        .eq('id', targetUserId)
+        .eq('company_id', companyId)
+        .single();
+    
+    if (userError || !targetUser) {
+        throw new Error('Target user not found or does not belong to the company');
+    }
+    
+    const baseDate = startDate || new Date();
+    let start: Date;
+    let end: Date;
+    let name: string;
+    
+    switch (frequency) {
+        case 'weekly':
+            start = startOfWeek(baseDate, { weekStartsOn: 1 }); // Monday start
+            end = endOfWeek(baseDate, { weekStartsOn: 1 }); // Sunday end
+            name = `${targetUser.first_name} ${targetUser.last_name} - Week of ${format(start, 'MMM dd, yyyy')}`;
+            break;
+            
+        case 'bi_monthly':
+            const day = baseDate.getDate();
+            if (day <= 15) {
+                start = startOfMonth(baseDate);
+                end = new Date(baseDate.getFullYear(), baseDate.getMonth(), 15);
+                name = `${targetUser.first_name} ${targetUser.last_name} - ${format(start, 'MMM yyyy')} (1st Half)`;
+            } else {
+                start = new Date(baseDate.getFullYear(), baseDate.getMonth(), 16);
+                end = endOfMonth(baseDate);
+                name = `${targetUser.first_name} ${targetUser.last_name} - ${format(start, 'MMM yyyy')} (2nd Half)`;
+            }
+            break;
+            
+        case 'monthly':
+            start = startOfMonth(baseDate);
+            end = endOfMonth(baseDate);
+            name = `${targetUser.first_name} ${targetUser.last_name} - ${format(start, 'MMM yyyy')}`;
+            break;
+            
+        default:
+            throw new Error(`Invalid billing frequency: ${frequency}`);
+    }
+    
+    const billingPeriodData: NewBillingPeriod = {
+        company_id: companyId,
+        name,
+        start_date: start.toISOString(),
+        end_date: end.toISOString(),
+        frequency,
+        status: 'active',
+        payment_status: 'pending',
+        created_by: createdByUserId || null,
+        // Add user-specific note to track this is for a specific user
+        notes: `Generated for user: ${targetUser.first_name} ${targetUser.last_name} (${targetUser.id})`
+    };
+    
+    return await createBillingPeriod(supabase, billingPeriodData);
 }
 
 export async function getBillingCycleStats(companyId: string, year?: number) {
@@ -688,4 +791,102 @@ export async function generateBillingReport(companyId: string, startDate: string
         console.error('❌ Error generating billing report:', error);
         throw new Error(`Failed to generate billing report: ${(error as Error).message}`);
     }
+}
+
+// Payment deletion functions
+
+export async function deletePaymentHistory(
+    supabase: SupabaseClient,
+    paymentHistoryId: string
+) {
+    const { error } = await supabase
+        .from('payment_history')
+        .delete()
+        .eq('id', paymentHistoryId);
+
+    if (error) {
+        throw new Error(`Failed to delete payment history: ${error.message}`);
+    }
+
+    return { message: 'Payment history deleted successfully' };
+}
+
+export async function resetBillingPeriodPaymentStatus(
+    supabase: SupabaseClient,
+    billingPeriodId: string,
+    userId: string
+) {
+    // First, get the billing period to check current status
+    const { data: billingPeriod, error: fetchError } = await supabase
+        .from('billing_periods')
+        .select('*')
+        .eq('id', billingPeriodId)
+        .single();
+
+    if (fetchError || !billingPeriod) {
+        throw new Error('Billing period not found');
+    }
+
+    // Check if we can reset the payment status (prevent resetting paid periods unless explicitly allowed)
+    if (billingPeriod.payment_status === 'paid') {
+        // Allow reset but create a warning in payment history
+        await createPaymentHistoryEntry({
+            billing_period_id: billingPeriodId,
+            user_id: userId,
+            action: 'payment_status_reset',
+            old_value: 'paid',
+            new_value: 'pending',
+            notes: 'Payment status reset by admin - WARNING: This was previously marked as paid'
+        });
+    }
+
+    // Reset payment status and clear payment-related fields
+    const { data, error } = await supabase
+        .from('billing_periods')
+        .update({
+            payment_status: 'pending',
+            payment_amount: null,
+            payment_reference: null,
+            payment_due_date: null,
+            payment_received_date: null,
+            invoice_sent_date: null,
+            notes: billingPeriod.notes ? `${billingPeriod.notes} [RESET BY ADMIN]` : '[RESET BY ADMIN]'
+        })
+        .eq('id', billingPeriodId)
+        .select()
+        .single();
+
+    if (error) {
+        throw new Error(`Failed to reset billing period payment status: ${error.message}`);
+    }
+
+    return data;
+}
+
+export async function deleteAllPaymentHistory(
+    supabase: SupabaseClient,
+    billingPeriodId: string,
+    userId: string
+) {
+    // Create a record of this mass deletion
+    await createPaymentHistoryEntry({
+        billing_period_id: billingPeriodId,
+        user_id: userId,
+        action: 'bulk_payment_history_deletion',
+        old_value: 'multiple_entries',
+        new_value: 'deleted',
+        notes: 'All payment history entries deleted by admin'
+    });
+
+    // Delete all payment history for this billing period
+    const { error } = await supabase
+        .from('payment_history')
+        .delete()
+        .eq('billing_period_id', billingPeriodId);
+
+    if (error) {
+        throw new Error(`Failed to delete payment history: ${error.message}`);
+    }
+
+    return { message: 'All payment history deleted successfully' };
 }
