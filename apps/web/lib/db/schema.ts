@@ -231,6 +231,15 @@ export interface CompanyBillingSettings extends BaseRecord {
   currency?: string | null
   billing_frequency?: BillingFrequency | null
   invoice_prefix?: string | null
+  // Branding fields
+  company_logo_url?: string | null
+  company_address?: string | null
+  company_phone?: string | null
+  company_email?: string | null
+  company_website?: string | null
+  invoice_footer?: string | null
+  brand_primary_color?: string | null
+  brand_secondary_color?: string | null
 }
 
 export interface NewCompanyBillingSettings {
@@ -238,6 +247,15 @@ export interface NewCompanyBillingSettings {
   currency?: string | null
   billing_frequency?: BillingFrequency | null
   invoice_prefix?: string | null
+  // Branding fields
+  company_logo_url?: string | null
+  company_address?: string | null
+  company_phone?: string | null
+  company_email?: string | null
+  company_website?: string | null
+  invoice_footer?: string | null
+  brand_primary_color?: string | null
+  brand_secondary_color?: string | null
 }
 
 // Time Entry Billing types

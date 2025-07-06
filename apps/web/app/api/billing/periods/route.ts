@@ -4,7 +4,10 @@ import {
     generateBillingPeriodForCycle, 
     generateNextBillingPeriod,
     generateBillingPeriodForUser,
-    deleteBillingPeriod
+    generateBillingPeriodWithCustomDates,
+    generateBillingPeriodForUserWithCustomDates,
+    deleteBillingPeriod,
+    recalculateBillingPeriodAmount
 } from '@/lib/db/billing-service';
 import { createClient } from '@/lib/supabase/server';
 import type { BillingFrequency } from '@/lib/db/schema';
@@ -74,7 +77,7 @@ export async function POST(request: NextRequest) {
         }
 
         const body = await request.json();
-        const { action, frequency, start_date, current_period_id, target_user_id } = body;
+        const { action, frequency, start_date, current_period_id, target_user_id, billing_period_id, custom_start_date, custom_end_date } = body;
 
         let result;
 
@@ -84,8 +87,20 @@ export async function POST(request: NextRequest) {
                     return NextResponse.json({ error: 'Frequency is required' }, { status: 400 });
                 }
                 
-                const startDate = start_date ? new Date(start_date) : undefined;
-                result = await generateBillingPeriodForCycle(supabase, user.company_id, frequency as BillingFrequency, startDate, user.id);
+                // Check if custom date range is provided
+                if (custom_start_date && custom_end_date) {
+                    result = await generateBillingPeriodWithCustomDates(
+                        supabase, 
+                        user.company_id, 
+                        frequency as BillingFrequency, 
+                        custom_start_date, 
+                        custom_end_date, 
+                        user.id
+                    );
+                } else {
+                    const startDate = start_date ? new Date(start_date) : undefined;
+                    result = await generateBillingPeriodForCycle(supabase, user.company_id, frequency as BillingFrequency, startDate, user.id);
+                }
                 
                 break;
 
@@ -103,8 +118,30 @@ export async function POST(request: NextRequest) {
                     return NextResponse.json({ error: 'Frequency and target user ID are required' }, { status: 400 });
                 }
                 
-                const userStartDate = start_date ? new Date(start_date) : undefined;
-                result = await generateBillingPeriodForUser(supabase, user.company_id, target_user_id, frequency as BillingFrequency, userStartDate, user.id);
+                // Check if custom date range is provided
+                if (custom_start_date && custom_end_date) {
+                    result = await generateBillingPeriodForUserWithCustomDates(
+                        supabase, 
+                        user.company_id, 
+                        target_user_id, 
+                        frequency as BillingFrequency, 
+                        custom_start_date, 
+                        custom_end_date, 
+                        user.id
+                    );
+                } else {
+                    const userStartDate = start_date ? new Date(start_date) : undefined;
+                    result = await generateBillingPeriodForUser(supabase, user.company_id, target_user_id, frequency as BillingFrequency, userStartDate, user.id);
+                }
+                
+                break;
+
+            case 'recalculate_amount':
+                if (!billing_period_id) {
+                    return NextResponse.json({ error: 'Billing period ID is required' }, { status: 400 });
+                }
+                
+                result = await recalculateBillingPeriodAmount(supabase, billing_period_id);
                 
                 break;
 

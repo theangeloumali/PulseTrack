@@ -5,11 +5,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@work
 import { Button } from '@workspace/ui/components/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@workspace/ui/components/select';
 import { Label } from '@workspace/ui/components/label';
+import { DateRangePicker } from '@/components/ui/date-range-picker';
 import { useCompanyUsers } from '@/lib/hooks/useUsers';
 import { useBillingSettings } from '@/lib/hooks/useBilling';
 import { useGenerateBillingPeriodForUser } from '@/lib/hooks/usePayments';
 import type { BillingFrequency } from '@/lib/db/schema';
-import { User, Loader2, X } from 'lucide-react';
+import { format, addDays, startOfMonth, endOfMonth } from 'date-fns';
+import { User, Loader2, X, Calendar } from 'lucide-react';
 
 interface UserSelectorProps {
   companyId: string;
@@ -20,6 +22,9 @@ interface UserSelectorProps {
 export function UserSelector({ companyId, isOpen, onClose }: UserSelectorProps) {
   const [selectedUserId, setSelectedUserId] = useState<string>('');
   const [selectedFrequency, setSelectedFrequency] = useState<BillingFrequency>('monthly');
+  const [useCustomDateRange, setUseCustomDateRange] = useState<boolean>(false);
+  const [startDate, setStartDate] = useState<string>(format(startOfMonth(new Date()), 'yyyy-MM-dd'));
+  const [endDate, setEndDate] = useState<string>(format(endOfMonth(new Date()), 'yyyy-MM-dd'));
 
   const { data: users, isLoading: usersLoading } = useCompanyUsers();
   const { data: companySettings } = useBillingSettings(companyId);
@@ -31,11 +36,24 @@ export function UserSelector({ companyId, isOpen, onClose }: UserSelectorProps) 
       return;
     }
 
+    if (useCustomDateRange && (!startDate || !endDate)) {
+      alert('Please select both start and end dates');
+      return;
+    }
+
     try {
-      await generateForUserMutation.mutateAsync({
+      const payload: any = {
         target_user_id: selectedUserId,
         frequency: selectedFrequency,
-      });
+      };
+
+      // Add custom date range if selected
+      if (useCustomDateRange) {
+        payload.custom_start_date = startDate;
+        payload.custom_end_date = endDate;
+      }
+
+      await generateForUserMutation.mutateAsync(payload);
       alert('Billing period generated successfully for selected user!');
       onClose();
     } catch (error) {
@@ -104,6 +122,43 @@ export function UserSelector({ companyId, isOpen, onClose }: UserSelectorProps) 
                 <SelectItem value="monthly">Monthly</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+
+          <div className="space-y-3 pt-2 border-t border-border">
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="custom-date-range"
+                checked={useCustomDateRange}
+                onChange={(e) => setUseCustomDateRange(e.target.checked)}
+                className="rounded border-gray-300"
+              />
+              <Label 
+                htmlFor="custom-date-range" 
+                className="text-sm font-medium flex items-center gap-2 cursor-pointer"
+              >
+                <Calendar className="h-4 w-4" />
+                Use Custom Date Range
+              </Label>
+            </div>
+            
+            {useCustomDateRange && (
+              <div className="space-y-2 bg-muted/50 p-3 rounded-lg">
+                <Label className="text-xs text-muted-foreground">
+                  Override the default frequency-based dates with custom range
+                </Label>
+                <DateRangePicker
+                  startDate={startDate}
+                  endDate={endDate}
+                  onStartDateChange={setStartDate}
+                  onEndDateChange={setEndDate}
+                  onRangeChange={(start, end) => {
+                    setStartDate(start);
+                    setEndDate(end);
+                  }}
+                />
+              </div>
+            )}
           </div>
 
           {companySettings?.billing_frequency && (

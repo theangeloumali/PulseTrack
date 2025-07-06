@@ -484,7 +484,32 @@ export async function generateBillingPeriodForCycle(
         created_by: userId || null, // Set to provided userId or null if not provided
     };
     
-    return await createBillingPeriod(supabase, billingPeriodData);
+    // Create the billing period first
+    const createdPeriod = await createBillingPeriod(supabase, billingPeriodData);
+    
+    // Calculate and set the payment amount based on actual time entries
+    try {
+        const totalAmount = await calculateBillingPeriodAmount(
+            companyId,
+            start.toISOString().split('T')[0], // Format as YYYY-MM-DD
+            end.toISOString().split('T')[0],   // Format as YYYY-MM-DD
+            undefined // No user filter for company-wide periods
+        );
+        
+        if (totalAmount > 0) {
+            // Update the billing period with the calculated amount
+            const updatedPeriod = await updateBillingPeriod(supabase, createdPeriod.id, {
+                payment_amount: totalAmount
+            });
+            console.log(`✅ Updated billing period ${createdPeriod.id} with payment amount: $${totalAmount}`);
+            return updatedPeriod;
+        }
+    } catch (error) {
+        console.error('❌ Failed to calculate payment amount for billing period:', error);
+        // Continue without failing - the period is created but without payment amount
+    }
+    
+    return createdPeriod;
 }
 
 export async function generateNextBillingPeriod(supabase: SupabaseClient, companyId: string, currentPeriodId: string, userId?: string) {
@@ -583,7 +608,32 @@ export async function generateBillingPeriodForUser(
         notes: `Generated for user: ${targetUser.first_name} ${targetUser.last_name} (${targetUser.id})`
     };
     
-    return await createBillingPeriod(supabase, billingPeriodData);
+    // Create the billing period first
+    const createdPeriod = await createBillingPeriod(supabase, billingPeriodData);
+    
+    // Calculate and set the payment amount based on actual time entries for this user
+    try {
+        const totalAmount = await calculateBillingPeriodAmount(
+            companyId,
+            start.toISOString().split('T')[0], // Format as YYYY-MM-DD
+            end.toISOString().split('T')[0],   // Format as YYYY-MM-DD
+            targetUserId // Filter for specific user
+        );
+        
+        if (totalAmount > 0) {
+            // Update the billing period with the calculated amount
+            const updatedPeriod = await updateBillingPeriod(supabase, createdPeriod.id, {
+                payment_amount: totalAmount
+            });
+            console.log(`✅ Updated user billing period ${createdPeriod.id} with payment amount: $${totalAmount}`);
+            return updatedPeriod;
+        }
+    } catch (error) {
+        console.error('❌ Failed to calculate payment amount for user billing period:', error);
+        // Continue without failing - the period is created but without payment amount
+    }
+    
+    return createdPeriod;
 }
 
 export async function getBillingCycleStats(companyId: string, year?: number) {
@@ -859,6 +909,80 @@ export async function generateBillingReport(
     }
 }
 
+// Helper function to calculate billing period amount from time entries
+export async function calculateBillingPeriodAmount(
+    companyId: string,
+    startDate: string,
+    endDate: string,
+    targetUserId?: string
+): Promise<number> {
+    try {
+        console.log('💰 Calculating billing period amount:', { companyId, startDate, endDate, targetUserId });
+        
+        // Generate billing report for the period
+        const billingReport = await generateBillingReport(companyId, startDate, endDate, targetUserId);
+        
+        // Calculate total amount from the report
+        let totalAmount = 0;
+        
+        Object.entries(billingReport).forEach(([date, dateData]: [string, any]) => {
+            Object.entries(dateData).forEach(([userId, userData]: [string, any]) => {
+                totalAmount += userData.totalAmount || 0;
+            });
+        });
+        
+        console.log('💰 Calculated total amount:', totalAmount);
+        return totalAmount;
+    } catch (error) {
+        console.error('❌ Error calculating billing period amount:', error);
+        return 0; // Return 0 if calculation fails rather than throwing
+    }
+}
+
+// Function to recalculate payment amount for existing billing period
+export async function recalculateBillingPeriodAmount(
+    supabase: SupabaseClient,
+    billingPeriodId: string
+): Promise<any> {
+    try {
+        // Get the billing period
+        const billingPeriod = await getBillingPeriodById(billingPeriodId);
+        if (!billingPeriod) {
+            throw new Error('Billing period not found');
+        }
+        
+        // Extract user ID if this is a user-specific period
+        const targetUserId = extractTargetUserIdFromBillingPeriod(billingPeriod);
+        
+        console.log('🔄 Recalculating payment amount for billing period:', {
+            id: billingPeriodId,
+            name: billingPeriod.name,
+            targetUserId,
+            currentAmount: billingPeriod.payment_amount
+        });
+        
+        // Calculate the new amount
+        const totalAmount = await calculateBillingPeriodAmount(
+            billingPeriod.company_id,
+            billingPeriod.start_date.split('T')[0], // Format as YYYY-MM-DD
+            billingPeriod.end_date.split('T')[0],   // Format as YYYY-MM-DD
+            targetUserId || undefined
+        );
+        
+        // Update the billing period with the calculated amount
+        const updatedPeriod = await updateBillingPeriod(supabase, billingPeriodId, {
+            payment_amount: totalAmount
+        });
+        
+        console.log(`✅ Recalculated billing period ${billingPeriodId}: $${billingPeriod.payment_amount || 0} → $${totalAmount}`);
+        return updatedPeriod;
+        
+    } catch (error) {
+        console.error('❌ Failed to recalculate payment amount:', error);
+        throw error;
+    }
+}
+
 // Helper function to extract target user ID from billing period notes
 export function extractTargetUserIdFromBillingPeriod(billingPeriod: any): string | null {
     if (!billingPeriod?.notes) return null;
@@ -1049,4 +1173,131 @@ export async function deleteOutstandingPaymentsByStatus(
         periods.map(p => p.id), 
         userId
     );
+}
+
+// Enhanced billing period generation functions with custom date range support
+export async function generateBillingPeriodWithCustomDates(
+    supabase: SupabaseClient,
+    companyId: string,
+    frequency: BillingFrequency,
+    customStartDate: string,
+    customEndDate: string,
+    userId?: string
+) {
+    const start = new Date(customStartDate);
+    const end = new Date(customEndDate);
+    
+    // Validate dates
+    if (start >= end) {
+        throw new Error('Start date must be before end date');
+    }
+    
+    const name = `Custom Period: ${format(start, 'MMM dd')} - ${format(end, 'MMM dd, yyyy')}`;
+    
+    const billingPeriodData: NewBillingPeriod = {
+        company_id: companyId,
+        name,
+        start_date: start.toISOString(),
+        end_date: end.toISOString(),
+        frequency,
+        status: 'active',
+        payment_status: 'pending',
+        created_by: userId || null,
+    };
+    
+    // Create the billing period first
+    const createdPeriod = await createBillingPeriod(supabase, billingPeriodData);
+    
+    // Calculate and set the payment amount based on actual time entries
+    try {
+        const totalAmount = await calculateBillingPeriodAmount(
+            companyId,
+            customStartDate,
+            customEndDate
+        );
+        
+        if (totalAmount > 0) {
+            // Update the billing period with the calculated amount
+            const updatedPeriod = await updateBillingPeriod(supabase, createdPeriod.id, {
+                payment_amount: totalAmount
+            });
+            console.log(`✅ Updated custom billing period ${createdPeriod.id} with payment amount: $${totalAmount}`);
+            return updatedPeriod;
+        }
+    } catch (error) {
+        console.error('❌ Failed to calculate payment amount for custom billing period:', error);
+        // Continue without failing - the period is created but without payment amount
+    }
+    
+    return createdPeriod;
+}
+
+export async function generateBillingPeriodForUserWithCustomDates(
+    supabase: SupabaseClient,
+    companyId: string,
+    targetUserId: string,
+    frequency: BillingFrequency,
+    customStartDate: string,
+    customEndDate: string,
+    createdByUserId?: string
+) {
+    // Validate that target user exists and belongs to the company
+    const { data: targetUser, error: userError } = await supabase
+        .from('users')
+        .select('id, first_name, last_name, company_id')
+        .eq('id', targetUserId)
+        .eq('company_id', companyId)
+        .single();
+
+    if (userError || !targetUser) {
+        throw new Error('Target user not found or does not belong to this company');
+    }
+
+    const start = new Date(customStartDate);
+    const end = new Date(customEndDate);
+    
+    // Validate dates
+    if (start >= end) {
+        throw new Error('Start date must be before end date');
+    }
+    
+    const name = `${targetUser.first_name} ${targetUser.last_name} - Custom: ${format(start, 'MMM dd')} - ${format(end, 'MMM dd, yyyy')}`;
+    
+    const billingPeriodData: NewBillingPeriod = {
+        company_id: companyId,
+        name,
+        start_date: start.toISOString(),
+        end_date: end.toISOString(),
+        frequency,
+        status: 'active',
+        payment_status: 'pending',
+        created_by: createdByUserId || null,
+    };
+    
+    // Create the billing period first
+    const createdPeriod = await createBillingPeriod(supabase, billingPeriodData);
+    
+    // Calculate and set the payment amount based on actual time entries for this user
+    try {
+        const totalAmount = await calculateBillingPeriodAmount(
+            companyId,
+            customStartDate,
+            customEndDate,
+            targetUserId
+        );
+        
+        if (totalAmount > 0) {
+            // Update the billing period with the calculated amount
+            const updatedPeriod = await updateBillingPeriod(supabase, createdPeriod.id, {
+                payment_amount: totalAmount
+            });
+            console.log(`✅ Updated custom user billing period ${createdPeriod.id} with payment amount: $${totalAmount}`);
+            return updatedPeriod;
+        }
+    } catch (error) {
+        console.error('❌ Failed to calculate payment amount for custom user billing period:', error);
+        // Continue without failing - the period is created but without payment amount
+    }
+    
+    return createdPeriod;
 }
