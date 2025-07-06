@@ -15,9 +15,11 @@ import { ComprehensiveBillingModal } from './comprehensive-billing-modal';
 import { 
   useBillingPeriods, 
   useGenerateBillingPeriod, 
+  useGenerateBillingPeriodForUser,
   useGenerateNextBillingPeriod,
   useDeleteBillingPeriod
 } from '@/lib/hooks/usePayments';
+import { useAuthStore } from '@/lib/stores/auth';
 import { useBillingSettings, useBillingReport } from '@/lib/hooks/useBilling';
 import { extractTargetUserIdFromBillingPeriod } from '@/lib/db/billing-service';
 import type { BillingPeriod, BillingFrequency } from '@/lib/db/schema';
@@ -45,6 +47,7 @@ interface BillingPeriodsListProps {
 }
 
 export function BillingPeriodsList({ companyId, isAdmin }: BillingPeriodsListProps) {
+  const { user } = useAuthStore();
   const [selectedPeriod, setSelectedPeriod] = useState<BillingPeriod | null>(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [showNewPeriodModal, setShowNewPeriodModal] = useState(false);
@@ -65,6 +68,7 @@ export function BillingPeriodsList({ companyId, isAdmin }: BillingPeriodsListPro
   const { data: billingPeriods, isLoading, isError, refetch } = useBillingPeriods(companyId);
   const { data: companySettings } = useBillingSettings(companyId);
   const generatePeriodMutation = useGenerateBillingPeriod(companyId);
+  const generateUserPeriodMutation = useGenerateBillingPeriodForUser(companyId);
   const generateNextMutation = useGenerateNextBillingPeriod(companyId);
   const deletePeriodMutation = useDeleteBillingPeriod(companyId);
 
@@ -91,17 +95,30 @@ export function BillingPeriodsList({ companyId, isAdmin }: BillingPeriodsListPro
     }
 
     try {
-      const payload: any = {
+      const basePayload = {
         frequency: companySettings?.billing_frequency as BillingFrequency || 'monthly',
+        ...(useCustomDateRange && {
+          custom_start_date: startDate,
+          custom_end_date: endDate,
+        }),
       };
 
-      // Add custom date range if selected
-      if (useCustomDateRange) {
-        payload.custom_start_date = startDate;
-        payload.custom_end_date = endDate;
+      // Use different mutations based on user role
+      if (!isAdmin) {
+        // For non-admin users, use the user-specific mutation
+        if (!user?.id) {
+          throw new Error('User ID not found');
+        }
+        await generateUserPeriodMutation.mutateAsync({
+          ...basePayload,
+          target_user_id: user.id, // Generate for the current user
+        });
+        alert('Personal billing period created successfully! It will be sent to your company admin for review.');
+      } else {
+        // For admins, use the company-wide mutation
+        await generatePeriodMutation.mutateAsync(basePayload);
       }
-
-      await generatePeriodMutation.mutateAsync(payload);
+      
       setShowNewPeriodModal(false);
       refetch();
     } catch (error) {
@@ -257,30 +274,43 @@ export function BillingPeriodsList({ companyId, isAdmin }: BillingPeriodsListPro
       {/* Header with Actions */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-semibold">Billing Periods</h2>
+          <h2 className="text-xl font-semibold">{isAdmin ? 'Billing Periods' : 'My Billing Periods'}</h2>
           <p className="text-muted-foreground">
-            Manage billing periods and generate invoices for your company
+            {isAdmin 
+              ? 'Manage billing periods and generate invoices for your company'
+              : 'View and generate your personal billing periods for approval'
+            }
           </p>
         </div>
-        {isAdmin && (
-          <div className="flex gap-2">
+        <div className="flex gap-2">
+          {isAdmin ? (
+            <>
+              <Button
+                onClick={() => setShowNewPeriodModal(true)}
+                className="flex items-center gap-2"
+              >
+                <Plus className="h-4 w-4" />
+                Generate New Period
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => setShowUserSelector(true)}
+                className="flex items-center gap-2"
+              >
+                <Plus className="h-4 w-4" />
+                Generate for User
+              </Button>
+            </>
+          ) : (
             <Button
               onClick={() => setShowNewPeriodModal(true)}
               className="flex items-center gap-2"
             >
               <Plus className="h-4 w-4" />
-              Generate New Period
+              Generate Personal Period
             </Button>
-            <Button
-              variant="outline"
-              onClick={() => setShowUserSelector(true)}
-              className="flex items-center gap-2"
-            >
-              <Plus className="h-4 w-4" />
-              Generate for User
-            </Button>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
       {/* Company Settings Info */}
@@ -432,8 +462,8 @@ export function BillingPeriodsList({ companyId, isAdmin }: BillingPeriodsListPro
               <h3 className="text-lg font-medium mb-2">No billing periods found</h3>
               <p className="mb-4">Get started by creating your first billing period</p>
               {isAdmin && companySettings?.billing_frequency && (
-                <Button onClick={handleGenerateNewPeriod} disabled={generatePeriodMutation.isPending}>
-                  {generatePeriodMutation.isPending ? (
+                <Button onClick={handleGenerateNewPeriod} disabled={generatePeriodMutation.isPending || generateUserPeriodMutation.isPending}>
+                  {(generatePeriodMutation.isPending || generateUserPeriodMutation.isPending) ? (
                     <>
                       <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                       Generating...
@@ -505,10 +535,13 @@ export function BillingPeriodsList({ companyId, isAdmin }: BillingPeriodsListPro
               <div>
                 <CardTitle className="flex items-center gap-2">
                   <Plus className="h-5 w-5" />
-                  Generate New Billing Period
+                  {isAdmin ? 'Generate New Billing Period' : 'Generate Personal Billing Period'}
                 </CardTitle>
                 <CardDescription>
-                  Create a new billing period for your company
+                  {isAdmin 
+                    ? 'Create a new billing period for your company'
+                    : 'Create a personal billing period for your work to be reviewed by your company admin'
+                  }
                 </CardDescription>
               </div>
               <Button
@@ -574,10 +607,10 @@ export function BillingPeriodsList({ companyId, isAdmin }: BillingPeriodsListPro
                 </Button>
                 <Button 
                   onClick={handleGenerateNewPeriod} 
-                  disabled={generatePeriodMutation.isPending}
+                  disabled={generatePeriodMutation.isPending || generateUserPeriodMutation.isPending}
                   className="flex-1"
                 >
-                  {generatePeriodMutation.isPending ? (
+                  {(generatePeriodMutation.isPending || generateUserPeriodMutation.isPending) ? (
                     <>
                       <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                       Generating...

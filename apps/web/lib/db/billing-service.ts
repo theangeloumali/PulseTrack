@@ -139,14 +139,86 @@ export async function getBillingPeriodById(id: string) {
     return data;
 }
 
-export async function getBillingPeriodsByCompany(companyId: string) {
-    const { data, error } = await supabase
-        .from('billing_periods')
-        .select('*')
-        .eq('company_id', companyId)
-        .order('start_date', { ascending: false });
-    if (error) throw error;
-    return data || [];
+export async function getBillingPeriodsByCompany(companyId: string, filterUserId?: string) {
+    console.log('🔍 getBillingPeriodsByCompany called with:', { companyId, filterUserId });
+
+    // If filterUserId is provided, filter to user-specific billing periods
+    if (filterUserId) {
+        // Use multiple queries and combine results for more reliable filtering
+        console.log('🔍 Executing user-specific queries for:', filterUserId);
+        
+        // Query 1: Get periods created by this user
+        const { data: createdByUser, error: createdByError } = await supabase
+            .from('billing_periods')
+            .select('*')
+            .eq('company_id', companyId)
+            .eq('created_by', filterUserId)
+            .order('start_date', { ascending: false });
+        
+        if (createdByError) {
+            console.error('❌ Error fetching periods created by user:', createdByError);
+        } else {
+            console.log('📊 Periods created by user:', createdByUser?.length || 0);
+        }
+        
+        // Query 2: Get periods with user in notes (using text search)
+        const { data: notesContainUser, error: notesError } = await supabase
+            .from('billing_periods')
+            .select('*')
+            .eq('company_id', companyId)
+            .ilike('notes', `%${filterUserId}%`)
+            .order('start_date', { ascending: false });
+        
+        if (notesError) {
+            console.error('❌ Error fetching periods with user in notes:', notesError);
+        } else {
+            console.log('📊 Periods with user in notes:', notesContainUser?.length || 0);
+        }
+        
+        // Combine and deduplicate results
+        const allPeriods = [...(createdByUser || []), ...(notesContainUser || [])];
+        const uniquePeriods = allPeriods.filter((period, index, self) => 
+            index === self.findIndex(p => p.id === period.id)
+        );
+        
+        // Sort by start_date descending
+        uniquePeriods.sort((a, b) => new Date(b.start_date).getTime() - new Date(a.start_date).getTime());
+        
+        console.log('📊 Final user-specific result:', { 
+            companyId, 
+            filterUserId, 
+            createdByUserCount: createdByUser?.length || 0,
+            notesContainUserCount: notesContainUser?.length || 0,
+            uniqueResultCount: uniquePeriods.length,
+            sampleData: uniquePeriods.slice(0, 2).map(p => ({ 
+                id: p.id, 
+                notes: p.notes, 
+                created_by: p.created_by,
+                name: p.name 
+            }))
+        });
+        
+        return uniquePeriods;
+    } else {
+        // Admin: get all periods for the company
+        console.log('🔍 Fetching all billing periods for company:', companyId);
+        
+        const { data, error } = await supabase
+            .from('billing_periods')
+            .select('*')
+            .eq('company_id', companyId)
+            .order('start_date', { ascending: false });
+        
+        console.log('📊 All billing periods result:', { 
+            companyId, 
+            resultCount: data?.length || 0, 
+            error: error?.message,
+            sampleData: data?.slice(0, 2).map(p => ({ id: p.id, notes: p.notes, created_by: p.created_by }))
+        });
+        
+        if (error) throw error;
+        return data || [];
+    }
 }
 
 export async function createBillingPeriod(supabase: SupabaseClient, data: NewBillingPeriod) {
@@ -381,30 +453,44 @@ export async function updateBillingPeriodPaymentStatus(
     return data;
 }
 
-export async function getOutstandingPayments(companyId: string) {
-    const { data, error } = await supabase
+export async function getOutstandingPayments(companyId: string, filterUserId?: string) {
+    let query = supabase
         .from('billing_periods')
         .select(`
             *,
             users!billing_periods_created_by_fkey(first_name, last_name, email)
         `)
         .eq('company_id', companyId)
-        .in('payment_status', ['pending', 'sent', 'overdue'])
+        .in('payment_status', ['pending', 'sent', 'overdue']);
+
+    // If filterUserId is provided, filter to user-specific billing periods
+    if (filterUserId) {
+        query = query.or(`notes.ilike.%Generated for user:%${filterUserId})%,created_by.eq.${filterUserId}`);
+    }
+
+    const { data, error } = await query
         .order('payment_due_date', { ascending: true, nullsLast: true });
         
     if (error) throw error;
     return data || [];
 }
 
-export async function getOverduePayments(companyId: string) {
-    const { data, error } = await supabase
+export async function getOverduePayments(companyId: string, filterUserId?: string) {
+    let query = supabase
         .from('billing_periods')
         .select(`
             *,
             users!billing_periods_created_by_fkey(first_name, last_name, email)
         `)
         .eq('company_id', companyId)
-        .eq('payment_status', 'overdue')
+        .eq('payment_status', 'overdue');
+
+    // If filterUserId is provided, filter to user-specific billing periods
+    if (filterUserId) {
+        query = query.or(`notes.ilike.%Generated for user:%${filterUserId})%,created_by.eq.${filterUserId}`);
+    }
+
+    const { data, error } = await query
         .order('payment_due_date', { ascending: true });
         
     if (error) throw error;
@@ -643,15 +729,22 @@ export async function generateBillingPeriodForUser(
     return createdPeriod;
 }
 
-export async function getBillingCycleStats(companyId: string, year?: number) {
+export async function getBillingCycleStats(companyId: string, year?: number, filterUserId?: string) {
     const targetYear = year || new Date().getFullYear();
     
-    const { data, error } = await supabase
+    let query = supabase
         .from('billing_periods')
         .select('*')
         .eq('company_id', companyId)
         .gte('start_date', `${targetYear}-01-01`)
         .lt('start_date', `${targetYear + 1}-01-01`);
+
+    // If filterUserId is provided, filter to user-specific billing periods
+    if (filterUserId) {
+        query = query.or(`notes.ilike.%Generated for user:%${filterUserId})%,created_by.eq.${filterUserId}`);
+    }
+    
+    const { data, error } = await query;
         
     if (error) throw error;
     

@@ -34,18 +34,22 @@ export async function GET(request: NextRequest) {
         const action = searchParams.get('action');
         const year = searchParams.get('year');
 
+        // Check if user is admin - if not, filter to user-specific data
+        const isAdmin = ['company_admin', 'system_admin', 'super_admin'].includes(user.role);
+        const filterUserId = isAdmin ? undefined : user.id;
+
         switch (action) {
             case 'outstanding':
-                const outstanding = await getOutstandingPayments(user.company_id);
+                const outstanding = await getOutstandingPayments(user.company_id, filterUserId);
                 return NextResponse.json(outstanding);
 
             case 'overdue':
-                const overdue = await getOverduePayments(user.company_id);
+                const overdue = await getOverduePayments(user.company_id, filterUserId);
                 return NextResponse.json(overdue);
 
             case 'stats':
                 const yearNum = year ? parseInt(year) : undefined;
-                const stats = await getBillingCycleStats(user.company_id, yearNum);
+                const stats = await getBillingCycleStats(user.company_id, yearNum, filterUserId);
                 return NextResponse.json(stats);
 
             default:
