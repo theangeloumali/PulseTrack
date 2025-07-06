@@ -24,12 +24,18 @@ export function useUpdateBillingSettings(companyId: string) {
     const queryClient = useQueryClient();
     return useMutation<CompanyBillingSettings, Error, Partial<NewCompanyBillingSettings>>({
         mutationFn: async (updates) => {
-            let result = await updateCompanyBillingSettings(companyId, updates);
-            if (!result) {
-                // If update returns null, it means no record existed, so create it
-                result = await createCompanyBillingSettings({ ...updates, company_id: companyId });
+            // First check if a record exists
+            const existingSettings = await getCompanyBillingSettings(companyId);
+            
+            if (existingSettings) {
+                // Record exists, update it
+                const result = await updateCompanyBillingSettings(companyId, updates);
+                return result!; // Should not be null since record exists
+            } else {
+                // No record exists, create it
+                const result = await createCompanyBillingSettings({ ...updates, company_id: companyId });
+                return result!; // Should not be null on successful creation
             }
-            return result;
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['billing-settings', companyId] });
@@ -45,16 +51,16 @@ export function useBillingReport(companyId: string, startDate: string, endDate: 
             if (targetUserId) {
                 apiPath += `&targetUserId=${targetUserId}`;
             }
-            console.log('🔍 Fetching billing report from:', apiPath);
+            
             const response = await fetch(apiPath);
             if (!response.ok) {
                 const errorText = await response.text();
-                console.error('❌ Billing report API error:', response.status, errorText);
                 throw new Error(`Failed to fetch billing report: ${response.status} ${errorText}`);
             }
+            
             return response.json();
         },
-        enabled: !!companyId && !!startDate && !!endDate, // Only run if all parameters are available
+        enabled: !!companyId && !!startDate && !!endDate,
     });
 }
 

@@ -343,24 +343,20 @@ console.log('filteredBillingReport:', filteredBillingReport);
 
 			{/* Navigation Tabs */}
 			<div className="flex border-b border-border mb-6">
-				{isAdmin && (
-					<button 
-						className={`px-4 py-2 font-medium ${activeTab === 'payments' ? 'border-b-2 border-blue-500 text-blue-600 dark:text-blue-400' : 'text-muted-foreground hover:text-foreground'}`}
-						onClick={() => setActiveTab('payments')}
-					>
-						Payments
-					</button>
-				)}
-				{isAdmin && (
-					<button 
-						className={`px-4 py-2 font-medium ml-4 ${activeTab === 'periods' ? 'border-b-2 border-blue-500 text-blue-600 dark:text-blue-400' : 'text-muted-foreground hover:text-foreground'}`}
-						onClick={() => setActiveTab('periods')}
-					>
-						Billing Periods
-					</button>
-				)}
 				<button 
-					className={`px-4 py-2 font-medium ${!isAdmin ? '' : 'ml-4'} ${activeTab === 'timesheet' ? 'border-b-2 border-blue-500 text-blue-600 dark:text-blue-400' : 'text-muted-foreground hover:text-foreground'}`}
+					className={`px-4 py-2 font-medium ${activeTab === 'payments' ? 'border-b-2 border-blue-500 text-blue-600 dark:text-blue-400' : 'text-muted-foreground hover:text-foreground'}`}
+					onClick={() => setActiveTab('payments')}
+				>
+					{isAdmin ? 'Payments' : 'My Payments'}
+				</button>
+				<button 
+					className={`px-4 py-2 font-medium ml-4 ${activeTab === 'periods' ? 'border-b-2 border-blue-500 text-blue-600 dark:text-blue-400' : 'text-muted-foreground hover:text-foreground'}`}
+					onClick={() => setActiveTab('periods')}
+				>
+					{isAdmin ? 'Billing Periods' : 'My Billing Periods'}
+				</button>
+				<button 
+					className={`px-4 py-2 font-medium ml-4 ${activeTab === 'timesheet' ? 'border-b-2 border-blue-500 text-blue-600 dark:text-blue-400' : 'text-muted-foreground hover:text-foreground'}`}
 					onClick={() => setActiveTab('timesheet')}
 				>
 					Timesheet
@@ -382,12 +378,12 @@ console.log('filteredBillingReport:', filteredBillingReport);
 			</div>
 
 			{/* Payments Tab */}
-			{activeTab === 'payments' && isAdmin && (
+			{activeTab === 'payments' && (
 				<PaymentDashboard companyId={companyId!} isAdmin={isAdmin} />
 			)}
 
 			{/* Billing Periods Tab */}
-			{activeTab === 'periods' && isAdmin && (
+			{activeTab === 'periods' && (
 				<BillingPeriodsList companyId={companyId!} isAdmin={isAdmin} />
 			)}
 

@@ -4,21 +4,27 @@ import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@workspace/ui/components/card';
 import { Button } from '@workspace/ui/components/button';
 import { Badge } from '@workspace/ui/components/badge';
+import { Label } from '@workspace/ui/components/label';
+import { DateRangePicker } from '@/components/ui/date-range-picker';
 import { PaymentStatusBadge } from '@/components/payments/payment-status-badge';
 import { InvoiceGenerator } from './invoice-generator';
 import { UserSelector } from './user-selector';
 import { DeleteConfirmationModal } from './delete-confirmation-modal';
 import { PDFExporter } from './pdf-exporter';
+import { ComprehensiveBillingModal } from './comprehensive-billing-modal';
 import { 
   useBillingPeriods, 
   useGenerateBillingPeriod, 
+  useGenerateBillingPeriodForUser,
   useGenerateNextBillingPeriod,
   useDeleteBillingPeriod
 } from '@/lib/hooks/usePayments';
+import { useAuthStore } from '@/lib/stores/auth';
 import { useBillingSettings, useBillingReport } from '@/lib/hooks/useBilling';
 import { extractTargetUserIdFromBillingPeriod } from '@/lib/db/billing-service';
 import type { BillingPeriod, BillingFrequency } from '@/lib/db/schema';
-import { format } from 'date-fns';
+import { getApiPath } from '@/lib/utils';
+import { format, startOfMonth, endOfMonth } from 'date-fns';
 import { 
   Plus, 
   Calendar, 
@@ -30,7 +36,9 @@ import {
   Receipt,
   Clock,
   Trash2,
-  Download
+  Download,
+  RefreshCw,
+  X
 } from 'lucide-react';
 
 interface BillingPeriodsListProps {
@@ -39,8 +47,10 @@ interface BillingPeriodsListProps {
 }
 
 export function BillingPeriodsList({ companyId, isAdmin }: BillingPeriodsListProps) {
+  const { user } = useAuthStore();
   const [selectedPeriod, setSelectedPeriod] = useState<BillingPeriod | null>(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
+  const [showNewPeriodModal, setShowNewPeriodModal] = useState(false);
   const [invoicePeriod, setInvoicePeriod] = useState<BillingPeriod | null>(null);
   const [showInvoiceGenerator, setShowInvoiceGenerator] = useState(false);
   const [showUserSelector, setShowUserSelector] = useState(false);
@@ -48,10 +58,17 @@ export function BillingPeriodsList({ companyId, isAdmin }: BillingPeriodsListPro
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
   const [pdfExportPeriod, setPdfExportPeriod] = useState<BillingPeriod | null>(null);
   const [showPdfExporter, setShowPdfExporter] = useState(false);
+  const [recalculatingPeriods, setRecalculatingPeriods] = useState<Set<string>>(new Set());
+  
+  // New period generation state
+  const [useCustomDateRange, setUseCustomDateRange] = useState<boolean>(false);
+  const [startDate, setStartDate] = useState<string>(format(startOfMonth(new Date()), 'yyyy-MM-dd'));
+  const [endDate, setEndDate] = useState<string>(format(endOfMonth(new Date()), 'yyyy-MM-dd'));
 
   const { data: billingPeriods, isLoading, isError, refetch } = useBillingPeriods(companyId);
   const { data: companySettings } = useBillingSettings(companyId);
   const generatePeriodMutation = useGenerateBillingPeriod(companyId);
+  const generateUserPeriodMutation = useGenerateBillingPeriodForUser(companyId);
   const generateNextMutation = useGenerateNextBillingPeriod(companyId);
   const deletePeriodMutation = useDeleteBillingPeriod(companyId);
 
@@ -67,15 +84,42 @@ export function BillingPeriodsList({ companyId, isAdmin }: BillingPeriodsListPro
   );
 
   const handleGenerateNewPeriod = async () => {
-    if (!companySettings?.billing_frequency) {
-      alert('Please set a billing frequency in the company settings first.');
+    if (!companySettings?.billing_frequency && !useCustomDateRange) {
+      alert('Please set a billing frequency in the company settings first or use custom date range.');
+      return;
+    }
+
+    if (useCustomDateRange && (!startDate || !endDate)) {
+      alert('Please select both start and end dates for custom range.');
       return;
     }
 
     try {
-      await generatePeriodMutation.mutateAsync({
-        frequency: companySettings.billing_frequency as BillingFrequency,
-      });
+      const basePayload = {
+        frequency: companySettings?.billing_frequency as BillingFrequency || 'monthly',
+        ...(useCustomDateRange && {
+          custom_start_date: startDate,
+          custom_end_date: endDate,
+        }),
+      };
+
+      // Use different mutations based on user role
+      if (!isAdmin) {
+        // For non-admin users, use the user-specific mutation
+        if (!user?.id) {
+          throw new Error('User ID not found');
+        }
+        await generateUserPeriodMutation.mutateAsync({
+          ...basePayload,
+          target_user_id: user.id, // Generate for the current user
+        });
+        alert('Personal billing period created successfully! It will be sent to your company admin for review.');
+      } else {
+        // For admins, use the company-wide mutation
+        await generatePeriodMutation.mutateAsync(basePayload);
+      }
+      
+      setShowNewPeriodModal(false);
       refetch();
     } catch (error) {
       console.error('Error generating billing period:', error);
@@ -141,6 +185,40 @@ export function BillingPeriodsList({ companyId, isAdmin }: BillingPeriodsListPro
     setShowPdfExporter(false);
   };
 
+  const handleRecalculateAmount = async (period: BillingPeriod) => {
+    setRecalculatingPeriods(prev => new Set(prev).add(period.id));
+    
+    try {
+      const response = await fetch(getApiPath('billing/periods'), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'recalculate_amount',
+          billing_period_id: period.id,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to recalculate amount');
+      }
+
+      await refetch(); // Refresh the billing periods list
+      alert('Payment amount recalculated successfully!');
+    } catch (error) {
+      console.error('Error recalculating payment amount:', error);
+      alert(error instanceof Error ? error.message : 'Failed to recalculate payment amount');
+    } finally {
+      setRecalculatingPeriods(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(period.id);
+        return newSet;
+      });
+    }
+  };
+
   const formatCurrency = (amount: number | null) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
@@ -196,35 +274,43 @@ export function BillingPeriodsList({ companyId, isAdmin }: BillingPeriodsListPro
       {/* Header with Actions */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-semibold">Billing Periods</h2>
+          <h2 className="text-xl font-semibold">{isAdmin ? 'Billing Periods' : 'My Billing Periods'}</h2>
           <p className="text-muted-foreground">
-            Manage billing periods and generate invoices for your company
+            {isAdmin 
+              ? 'Manage billing periods and generate invoices for your company'
+              : 'View and generate your personal billing periods for approval'
+            }
           </p>
         </div>
-        {isAdmin && (
-          <div className="flex gap-2">
-            <Button
-              onClick={handleGenerateNewPeriod}
-              disabled={generatePeriodMutation.isPending || !companySettings?.billing_frequency}
-              className="flex items-center gap-2"
-            >
-              {generatePeriodMutation.isPending ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
+        <div className="flex gap-2">
+          {isAdmin ? (
+            <>
+              <Button
+                onClick={() => setShowNewPeriodModal(true)}
+                className="flex items-center gap-2"
+              >
                 <Plus className="h-4 w-4" />
-              )}
-              Generate New Period
-            </Button>
+                Generate New Period
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => setShowUserSelector(true)}
+                className="flex items-center gap-2"
+              >
+                <Plus className="h-4 w-4" />
+                Generate for User
+              </Button>
+            </>
+          ) : (
             <Button
-              variant="outline"
-              onClick={() => setShowUserSelector(true)}
+              onClick={() => setShowNewPeriodModal(true)}
               className="flex items-center gap-2"
             >
               <Plus className="h-4 w-4" />
-              Generate for User
+              Generate Personal Period
             </Button>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
       {/* Company Settings Info */}
@@ -340,6 +426,24 @@ export function BillingPeriodsList({ companyId, isAdmin }: BillingPeriodsListPro
                         <Button
                           size="sm"
                           variant="outline"
+                          onClick={() => handleRecalculateAmount(period)}
+                          disabled={recalculatingPeriods.has(period.id)}
+                          className="flex items-center gap-1"
+                          title="Recalculate payment amount from time entries"
+                        >
+                          {recalculatingPeriods.has(period.id) ? (
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                          ) : (
+                            <RefreshCw className="h-3 w-3" />
+                          )}
+                          Recalculate
+                        </Button>
+                      )}
+
+                      {isAdmin && (
+                        <Button
+                          size="sm"
+                          variant="outline"
                           onClick={() => handleDeleteClick(period)}
                           className="flex items-center gap-1 text-destructive hover:text-destructive"
                         >
@@ -358,8 +462,8 @@ export function BillingPeriodsList({ companyId, isAdmin }: BillingPeriodsListPro
               <h3 className="text-lg font-medium mb-2">No billing periods found</h3>
               <p className="mb-4">Get started by creating your first billing period</p>
               {isAdmin && companySettings?.billing_frequency && (
-                <Button onClick={handleGenerateNewPeriod} disabled={generatePeriodMutation.isPending}>
-                  {generatePeriodMutation.isPending ? (
+                <Button onClick={handleGenerateNewPeriod} disabled={generatePeriodMutation.isPending || generateUserPeriodMutation.isPending}>
+                  {(generatePeriodMutation.isPending || generateUserPeriodMutation.isPending) ? (
                     <>
                       <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                       Generating...
@@ -377,142 +481,14 @@ export function BillingPeriodsList({ companyId, isAdmin }: BillingPeriodsListPro
         </CardContent>
       </Card>
 
-      {/* Period Details Modal */}
+      {/* Comprehensive Billing Modal */}
       {selectedPeriod && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-          <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <CardHeader>
-              <CardTitle>Billing Period Details</CardTitle>
-              <CardDescription>
-                {selectedPeriod.name} • {format(new Date(selectedPeriod.start_date), 'MMM dd')} - {format(new Date(selectedPeriod.end_date), 'MMM dd, yyyy')}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm font-medium">Status</label>
-                  <div className="mt-1">
-                    <Badge variant={getStatusBadgeVariant(getBillingPeriodStatus(selectedPeriod))}>
-                      {getBillingPeriodStatus(selectedPeriod)}
-                    </Badge>
-                  </div>
-                </div>
-                <div>
-                  <label className="text-sm font-medium">Payment Status</label>
-                  <div className="mt-1">
-                    <PaymentStatusBadge status={selectedPeriod.payment_status} />
-                  </div>
-                </div>
-              </div>
-
-              {selectedPeriod.payment_amount && (
-                <div>
-                  <label className="text-sm font-medium">Payment Amount</label>
-                  <div className="text-lg font-semibold">
-                    {formatCurrency(selectedPeriod.payment_amount)}
-                  </div>
-                </div>
-              )}
-
-              {selectedPeriod.notes && (
-                <div>
-                  <label className="text-sm font-medium">Notes</label>
-                  <p className="text-sm text-muted-foreground mt-1">{selectedPeriod.notes}</p>
-                </div>
-              )}
-
-              {/* Time Entries Section */}
-              {periodReport && Object.keys(periodReport).length > 0 && (
-                <div className="space-y-4">
-                  <h3 className="text-lg font-semibold">Time Entries</h3>
-                  
-                  <div className="space-y-3 max-h-64 overflow-y-auto">
-                    {Object.entries(periodReport).map(([date, users]: [string, any]) => (
-                      <div key={date} className="border rounded-lg p-3">
-                        <h4 className="font-medium text-sm mb-2 flex items-center gap-2">
-                          <Calendar className="h-3 w-3" />
-                          {format(new Date(date), 'EEEE, MMM dd, yyyy')}
-                        </h4>
-                        
-                        <div className="space-y-2">
-                          {Object.entries(users).map(([userId, userData]: [string, any]) => (
-                            <div key={userId} className="flex items-center justify-between text-sm">
-                              <div className="flex items-center gap-2">
-                                <div className="w-2 h-2 rounded-full bg-primary"></div>
-                                <span className="font-medium">
-                                  {userData.userFirstName} {userData.userLastName}
-                                </span>
-                              </div>
-                              <div className="flex items-center gap-4 text-muted-foreground">
-                                <div className="flex items-center gap-1">
-                                  <Clock className="h-3 w-3" />
-                                  {userData.totalHours?.toFixed(2) || '0.00'}h
-                                </div>
-                                <div className="flex items-center gap-1">
-                                  <DollarSign className="h-3 w-3" />
-                                  {formatCurrency(userData.totalAmount || 0)}
-                                </div>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                        
-                        {/* Daily Total */}
-                        <div className="border-t mt-2 pt-2 flex justify-between text-sm font-medium">
-                          <span>Daily Total</span>
-                          <div className="flex items-center gap-4">
-                            <span>
-                              {Object.values(users).reduce((sum: number, user: any) => sum + (user.totalHours || 0), 0).toFixed(2)}h
-                            </span>
-                            <span>
-                              {formatCurrency(Object.values(users).reduce((sum: number, user: any) => sum + (user.totalAmount || 0), 0))}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Period Summary */}
-                  <div className="border-t pt-4">
-                    <div className="grid grid-cols-2 gap-4 text-sm">
-                      <div>
-                        <label className="font-medium">Total Period Hours</label>
-                        <div className="text-lg font-semibold">
-                          {Object.values(periodReport).reduce((totalHours: number, dayUsers: any) => {
-                            return totalHours + Object.values(dayUsers).reduce((dayTotal: number, user: any) => dayTotal + (user.totalHours || 0), 0);
-                          }, 0).toFixed(2)}h
-                        </div>
-                      </div>
-                      <div>
-                        <label className="font-medium">Total Period Amount</label>
-                        <div className="text-lg font-semibold">
-                          {formatCurrency(Object.values(periodReport).reduce((totalAmount: number, dayUsers: any) => {
-                            return totalAmount + Object.values(dayUsers).reduce((dayTotal: number, user: any) => dayTotal + (user.totalAmount || 0), 0);
-                          }, 0))}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* No Time Entries Message */}
-              {periodReport && Object.keys(periodReport).length === 0 && (
-                <div className="text-center py-8 text-muted-foreground">
-                  <Clock className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                  <p>No time entries found for this billing period</p>
-                </div>
-              )}
-
-              <div className="flex justify-end gap-2">
-                <Button variant="outline" onClick={() => setSelectedPeriod(null)}>
-                  Close
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+        <ComprehensiveBillingModal
+          billingPeriod={selectedPeriod}
+          isOpen={!!selectedPeriod}
+          onClose={() => setSelectedPeriod(null)}
+          companyId={companyId}
+        />
       )}
 
       {/* Invoice Generator */}
@@ -549,6 +525,104 @@ export function BillingPeriodsList({ companyId, isAdmin }: BillingPeriodsListPro
           isOpen={showPdfExporter}
           onClose={handleClosePdfExporter}
         />
+      )}
+
+      {/* New Period Generation Modal */}
+      {showNewPeriodModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <Card className="w-full max-w-md">
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div>
+                <CardTitle className="flex items-center gap-2">
+                  <Plus className="h-5 w-5" />
+                  {isAdmin ? 'Generate New Billing Period' : 'Generate Personal Billing Period'}
+                </CardTitle>
+                <CardDescription>
+                  {isAdmin 
+                    ? 'Create a new billing period for your company'
+                    : 'Create a personal billing period for your work to be reviewed by your company admin'
+                  }
+                </CardDescription>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowNewPeriodModal(false)}
+                className="h-8 w-8 p-0"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {companySettings?.billing_frequency && (
+                <div className="text-sm text-muted-foreground p-3 bg-muted rounded-lg">
+                  <strong>Default frequency:</strong> {companySettings.billing_frequency.replace('_', '-')}
+                </div>
+              )}
+
+              <div className="space-y-3 pt-2 border-t border-border">
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id="custom-date-range-main"
+                    checked={useCustomDateRange}
+                    onChange={(e) => setUseCustomDateRange(e.target.checked)}
+                    className="rounded border-gray-300"
+                  />
+                  <Label 
+                    htmlFor="custom-date-range-main" 
+                    className="text-sm font-medium flex items-center gap-2 cursor-pointer"
+                  >
+                    <Calendar className="h-4 w-4" />
+                    Use Custom Date Range
+                  </Label>
+                </div>
+                
+                {useCustomDateRange && (
+                  <div className="space-y-2 bg-muted/50 p-3 rounded-lg">
+                    <Label className="text-xs text-muted-foreground">
+                      Override the default frequency-based dates with custom range
+                    </Label>
+                    <DateRangePicker
+                      startDate={startDate}
+                      endDate={endDate}
+                      onStartDateChange={setStartDate}
+                      onEndDateChange={setEndDate}
+                      onRangeChange={(start, end) => {
+                        setStartDate(start);
+                        setEndDate(end);
+                      }}
+                    />
+                  </div>
+                )}
+              </div>
+
+              <div className="flex gap-2 pt-4">
+                <Button 
+                  variant="outline" 
+                  onClick={() => setShowNewPeriodModal(false)} 
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  onClick={handleGenerateNewPeriod} 
+                  disabled={generatePeriodMutation.isPending || generateUserPeriodMutation.isPending}
+                  className="flex-1"
+                >
+                  {(generatePeriodMutation.isPending || generateUserPeriodMutation.isPending) ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Generating...
+                    </>
+                  ) : (
+                    'Generate Period'
+                  )}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       )}
     </div>
   );

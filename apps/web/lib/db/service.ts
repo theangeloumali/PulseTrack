@@ -1041,17 +1041,10 @@ export async function getTimeEntriesForBillingByUser(
   startDate: string, 
   endDate: string
 ) {
-  console.log('🔍 Fetching time entries for billing by user:', { 
-    companyId, 
-    targetUserId, 
-    startDate, 
-    endDate 
-  });
-  
   // First validate that the target user belongs to the company
   const { data: userValidation, error: userError } = await supabase
     .from('users')
-    .select('id, company_id')
+    .select('id, company_id, first_name, last_name')
     .eq('id', targetUserId)
     .eq('company_id', companyId)
     .single();
@@ -1108,8 +1101,6 @@ export async function getTimeEntriesForBillingByUser(
     console.error('❌ Error fetching time entries for billing by user:', error);
     throw new Error(`Failed to fetch time entries for user: ${error.message}`);
   }
-
-  console.log('📊 Found time entries for billing by user:', data?.length || 0);
   return data || [];
 }
 

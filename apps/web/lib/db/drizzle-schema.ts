@@ -232,6 +232,15 @@ export const companyBillingSettings = pgTable('company_billing_settings', {
     currency: text('currency').default('USD'),
     billing_frequency: text('billing_frequency'), // 'weekly', 'bi_monthly', 'monthly'
     invoice_prefix: text('invoice_prefix'),
+    // Branding fields
+    company_logo_url: text('company_logo_url'), // URL to company logo
+    company_address: text('company_address'), // Full company address
+    company_phone: text('company_phone'), // Company phone number
+    company_email: text('company_email'), // Company billing email
+    company_website: text('company_website'), // Company website URL
+    invoice_footer: text('invoice_footer'), // Custom footer text for invoices
+    brand_primary_color: text('brand_primary_color').default('#3b82f6'), // Hex color for primary brand
+    brand_secondary_color: text('brand_secondary_color').default('#64748b'), // Hex color for secondary brand
     created_at: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
     updated_at: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 }, (table) => ({

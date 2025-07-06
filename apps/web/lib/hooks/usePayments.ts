@@ -222,9 +222,13 @@ export function useGenerateBillingPeriod(companyId: string) {
     mutationFn: async ({
       frequency,
       start_date,
+      custom_start_date,
+      custom_end_date,
     }: {
       frequency: BillingFrequency;
       start_date?: string;
+      custom_start_date?: string;
+      custom_end_date?: string;
     }) => {
       const response = await fetch(getApiPath('billing/periods'), {
         method: 'POST',
@@ -235,6 +239,8 @@ export function useGenerateBillingPeriod(companyId: string) {
           action: 'generate',
           frequency,
           start_date,
+          custom_start_date,
+          custom_end_date,
         }),
       });
 
@@ -286,10 +292,14 @@ export function useGenerateBillingPeriodForUser(companyId: string) {
       target_user_id,
       frequency,
       start_date,
+      custom_start_date,
+      custom_end_date,
     }: {
       target_user_id: string;
       frequency: BillingFrequency;
       start_date?: string;
+      custom_start_date?: string;
+      custom_end_date?: string;
     }) => {
       const response = await fetch(getApiPath('billing/periods'), {
         method: 'POST',
@@ -301,6 +311,8 @@ export function useGenerateBillingPeriodForUser(companyId: string) {
           target_user_id,
           frequency,
           start_date,
+          custom_start_date,
+          custom_end_date,
         }),
       });
 

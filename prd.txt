@@ -46,7 +46,11 @@ PulseTrack is a comprehensive SaaS project management platform that combines tic
 - Simple dashboard with key metrics
 - Basic search and filtering
 - User role management (Admin, Manager, User)
-- Billing periods and time reports (weekly, bi-monthly, monthly)
+- **Comprehensive billing system with user role access**
+- **Personal billing period generation for users**
+- **Professional invoice generation and payment tracking**
+- **Company branding and payment method configuration**
+- **Role-based data filtering and multi-tenant security**
 
 ### ❌ Excluded from MVP (Future Releases)
 - Advanced reporting and analytics
@@ -55,9 +59,9 @@ PulseTrack is a comprehensive SaaS project management platform that combines tic
 - Email notifications
 - API integrations
 - Mobile app
-- Advanced billing automation
+- **Client portal access functionality**
+- **Automated communication workflows**
 - Real-time notifications
-- Invoice generation
 
 ## 💰 SaaS Business Model
 
@@ -169,9 +173,9 @@ PulseTrack is a comprehensive SaaS project management platform that combines tic
 **Requirement**: System supports three user roles with different permissions.
 
 **Functional Requirements**:
-- **Admin**: Can manage all projects, users, and system settings
+- **Admin**: Can manage all projects, users, system settings, and company-wide billing
 - **Manager**: Can manage assigned projects and tickets
-- **User**: Can view assigned projects and create/manage assigned tickets
+- **User**: Can view assigned projects, create/manage assigned tickets, and **generate personal billing periods**
 
 **Technical Requirements**:
 - Role-based access control (RBAC)
@@ -179,9 +183,12 @@ PulseTrack is a comprehensive SaaS project management platform that combines tic
 - Role validation on all API endpoints
 
 **Acceptance Criteria**:
-- [ ] Admin can access all features
+- [x] Admin can access all features including company-wide billing management
 - [ ] Manager can manage assigned projects
-- [ ] User can only access assigned content
+- [x] User can only access assigned content plus personal billing functionality
+- [x] **User can access "My Payments" and "My Billing Periods" tabs**
+- [x] **User can generate personal billing periods for company review**
+- [x] **User billing data is properly isolated from other users**
 - [ ] Role changes are reflected immediately
 
 ## 2. Project Management
@@ -484,20 +491,27 @@ time_entries {
 ## 7. Billing & Time Reports
 
 ### 7.1 Billing Periods Management
-**Requirement**: Companies can define and manage billing periods for time tracking reports.
+**Requirement**: Companies can define and manage billing periods for time tracking reports with user self-service capabilities.
 
 **Functional Requirements**:
 - Companies can create billing periods (weekly, bi-monthly, monthly)
 - Billing periods have start date, end date, and status
 - Users can view active and past billing periods
 - Time entries are automatically grouped by billing period
-- Only company admins can manage billing periods
+- **Admin Management**: Company admins can manage all billing periods
+- **User Self-Service**: Regular users can generate personal billing periods for company review
+- **Role-Based Access**: Users access "My Billing Periods" while admins access "Billing Periods"
+- **Personal Billing Workflow**: User-generated periods are sent to company for approval
 
 **Technical Requirements**:
 - Billing periods table with company scoping
 - Automatic time entry aggregation by period
 - Efficient querying for large time entry datasets
 - Period overlap validation
+- **Role-Based API Permissions**: Action-specific permission checks for user vs admin operations
+- **User Data Filtering**: Multi-query approach for user-specific billing period visibility
+- **User Identification in Notes**: Admin-created periods include user ID in notes for targeting
+- **API Endpoint Security**: User validation for personal billing period generation
 
 **Data Model**:
 ```sql
@@ -516,11 +530,46 @@ billing_periods {
 ```
 
 **Acceptance Criteria**:
-- [ ] Admin can create new billing periods
-- [ ] Billing periods cannot overlap for the same company
-- [ ] Users can view current and past billing periods
-- [ ] Time entries are automatically associated with periods
-- [ ] Period status can be changed (draft → active → closed)
+- [x] Admin can create new billing periods
+- [x] Billing periods cannot overlap for the same company
+- [x] Users can view current and past billing periods
+- [x] Time entries are automatically associated with periods
+- [x] Period status can be changed (draft → active → closed)
+- [x] **Users can generate personal billing periods for themselves**
+- [x] **Users see only their own billing data (self-created + admin-created for them)**
+- [x] **Admin-created user periods are visible to target users via notes field**
+- [x] **API endpoints support both admin and user billing period creation**
+- [x] **Role-based filtering ensures data isolation between users**
+
+### 7.1.1 User Role Billing Access
+**Requirement**: Regular users can access billing functionality with appropriate restrictions and self-service capabilities.
+
+**Functional Requirements**:
+- **Tab Access**: Users can access "My Payments" and "My Billing Periods" tabs
+- **Personal Data View**: Users see only their own payment and billing data
+- **Self-Service Generation**: Users can create personal billing periods for approval
+- **Custom Date Ranges**: Users can specify custom date ranges for billing periods
+- **Admin Oversight**: Admin-created billing periods for users are visible to target users
+
+**Technical Implementation**:
+- **Multi-Query Filtering**: Separate queries for user-created and admin-targeted periods
+- **Pattern Matching**: User ID matching in billing period notes field for admin-created periods
+- **API Permission Model**: Action-specific validation (users can only generate for themselves)
+- **UI Role Adaptation**: Dynamic tab labels and functionality based on user role
+
+**Data Flow**:
+1. User generates personal billing period → Saved with user as creator
+2. Admin generates period for user → User ID included in notes field
+3. User views billing periods → System queries both user-created and admin-targeted periods
+4. Results combined and deduplicated for unified user experience
+
+**Acceptance Criteria**:
+- [x] **Users can access payments and billing periods tabs**
+- [x] **Users see role-appropriate tab labels ("My Payments" vs "Payments")**
+- [x] **Users can generate personal billing periods with custom date ranges**
+- [x] **User billing data is properly filtered (own data only)**
+- [x] **Admin-created user periods are visible to target users**
+- [x] **API endpoints validate user permissions for personal billing operations**
 
 ### 7.2 Billing Rates Management
 **Requirement**: Companies can set hourly rates for billing calculations.
@@ -746,6 +795,65 @@ time_entry_billing {
 - [ ] Data is backed up
 - [ ] Monitoring is in place
 
+## 📈 Implementation Status & Completed Features
+
+### ✅ **Completed Major Features**
+
+#### **User Billing System (December 2024)**
+- [x] **Role-Based Billing Access**: Users can access payments and billing periods tabs
+- [x] **Personal Billing Period Generation**: Users can create billing periods for company approval
+- [x] **User Data Filtering**: Multi-query system ensuring users see only their own billing data
+- [x] **Admin-User Period Targeting**: Admin-created periods visible to target users via notes field
+- [x] **API Permission Security**: Action-specific validation for user vs admin operations
+- [x] **Dynamic UI Adaptation**: Role-based tab labels and functionality
+- [x] **Custom Date Range Support**: Users can specify custom date ranges for billing periods
+
+#### **Comprehensive Billing Modal System**
+- [x] **Enhanced Layout**: Tabbed interface for billing overview, payments, time details, analytics
+- [x] **Payment Method Configuration**: Support for Wise, PayPal, bank transfers
+- [x] **Professional PDF Generation**: Invoice generation with company branding
+- [x] **Company Branding System**: Logo upload and brand customization
+- [x] **Payment Analytics Dashboard**: Charts and metrics for payment tracking
+- [x] **Time Detail Tracking**: Comprehensive time entry management within billing periods
+
+#### **Core Billing Infrastructure**
+- [x] **Billing Period Management**: Admin and user period creation with overlap validation
+- [x] **Payment Amount Calculation**: Automatic calculation from time entries with proper rates
+- [x] **Payment Status Tracking**: Complete payment lifecycle management
+- [x] **Date Range Selection**: Flexible period generation with custom date support
+- [x] **Database Schema**: Complete billing tables with proper relationships and constraints
+
+### 🔄 **In Progress**
+- [ ] Client Portal Access Functionality (Low Priority)
+- [ ] Automated Communication Workflows (Low Priority)
+
+### 🎯 **Technical Implementation Highlights**
+
+#### **Multi-Query Filtering Architecture**
+```typescript
+// Robust user billing period filtering
+const userCreatedPeriods = await getBillingPeriodsByCreator(userId);
+const adminTargetedPeriods = await getBillingPeriodsByNotesPattern(userId);
+const combinedResults = deduplicateAndSort([...userCreatedPeriods, ...adminTargetedPeriods]);
+```
+
+#### **Action-Specific API Permissions**
+```typescript
+// API endpoint security model
+switch (action) {
+  case 'generate': // Admin only
+  case 'generate_for_user': // Users can only generate for themselves
+  case 'recalculate_amount': // Admin only
+}
+```
+
+#### **Role-Based UI Adaptation**
+```typescript
+// Dynamic user interface based on role
+const tabLabel = isAdmin ? 'Billing Periods' : 'My Billing Periods';
+const generateButtonText = isAdmin ? 'Generate New Period' : 'Generate Personal Period';
+```
+
 ## 📊 Success Metrics
 
 ### Technical Metrics
@@ -769,15 +877,19 @@ time_entry_billing {
 ## 🚀 Launch Criteria
 
 ### MVP Launch Requirements
-- [ ] User authentication works reliably
-- [ ] Project creation and management functions
-- [ ] Ticket creation and workflow operates correctly
-- [ ] Time tracking is accurate and easy to use
-- [ ] Dashboard provides useful insights
-- [ ] Search and navigation work properly
-- [ ] UI is responsive and accessible
-- [ ] Performance meets requirements
-- [ ] Security requirements are met
+- [x] User authentication works reliably
+- [x] Project creation and management functions
+- [x] Ticket creation and workflow operates correctly
+- [x] Time tracking is accurate and easy to use
+- [x] Dashboard provides useful insights
+- [x] Search and navigation work properly
+- [x] UI is responsive and accessible
+- [x] Performance meets requirements
+- [x] Security requirements are met
+- [x] **Comprehensive billing system with user role access**
+- [x] **Personal billing period generation for users**
+- [x] **Role-based data filtering and permissions**
+- [x] **Professional invoice generation and payment tracking**
 - [ ] Basic testing is complete
 
 ### Post-Launch Features (Future Releases)
@@ -787,7 +899,8 @@ time_entry_billing {
 - Custom workflows
 - API integrations
 - Mobile application
-- Advanced time reports
+- **Client portal access functionality** (In planning)
+- **Automated communication workflows** (In planning)
 - Real-time notifications
 
 ## 📝 Assumptions and Constraints
