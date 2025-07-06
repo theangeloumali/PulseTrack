@@ -1,138 +1,347 @@
-# shadcn/ui monorepo template
+# PulseTrack - Project Management System
 
-This template is for creating a monorepo with shadcn/ui.
+![PulseTrack Logo](./assets/pulsetrack%20assets/logo.png)
 
-## Usage
+**PulseTrack** is a comprehensive project management system that includes ticket tracking, user management, time tracking, and billing features. Built with Next.js 15 and Supabase as a modern, scalable monorepo solution.
+
+## 🚀 Features
+
+- **Project Management**: Create and manage projects with team collaboration
+- **Ticket Tracking**: Kanban-style ticket board with drag-and-drop functionality
+- **Time Tracking**: Track time spent on tickets with automatic billing calculation
+- **Billing System**: Generate invoices, manage billing periods, and payment tracking
+- **User Management**: Role-based access control with company-based isolation
+- **Real-time Updates**: Live updates across all connected clients
+- **Dark Mode**: Built-in theme switching with system preference detection
+
+## 🏗️ Architecture
+
+### Tech Stack
+
+**Frontend:**
+- Next.js 15 (React 19) with App Router
+- TypeScript 5.7.3
+- Tailwind CSS + shadcn/ui components
+- Zustand for state management
+- TanStack Query (React Query) for data fetching
+- React Hook Form + Zod for form validation
+- Drag-and-drop with @dnd-kit
+
+**Backend:**
+- Next.js 15 API Routes
+- Supabase (PostgreSQL) for database
+- Drizzle ORM for type-safe database operations
+- Supabase Auth for authentication
+- Row Level Security (RLS) for data isolation
+
+**Development:**
+- Turbo monorepo with pnpm workspaces
+- ESLint + Prettier for code quality
+- Vercel Analytics for monitoring
+
+### Project Structure
+
+```
+PulseTrack/
+├── apps/
+│   ├── web/                     # Main Next.js application
+│   │   ├── app/                 # Next.js App Router pages and API routes
+│   │   ├── components/          # React components and UI components
+│   │   ├── lib/                 # Core application logic and utilities
+│   │   │   ├── db/              # Database schema, queries, and services
+│   │   │   ├── hooks/           # Custom React hooks
+│   │   │   ├── stores/          # Zustand state stores
+│   │   │   └── supabase/        # Supabase client configuration
+│   │   ├── screens/             # Page-specific components
+│   │   └── tests/               # Test files and debugging utilities
+│   └── landing/                 # Marketing landing page (Vite)
+├── packages/                    # Shared workspace packages
+│   └── ui/                      # Shared UI components
+├── docs/                        # Comprehensive project documentation
+└── assets/                      # Static assets and branding
+```
+
+## 🛠️ Quick Start
+
+### Prerequisites
+
+- Node.js 20+ 
+- pnpm 10+
+- Supabase account and project
+
+### 1. Install Dependencies
 
 ```bash
-pnpm dlx shadcn@latest init
+pnpm install
 ```
 
-## Adding components
+### 2. Environment Setup
 
-To add components to your app, run the following command at the root of your `web` app:
+Copy the environment template and configure your Supabase credentials:
 
 ```bash
-pnpm dlx shadcn@latest add button -c apps/web
+cp apps/web/.env.local.example apps/web/.env.local
 ```
 
-This will place the ui components in the `packages/ui/src/components` directory.
+Configure the following environment variables in `apps/web/.env.local`:
 
-## Tailwind
-
-Your `tailwind.config.ts` and `globals.css` are already set up to use the components from the `ui` package.
-
-## Using components
-
-To use the components in your app, import them from the `ui` package.
-
-```tsx
-import { Button } from "@workspace/ui/components/button"
+```env
+# Supabase Configuration
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
+NEXT_PUBLIC_SITE_URL=http://localhost:4649
 ```
 
-<!-- TASKMASTER_EXPORT_START -->
-> 🎯 **Taskmaster Export** - 2025-06-30 02:26:52 UTC
-> 📋 Export: with subtasks • Status filter: none
-> 🔗 Powered by [Task Master](https://task-master.dev?utm_source=github-readme&utm_medium=readme-export&utm_campaign=pulsetrack&utm_content=task-export-link)
+**Where to find these values:**
+1. Go to your [Supabase Dashboard](https://supabase.com/dashboard)
+2. Select your project
+3. Go to Settings → API
+4. Copy the Project URL and Project API keys
 
-```
-╭─────────────────────────────────────────────────────────╮╭─────────────────────────────────────────────────────────╮
-│                                                         ││                                                         │
-│   Project Dashboard                                     ││   Dependency Status & Next Task                         │
-│   Tasks Progress: ░░░░░░░░░░░░░░░░░░░░ 0%    ││   Dependency Metrics:                                   │
-│   0%                                                   ││   • Tasks with no dependencies: 3                      │
-│   Done: 0  In Progress: 0  Pending: 24  Blocked: 0     ││   • Tasks ready to work on: 3                          │
-│   Deferred: 0  Cancelled: 0                             ││   • Tasks blocked by dependencies: 21                    │
-│                                                         ││   • Most depended-on task: #2 (14 dependents)           │
-│   Subtasks Progress: ░░░░░░░░░░░░░░░░░░░░     ││   • Avg dependencies per task: 2.5                      │
-│   0% 0%                                               ││                                                         │
-│   Completed: 0/0  In Progress: 0  Pending: 0      ││   Next Task to Work On:                                 │
-│   Blocked: 0  Deferred: 0  Cancelled: 0                 ││   ID: 1 - Implement CSV/Excel Import System     │
-│                                                         ││   Priority: high  Dependencies: None                    │
-│   Priority Breakdown:                                   ││   Complexity: N/A                                       │
-│   • High priority: 9                                   │╰─────────────────────────────────────────────────────────╯
-│   • Medium priority: 14                                 │
-│   • Low priority: 1                                     │
-│                                                         │
-╰─────────────────────────────────────────────────────────╯
-┌───────────┬──────────────────────────────────────┬─────────────────┬──────────────┬───────────────────────┬───────────┐
-│ ID        │ Title                                │ Status          │ Priority     │ Dependencies          │ Complexi… │
-├───────────┼──────────────────────────────────────┼─────────────────┼──────────────┼───────────────────────┼───────────┤
-│ 1         │ Implement CSV/Excel Import System    │ ○ pending       │ high         │ None                  │ N/A       │
-├───────────┼──────────────────────────────────────┼─────────────────┼──────────────┼───────────────────────┼───────────┤
-│ 2         │ Implement Multi-Format Export System │ ○ pending       │ high         │ None                  │ N/A       │
-├───────────┼──────────────────────────────────────┼─────────────────┼──────────────┼───────────────────────┼───────────┤
-│ 3         │ Create Data Import Templates and Map │ ○ pending       │ medium       │ 1                     │ N/A       │
-├───────────┼──────────────────────────────────────┼─────────────────┼──────────────┼───────────────────────┼───────────┤
-│ 4         │ Implement Import Validation and Erro │ ○ pending       │ high         │ 1, 3                  │ N/A       │
-├───────────┼──────────────────────────────────────┼─────────────────┼──────────────┼───────────────────────┼───────────┤
-│ 5         │ Build Scheduled Export System        │ ○ pending       │ medium       │ 2                     │ N/A       │
-├───────────┼──────────────────────────────────────┼─────────────────┼──────────────┼───────────────────────┼───────────┤
-│ 6         │ Implement Automated Database Backup  │ ○ pending       │ high         │ None                  │ N/A       │
-├───────────┼──────────────────────────────────────┼─────────────────┼──────────────┼───────────────────────┼───────────┤
-│ 7         │ Build Point-in-Time Recovery System  │ ○ pending       │ high         │ 6                     │ N/A       │
-├───────────┼──────────────────────────────────────┼─────────────────┼──────────────┼───────────────────────┼───────────┤
-│ 8         │ Create Backup Restoration Interface  │ ○ pending       │ medium       │ 6, 7                  │ N/A       │
-├───────────┼──────────────────────────────────────┼─────────────────┼──────────────┼───────────────────────┼───────────┤
-│ 9         │ Implement Disaster Recovery Procedur │ ○ pending       │ medium       │ 6, 7, 8               │ N/A       │
-├───────────┼──────────────────────────────────────┼─────────────────┼──────────────┼───────────────────────┼───────────┤
-│ 10        │ Build Backup Testing and Validation  │ ○ pending       │ medium       │ 6, 8                  │ N/A       │
-├───────────┼──────────────────────────────────────┼─────────────────┼──────────────┼───────────────────────┼───────────┤
-│ 11        │ Build Advanced Analytics Dashboard   │ ○ pending       │ high         │ 2, 5                  │ N/A       │
-├───────────┼──────────────────────────────────────┼─────────────────┼──────────────┼───────────────────────┼───────────┤
-│ 12        │ Implement Custom Report Builder      │ ○ pending       │ high         │ 2, 5, 11              │ N/A       │
-├───────────┼──────────────────────────────────────┼─────────────────┼──────────────┼───────────────────────┼───────────┤
-│ 13        │ Build Scheduled Report Generation Sy │ ○ pending       │ medium       │ 2, 5, 11, 12          │ N/A       │
-├───────────┼──────────────────────────────────────┼─────────────────┼──────────────┼───────────────────────┼───────────┤
-│ 14        │ Create Performance Metrics and KPI S │ ○ pending       │ medium       │ 2, 11                 │ N/A       │
-├───────────┼──────────────────────────────────────┼─────────────────┼──────────────┼───────────────────────┼───────────┤
-│ 15        │ Implement Data Visualization System  │ ○ pending       │ medium       │ 2, 11                 │ N/A       │
-├───────────┼──────────────────────────────────────┼─────────────────┼──────────────┼───────────────────────┼───────────┤
-│ 16        │ Build Migration System from Other Pr │ ○ pending       │ medium       │ 1, 2, 3               │ N/A       │
-├───────────┼──────────────────────────────────────┼─────────────────┼──────────────┼───────────────────────┼───────────┤
-│ 17        │ Create Data Transformation Utilities │ ○ pending       │ medium       │ 1, 2, 3               │ N/A       │
-├───────────┼──────────────────────────────────────┼─────────────────┼──────────────┼───────────────────────┼───────────┤
-│ 18        │ Implement Migration Validation Syste │ ○ pending       │ medium       │ 1, 2, 7, 16, 17       │ N/A       │
-├───────────┼──────────────────────────────────────┼─────────────────┼──────────────┼───────────────────────┼───────────┤
-│ 19        │ Build Migration Rollback System      │ ○ pending       │ low          │ 16, 18, 6, 7          │ N/A       │
-├───────────┼──────────────────────────────────────┼─────────────────┼──────────────┼───────────────────────┼───────────┤
-│ 20        │ Implement GDPR Compliance Features   │ ○ pending       │ high         │ 1, 2, 4               │ N/A       │
-├───────────┼──────────────────────────────────────┼─────────────────┼──────────────┼───────────────────────┼───────────┤
-│ 21        │ Create Data Retention Policy System  │ ○ pending       │ medium       │ 1, 2, 6, 20           │ N/A       │
-├───────────┼──────────────────────────────────────┼─────────────────┼──────────────┼───────────────────────┼───────────┤
-│ 22        │ Implement Right to be Forgotten Syst │ ○ pending       │ high         │ 20, 2, 4              │ N/A       │
-├───────────┼──────────────────────────────────────┼─────────────────┼──────────────┼───────────────────────┼───────────┤
-│ 23        │ Build Data Anonymization System      │ ○ pending       │ medium       │ 1, 2, 6, 7            │ N/A       │
-├───────────┼──────────────────────────────────────┼─────────────────┼──────────────┼───────────────────────┼───────────┤
-│ 24        │ Create Compliance Reporting System   │ ○ pending       │ medium       │ 20, 22, 2, 4, 6, 21   │ N/A       │
-└───────────┴──────────────────────────────────────┴─────────────────┴──────────────┴───────────────────────┴───────────┘
+### 3. Database Setup
+
+Run the database migrations to set up your schema:
+
+```bash
+cd apps/web && pnpm migration:run
 ```
 
-╭────────────────────────────────────────────── ⚡ RECOMMENDED NEXT TASK ⚡ ──────────────────────────────────────────────╮
-│                                                                                                                         │
-│  🔥 Next Task to Work On: #1 - Implement CSV/Excel Import System                                  │
-│                                                                                                                         │
-│  Priority: high   Status: ○ pending                                                                                     │
-│  Dependencies: None                                                                                                     │
-│                                                                                                                         │
-│  Description: Build comprehensive functionality to import bulk data from CSV and Excel files with column mapping, validation, and error handling for users, projects, tickets, and time tracking data.     │
-│                                                                                                                         │
-│  Start working: task-master set-status --id=1 --status=in-progress                                                     │
-│  View details: task-master show 1                                                                      │
-│                                                                                                                         │
-╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+### 4. Start Development Server
 
+```bash
+pnpm dev
+```
 
-╭──────────────────────────────────────────────────────────────────────────────────────╮
-│                                                                                      │
-│   Suggested Next Steps:                                                              │
-│                                                                                      │
-│   1. Run task-master next to see what to work on next                                │
-│   2. Run task-master expand --id=<id> to break down a task into subtasks             │
-│   3. Run task-master set-status --id=<id> --status=done to mark a task as complete   │
-│                                                                                      │
-╰──────────────────────────────────────────────────────────────────────────────────────╯
+The application will be available at [http://localhost:4649](http://localhost:4649)
 
-> 📋 **End of Taskmaster Export** - Tasks are synced from your project using the `sync-readme` command.
-<!-- TASKMASTER_EXPORT_END -->
+## 📋 Available Commands
 
+### Root Level Commands
+
+```bash
+# Start all development servers
+pnpm dev
+
+# Build all applications for production
+pnpm build
+
+# Run linting across all packages
+pnpm lint
+
+# Format code with prettier
+pnpm format
+```
+
+### Web App Commands
+
+```bash
+cd apps/web
+
+# Start development server with Turbopack
+pnpm dev
+
+# Build for production
+pnpm build
+
+# Run type checking
+pnpm typecheck
+
+# Run and fix linting issues
+pnpm lint:fix
+
+# Generate new database migration
+pnpm migration:generate
+
+# Apply database migrations
+pnpm migration:run
+```
+
+## 🔐 Authentication & Authorization
+
+PulseTrack uses Supabase Auth with a comprehensive role-based access control system:
+
+### User Roles (Hierarchical)
+- **Super Admin**: Global system access
+- **System Admin**: Multi-company management
+- **Company Admin**: Company-wide management
+- **Manager**: Project and team management
+- **User**: Basic project access
+
+### Data Isolation
+- Company-based data isolation using Row Level Security (RLS)
+- Users can only access data within their company
+- Admins have appropriate cross-company access based on role
+
+For detailed authentication flows, see [docs/authentication.md](./docs/authentication.md)
+
+## 💾 Database Schema
+
+The application uses PostgreSQL with Drizzle ORM for type-safe database operations. Key entities include:
+
+- **Companies**: Multi-tenant organization structure
+- **Users**: Authentication and role management
+- **Projects**: Work organization with team access
+- **Tickets**: Task tracking with status and priority
+- **Time Entries**: Time tracking linked to tickets
+- **Billing**: Automated billing calculations and invoice generation
+
+For complete schema documentation, see [docs/database-schema.md](./docs/database-schema.md)
+
+## 🎯 Key Features Detail
+
+### Project Management
+- Create projects with team member assignment
+- Role-based project access (public, company, private)
+- Project-specific billing rates and settings
+
+### Ticket Tracking
+- Kanban board with drag-and-drop reordering
+- Status tracking (New → In Progress → Review → Done)
+- Priority levels (Low, Medium, High, Critical)
+- Assignment and due date management
+- Complete change history logging
+
+### Time Tracking
+- Start/stop timers linked to specific tickets
+- Manual time entry with duration
+- Automatic billing rate calculation
+- Time entry validation and integrity checks
+
+### Billing System
+- Automatic billing period generation
+- Flexible billing rates (per-user, per-project, company default)
+- Invoice generation with PDF export
+- Payment status tracking and history
+- Outstanding payment management
+
+## 🔧 Configuration
+
+### Deployment Configuration
+
+The app supports both standalone and proxy deployments:
+
+```javascript
+// next.config.mjs
+const nextConfig = {
+  basePath: "/pulse",      // For proxy deployment
+  assetPrefix: "/pulse",   // Ensures assets load correctly
+}
+```
+
+### Theme Configuration
+
+Built-in dark/light mode with system preference detection:
+- Uses `next-themes` for theme management
+- Tailwind CSS with CSS variables for theme colors
+- Persistent theme selection per user
+
+## 📚 Documentation
+
+Comprehensive documentation is available in the [`docs/`](./docs/) directory:
+
+- **[Authentication Guide](./docs/authentication.md)** - Auth flows and security
+- **[Database Schema](./docs/database-schema.md)** - Complete database structure
+- **[API Reference](./docs/api-endpoints.md)** - API endpoints and usage
+- **[Role System](./docs/role-system.md)** - Access control and permissions
+
+## 🧪 Testing
+
+### Development Testing Commands
+
+```bash
+# Check TypeScript compilation
+cd apps/web && pnpm typecheck
+
+# Run linting
+pnpm lint
+
+# Test database connections
+node apps/web/tests/check/check-database.cjs
+
+# Test invitation flow
+node apps/web/tests/test/test-invitation-flow.cjs
+```
+
+### Database Health Checks
+
+```javascript
+// Check for data integrity issues
+import { checkTimeEntryIntegrity } from '@/lib/db/service';
+
+const issues = await checkTimeEntryIntegrity('company-id');
+console.log('Database health:', issues);
+```
+
+## 🚀 Deployment
+
+### Vercel Deployment
+
+1. **Connect Repository**: Link your GitHub repository to Vercel
+2. **Environment Variables**: Add your Supabase credentials to Vercel
+3. **Build Settings**: Turbo automatically handles the build process
+4. **Domain Configuration**: Set up custom domain if needed
+
+### Environment Variables for Production
+
+```env
+NEXT_PUBLIC_SUPABASE_URL=your_production_supabase_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_production_anon_key
+SUPABASE_SERVICE_ROLE_KEY=your_production_service_role_key
+NEXT_PUBLIC_SITE_URL=https://your-domain.com
+```
+
+## 🔒 Security
+
+- **Row Level Security**: Database-level access control
+- **Authentication**: Supabase Auth with secure session management
+- **CORS**: Properly configured API access
+- **Input Validation**: Zod schema validation on all forms
+- **SQL Injection Prevention**: Parameterized queries via Drizzle ORM
+
+## 🤝 Contributing
+
+1. **Fork the Repository**
+2. **Create Feature Branch**: `git checkout -b feature/amazing-feature`
+3. **Make Changes**: Follow existing code conventions
+4. **Run Tests**: `pnpm typecheck && pnpm lint`
+5. **Commit Changes**: `git commit -m 'Add amazing feature'`
+6. **Push to Branch**: `git push origin feature/amazing-feature`
+7. **Open Pull Request**
+
+### Development Guidelines
+
+- Follow existing code patterns and conventions
+- Use TypeScript for all new code
+- Add appropriate error handling
+- Update documentation for new features
+- Ensure all tests pass before submitting
+
+## 📄 License
+
+This project is proprietary software. All rights reserved.
+
+## 🐛 Troubleshooting
+
+### Common Issues
+
+**Authentication Problems:**
+- Verify Supabase credentials in `.env.local`
+- Check Supabase project settings and RLS policies
+- Ensure database migrations are applied
+
+**Build Errors:**
+- Run `pnpm typecheck` to identify TypeScript issues
+- Check for missing dependencies with `pnpm install`
+- Verify Node.js version compatibility (20+)
+
+**Database Issues:**
+- Apply pending migrations: `cd apps/web && pnpm migration:run`
+- Check database connection in Supabase dashboard
+- Verify RLS policies are properly configured
+
+For additional troubleshooting, see the [documentation](./docs/) or check the existing issues in the repository.
+
+---
+
+**Built with ❤️ by the PulseTrack team**
