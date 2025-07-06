@@ -292,14 +292,17 @@ export async function getCompanyBillingSettings(companyId: string) {
 }
 
 export async function createCompanyBillingSettings(data: NewCompanyBillingSettings) {
+    // Filter out undefined values
+    const filteredData: Record<string, any> = {};
+    Object.entries(data).forEach(([key, value]) => {
+        if (value !== undefined) {
+            filteredData[key] = value;
+        }
+    });
+
     const { data: result, error } = await supabase
         .from('company_billing_settings')
-        .insert({
-            company_id: data.company_id,
-            currency: data.currency,
-            billing_frequency: data.billing_frequency,
-            invoice_prefix: data.invoice_prefix,
-        })
+        .insert(filteredData)
         .select()
         .maybeSingle();
     if (error) throw error;
@@ -307,13 +310,17 @@ export async function createCompanyBillingSettings(data: NewCompanyBillingSettin
 }
 
 export async function updateCompanyBillingSettings(companyId: string, updates: Partial<NewCompanyBillingSettings>) {
+    // Filter out undefined values and company_id from updates
+    const filteredUpdates: Record<string, any> = {};
+    Object.entries(updates).forEach(([key, value]) => {
+        if (value !== undefined && key !== 'company_id') {
+            filteredUpdates[key] = value;
+        }
+    });
+
     const { data, error } = await supabase
         .from('company_billing_settings')
-        .update({
-            currency: updates.currency,
-            billing_frequency: updates.billing_frequency,
-            invoice_prefix: updates.invoice_prefix,
-        })
+        .update(filteredUpdates)
         .eq('company_id', companyId)
         .select()
         .maybeSingle();
