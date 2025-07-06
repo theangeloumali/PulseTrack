@@ -80,8 +80,13 @@ export function TimeDetailView({
                 const amount = ticketEntry.amount || 0;
                 const rate = hours > 0 ? amount / hours : 0;
                 
+                // Create a unique ID that includes the index to prevent duplicates
+                const uniqueId = ticketEntry.timeEntryId 
+                  ? `entry-${ticketEntry.timeEntryId}`
+                  : `${date}-${userId}-${projectId}-${ticketEntry.ticketId || 'unknown'}-${index}`;
+                
                 entries.push({
-                  id: `${date}-${userId}-${projectId}-${ticketEntry.ticketId || index}`,
+                  id: uniqueId,
                   date,
                   userId,
                   userName,
@@ -98,14 +103,14 @@ export function TimeDetailView({
               });
             } else if (projectData.tickets && typeof projectData.tickets === 'object') {
               // Old structure: tickets is an object with ticket IDs as keys
-              Object.entries(projectData.tickets).forEach(([ticketId, ticketData]: [string, any]) => {
+              Object.entries(projectData.tickets).forEach(([ticketId, ticketData]: [string, any], index: number) => {
                 const ticketTitle = ticketData.title || `Ticket ${ticketId.slice(0, 8)}`;
                 const hours = ticketData.totalHours || 0;
                 const rate = ticketData.hourlyRate || 0;
                 const amount = hours * rate;
                 
                 entries.push({
-                  id: `${date}-${userId}-${projectId}-${ticketId}`,
+                  id: `legacy-${date}-${userId}-${projectId}-${ticketId}-${index}`,
                   date,
                   userId,
                   userName,
@@ -128,7 +133,7 @@ export function TimeDetailView({
               
               if (hours > 0) {
                 entries.push({
-                  id: `${date}-${userId}-${projectId}`,
+                  id: `project-${date}-${userId}-${projectId}`,
                   date,
                   userId,
                   userName,
@@ -151,7 +156,7 @@ export function TimeDetailView({
           
           if (hours > 0) {
             entries.push({
-              id: `${date}-${userId}`,
+              id: `user-${date}-${userId}`,
               date,
               userId,
               userName,

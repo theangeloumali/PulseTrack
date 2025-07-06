@@ -21,6 +21,7 @@ import {
 import { useBillingSettings, useBillingReport } from '@/lib/hooks/useBilling';
 import { extractTargetUserIdFromBillingPeriod } from '@/lib/db/billing-service';
 import type { BillingPeriod, BillingFrequency } from '@/lib/db/schema';
+import { getApiPath } from '@/lib/utils';
 import { format, startOfMonth, endOfMonth } from 'date-fns';
 import { 
   Plus, 
@@ -171,7 +172,7 @@ export function BillingPeriodsList({ companyId, isAdmin }: BillingPeriodsListPro
     setRecalculatingPeriods(prev => new Set(prev).add(period.id));
     
     try {
-      const response = await fetch('/api/billing/periods', {
+      const response = await fetch(getApiPath('billing/periods'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

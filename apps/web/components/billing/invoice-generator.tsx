@@ -205,9 +205,8 @@ export function InvoiceGenerator({
     <div class="invoice-details">
         <div class="company-info">
             <h3>From:</h3>
-            <p><strong>Your Company</strong></p>
-            <p>123 Business Street</p>
-            <p>City, State 12345</p>
+            <p><strong>ZKidzDev</strong></p>
+            <p>Quezon City</p>
         </div>
         <div class="billing-info">
             <h3>Bill To:</h3>
