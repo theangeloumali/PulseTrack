@@ -45,16 +45,16 @@ export function useBillingReport(companyId: string, startDate: string, endDate: 
             if (targetUserId) {
                 apiPath += `&targetUserId=${targetUserId}`;
             }
-            console.log('🔍 Fetching billing report from:', apiPath);
+            
             const response = await fetch(apiPath);
             if (!response.ok) {
                 const errorText = await response.text();
-                console.error('❌ Billing report API error:', response.status, errorText);
                 throw new Error(`Failed to fetch billing report: ${response.status} ${errorText}`);
             }
+            
             return response.json();
         },
-        enabled: !!companyId && !!startDate && !!endDate, // Only run if all parameters are available
+        enabled: !!companyId && !!startDate && !!endDate,
     });
 }
 

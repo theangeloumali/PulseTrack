@@ -705,8 +705,6 @@ export async function generateBillingReport(
     endDate: string, 
     targetUserId?: string
 ) {
-    console.log('📊 Starting billing report generation:', { companyId, startDate, endDate, targetUserId });
-    
     try {
         // Fetch all required data - use user-specific function if targetUserId provided
         const timeEntries = targetUserId 
@@ -714,14 +712,8 @@ export async function generateBillingReport(
             : await getTimeEntriesForBilling(companyId, startDate, endDate);
         const billingRates = await getBillingRatesByCompany(companyId);
         const companySettings = await getCompanyBillingSettings(companyId);
-        
-        console.log('📋 Data fetched:');
-        console.log(`  - Time Entries: ${timeEntries?.length || 0}`);
-        console.log(`  - Billing Rates: ${billingRates?.length || 0}`);
-        console.log(`  - Company Settings: ${companySettings ? 'Found' : 'Not found'}`);
 
         if (!timeEntries || timeEntries.length === 0) {
-            console.log('⚠️ No time entries found, returning empty report');
             return {};
         }
 
@@ -985,7 +977,9 @@ export async function recalculateBillingPeriodAmount(
 
 // Helper function to extract target user ID from billing period notes
 export function extractTargetUserIdFromBillingPeriod(billingPeriod: any): string | null {
-    if (!billingPeriod?.notes) return null;
+    if (!billingPeriod?.notes) {
+        return null;
+    }
     
     // Parse the notes field to extract user ID
     // Format: "Generated for user: FirstName LastName (user-id)"
@@ -1272,6 +1266,7 @@ export async function generateBillingPeriodForUserWithCustomDates(
         status: 'active',
         payment_status: 'pending',
         created_by: createdByUserId || null,
+        notes: `Generated for user: ${targetUser.first_name} ${targetUser.last_name} (${targetUser.id})`
     };
     
     // Create the billing period first
