@@ -309,7 +309,7 @@ export interface ActivityWithUser extends Activity {
 export interface PaymentHistory extends BaseRecord {
   billing_period_id: string
   user_id: string
-  action: 'status_changed' | 'invoice_sent' | 'payment_received' | 'due_date_set' | 'notes_updated'
+  action: 'status_changed' | 'invoice_sent' | 'payment_received' | 'due_date_set' | 'notes_updated' | 'outstanding_payment_deletion' | 'bulk_payment_history_deletion' | 'payment_status_reset'
   old_value?: string | null
   new_value?: string | null
   notes?: string | null
@@ -318,7 +318,7 @@ export interface PaymentHistory extends BaseRecord {
 export interface NewPaymentHistory {
   billing_period_id: string
   user_id: string
-  action: 'status_changed' | 'invoice_sent' | 'payment_received' | 'due_date_set' | 'notes_updated'
+  action: 'status_changed' | 'invoice_sent' | 'payment_received' | 'due_date_set' | 'notes_updated' | 'outstanding_payment_deletion' | 'bulk_payment_history_deletion' | 'payment_status_reset'
   old_value?: string | null
   new_value?: string | null
   notes?: string | null

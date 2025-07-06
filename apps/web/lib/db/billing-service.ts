@@ -671,31 +671,58 @@ export async function generateBillingReport(
         let processedEntries = 0;
         let skippedEntries = 0;
 
+        // Add detailed logging for the first few entries to understand data structure
+        if (timeEntries.length > 0) {
+            console.log('🔍 Sample time entry structure:', JSON.stringify(timeEntries[0], null, 2));
+        }
+
         timeEntries.forEach((entry, index) => {
             try {
-                if (!entry.user || !entry.ticket || !entry.project) {
+                // Debug log for problematic entries
+                if (index < 3 || (!entry.users && !entry.user) || (!entry.tickets && !entry.ticket)) {
+                    console.log(`🔍 Entry ${index} structure:`, {
+                        id: entry.id,
+                        hasUsers: !!entry.users,
+                        hasUser: !!entry.user,
+                        hasTickets: !!entry.tickets,
+                        hasTicket: !!entry.ticket,
+                        ticketsStructure: entry.tickets ? Object.keys(entry.tickets) : 'null',
+                        usersStructure: entry.users ? Object.keys(entry.users) : 'null'
+                    });
+                }
+
+                // Fix the data structure access - Supabase returns 'users' and 'tickets', not 'user' and 'ticket'
+                const user = entry.users || entry.user;
+                const ticket = entry.tickets || entry.ticket;
+                const project = ticket?.projects || entry.project;
+
+                if (!user || !ticket || !project) {
                     console.warn(`⚠️ Skipping entry ${index} due to missing data:`, {
                         id: entry.id,
-                        hasUser: !!entry.user,
-                        hasTicket: !!entry.ticket,
-                        hasProject: !!entry.project
+                        hasUser: !!user,
+                        hasTicket: !!ticket,
+                        hasProject: !!project,
+                        ticketStructure: ticket ? Object.keys(ticket) : 'null'
                     });
                     skippedEntries++;
                     return;
                 }
 
                 const entryDate = format(new Date(entry.start_time), 'yyyy-MM-dd');
-                const user = entry.user;
                 const userId = user.id;
-                const project = Array.isArray(entry.project) ? entry.project[0] : entry.project;
-                if (!project) {
-                    console.warn(`⚠️ Skipping entry ${index} due to missing project:`, entry.id);
+                // Handle project data - it might be nested under ticket.projects
+                const projectData = Array.isArray(project) ? project[0] : project;
+                if (!projectData) {
+                    console.warn(`⚠️ Skipping entry ${index} due to missing project data:`, {
+                        entryId: entry.id,
+                        projectStructure: project ? (Array.isArray(project) ? 'array' : 'object') : 'null'
+                    });
                     skippedEntries++;
                     return;
                 }
-                const projectId = project.id;
-                const ticketId = entry.ticket.id;
-                const ticketTitle = entry.ticket.title;
+                const projectId = projectData.id;
+                const ticketId = ticket.id;
+                const ticketTitle = ticket.title;
                 const durationHours = entry.duration || 0;
 
                 if (durationHours <= 0) {
@@ -759,7 +786,7 @@ export async function generateBillingReport(
                 }
                 if (!report[entryDate][userId].projects[projectId]) {
                     report[entryDate][userId].projects[projectId] = {
-                        projectName: project.name || 'Unknown Project',
+                        projectName: projectData.name || 'Unknown Project',
                         totalHours: 0,
                         totalAmount: 0,
                         tickets: [],

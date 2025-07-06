@@ -393,7 +393,7 @@ export async function updateTicket(id: string, data: Partial<NewTicket>, updated
   
   if (error) throw error
   
-  // Log ticket update activity
+  // Log ticket update activity and history
   if (currentTicket && result && updatedBy) {
     try {
       await logTicketUpdated(id, result.project_id, updatedBy, result.title, data)
@@ -402,8 +402,25 @@ export async function updateTicket(id: string, data: Partial<NewTicket>, updated
       if (data.assignee_id && data.assignee_id !== currentTicket.assignee_id) {
         await logTicketAssigned(id, result.project_id, updatedBy, data.assignee_id, result.title)
       }
+
+      // Log detailed field changes in ticket history
+      const fieldMappings = [
+        { field: 'title', oldValue: currentTicket.title, newValue: data.title },
+        { field: 'description', oldValue: currentTicket.description, newValue: data.description },
+        { field: 'status', oldValue: currentTicket.status, newValue: data.status },
+        { field: 'priority', oldValue: currentTicket.priority, newValue: data.priority },
+        { field: 'assignee_id', oldValue: currentTicket.assignee_id, newValue: data.assignee_id },
+        { field: 'due_date', oldValue: currentTicket.due_date, newValue: data.due_date },
+      ]
+
+      // Log changes for each field that was updated
+      for (const { field, oldValue, newValue } of fieldMappings) {
+        if (newValue !== undefined && oldValue !== newValue) {
+          await logTicketFieldChange(id, updatedBy, field, oldValue, newValue)
+        }
+      }
     } catch (activityError) {
-      console.error('Failed to log ticket update activity:', activityError)
+      console.error('Failed to log ticket update activity or history:', activityError)
     }
   }
   
@@ -1519,4 +1536,254 @@ export async function logTimeEntryCreated(projectId: string, ticketId: string, u
     description: `${hours} hours logged on ticket "${ticketTitle}"`,
     metadata: { ticketTitle, duration, hours }
   })
+}
+
+// ==============================================
+// TICKET HISTORY FUNCTIONS
+// ==============================================
+
+/**
+ * Create a ticket history entry
+ */
+export async function createTicketHistory(data: NewTicketHistory) {
+  const { data: result, error } = await supabase
+    .from('ticket_history')
+    .insert(data)
+    .select()
+    .single()
+  
+  if (error) throw error
+  return result
+}
+
+/**
+ * Get ticket history for a specific ticket
+ */
+export async function getTicketHistory(ticketId: string) {
+  const { data, error } = await supabase
+    .from('ticket_history')
+    .select(`
+      *,
+      users(first_name, last_name, email)
+    `)
+    .eq('ticket_id', ticketId)
+    .order('created_at', { ascending: false })
+  
+  if (error) throw error
+  return data || []
+}
+
+/**
+ * Log ticket field changes
+ */
+export async function logTicketFieldChange(
+  ticketId: string, 
+  userId: string, 
+  fieldName: string, 
+  oldValue: string | null, 
+  newValue: string | null
+) {
+  // Only log if values are actually different
+  if (oldValue === newValue) return null
+  
+  return await createTicketHistory({
+    ticket_id: ticketId,
+    user_id: userId,
+    field_name: fieldName,
+    old_value: oldValue,
+    new_value: newValue
+  })
+}
+
+// ==============================================
+// DATABASE HEALTH CHECK FUNCTIONS
+// ==============================================
+
+/**
+ * Check for orphaned time entries and provide repair suggestions
+ */
+export async function checkTimeEntryIntegrity(companyId: string) {
+  console.log('🔍 Running time entry integrity check for company:', companyId);
+  
+  const issues = {
+    orphanedEntries: [],
+    missingUsers: [],
+    missingTickets: [],
+    missingProjects: [],
+    summary: {
+      totalChecked: 0,
+      totalIssues: 0,
+      orphanedCount: 0
+    }
+  };
+
+  try {
+    // Get all time entries for the company
+    const { data: timeEntries, error: entriesError } = await supabase
+      .from('time_entries')
+      .select(`
+        id,
+        user_id,
+        ticket_id,
+        start_time,
+        duration,
+        tickets!left (
+          id,
+          title,
+          deleted_at,
+          projects!left (
+            id,
+            name,
+            company_id
+          )
+        ),
+        users!left (
+          id,
+          first_name,
+          last_name
+        )
+      `)
+      .eq('tickets.projects.company_id', companyId)
+      .not('duration', 'is', null)
+      .gt('duration', 0);
+
+    if (entriesError) {
+      throw new Error(`Failed to fetch time entries: ${entriesError.message}`);
+    }
+
+    issues.summary.totalChecked = timeEntries?.length || 0;
+
+    if (!timeEntries || timeEntries.length === 0) {
+      console.log('✅ No time entries found for this company');
+      return issues;
+    }
+
+    timeEntries.forEach((entry, index) => {
+      let hasIssues = false;
+
+      // Check for missing user
+      if (!entry.users) {
+        issues.missingUsers.push({
+          timeEntryId: entry.id,
+          userId: entry.user_id,
+          startTime: entry.start_time
+        });
+        hasIssues = true;
+      }
+
+      // Check for missing ticket
+      if (!entry.tickets) {
+        issues.missingTickets.push({
+          timeEntryId: entry.id,
+          ticketId: entry.ticket_id,
+          startTime: entry.start_time
+        });
+        hasIssues = true;
+      } else {
+        // Check for missing project (if ticket exists)
+        if (!entry.tickets.projects) {
+          issues.missingProjects.push({
+            timeEntryId: entry.id,
+            ticketId: entry.ticket_id,
+            ticketTitle: entry.tickets.title,
+            startTime: entry.start_time
+          });
+          hasIssues = true;
+        }
+      }
+
+      // Check for completely orphaned entries
+      if (!entry.users && !entry.tickets) {
+        issues.orphanedEntries.push({
+          timeEntryId: entry.id,
+          userId: entry.user_id,
+          ticketId: entry.ticket_id,
+          startTime: entry.start_time,
+          duration: entry.duration
+        });
+        hasIssues = true;
+      }
+
+      if (hasIssues) {
+        issues.summary.totalIssues++;
+      }
+    });
+
+    issues.summary.orphanedCount = issues.orphanedEntries.length;
+
+    console.log('📊 Time entry integrity check results:', {
+      totalChecked: issues.summary.totalChecked,
+      totalIssues: issues.summary.totalIssues,
+      orphanedEntries: issues.orphanedEntries.length,
+      missingUsers: issues.missingUsers.length,
+      missingTickets: issues.missingTickets.length,
+      missingProjects: issues.missingProjects.length
+    });
+
+    return issues;
+  } catch (error) {
+    console.error('❌ Error during time entry integrity check:', error);
+    throw error;
+  }
+}
+
+/**
+ * Clean up orphaned time entries (use with caution)
+ */
+export async function cleanupOrphanedTimeEntries(companyId: string, dryRun: boolean = true) {
+  console.log('🧹 Starting orphaned time entries cleanup (dry run:', dryRun, ')');
+  
+  const integrityCheck = await checkTimeEntryIntegrity(companyId);
+  const cleanupResults = {
+    deletedEntries: [],
+    errors: [],
+    summary: {
+      totalDeleted: 0,
+      totalErrors: 0
+    }
+  };
+
+  if (integrityCheck.orphanedEntries.length === 0) {
+    console.log('✅ No orphaned time entries found to clean up');
+    return cleanupResults;
+  }
+
+  if (dryRun) {
+    console.log('🔍 DRY RUN - Would delete the following orphaned entries:', 
+      integrityCheck.orphanedEntries.map(e => e.timeEntryId));
+    return {
+      ...cleanupResults,
+      wouldDelete: integrityCheck.orphanedEntries
+    };
+  }
+
+  // Actual deletion (only if dryRun is false)
+  for (const orphanedEntry of integrityCheck.orphanedEntries) {
+    try {
+      const { error } = await supabase
+        .from('time_entries')
+        .delete()
+        .eq('id', orphanedEntry.timeEntryId);
+
+      if (error) {
+        cleanupResults.errors.push({
+          timeEntryId: orphanedEntry.timeEntryId,
+          error: error.message
+        });
+        cleanupResults.summary.totalErrors++;
+      } else {
+        cleanupResults.deletedEntries.push(orphanedEntry.timeEntryId);
+        cleanupResults.summary.totalDeleted++;
+      }
+    } catch (error) {
+      cleanupResults.errors.push({
+        timeEntryId: orphanedEntry.timeEntryId,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+      cleanupResults.summary.totalErrors++;
+    }
+  }
+
+  console.log('✅ Cleanup completed:', cleanupResults.summary);
+  return cleanupResults;
 }
