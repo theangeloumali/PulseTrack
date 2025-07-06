@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import { Button } from '@workspace/ui/components/button';
 import { useAuthStore } from '@/lib/stores/auth';
@@ -60,9 +61,15 @@ export function SidebarLayout({ children }: SidebarLayoutProps) {
 				<div className='flex flex-col h-full'>
 					{/* Logo/Header */}
 					<div className='flex items-center justify-between h-14 px-4 border-b border-sidebar-border'>
-						<Link href='/dashboard' className='flex items-center space-x-2'>
-							<div className='w-8 h-8 bg-sidebar-primary rounded-lg flex items-center justify-center'>
-								<Ticket className='h-5 w-5 text-sidebar-primary-foreground' />
+						<Link href='/dashboard' className='flex items-center space-x-3'>
+							<div className='w-8 h-8 relative'>
+								<Image
+									src='/pulse/app-logo.png'
+									alt='PulseTrack Logo'
+									width={32}
+									height={32}
+									className='rounded-lg'
+								/>
 							</div>
 							<span className='text-xl font-bold text-sidebar-foreground'>PulseTrack</span>
 						</Link>
