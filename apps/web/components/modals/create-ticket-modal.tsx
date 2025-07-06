@@ -1,16 +1,16 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { Button } from '@workspace/ui/components/button';
-import { Input } from '@workspace/ui/components/input';
-import { Label } from '@workspace/ui/components/label';
-import { RichTextEditor } from '@/components/ui/rich-text-editor';
-import { Modal } from '@/components/ui/modal';
-import { useCreateTicketMutation } from '@/lib/hooks/useTickets';
-import { useProjectsQuery } from '@/lib/hooks/useProjects';
-import { useAuthStore } from '@/lib/stores/auth';
-import { TicketPriority, TicketStatus } from '@/lib/db/schema';
-import { Loader2, Save } from 'lucide-react';
+import { useState } from "react";
+import { Button } from "@workspace/ui/components/button";
+import { Input } from "@workspace/ui/components/input";
+import { Label } from "@workspace/ui/components/label";
+import { RichTextEditor } from "@/components/ui/rich-text-editor";
+import { Modal } from "@/components/ui/modal";
+import { useCreateTicketMutation } from "@/lib/hooks/useTickets";
+import { useProjectsQuery } from "@/lib/hooks/useProjects";
+import { useAuthStore } from "@/lib/stores/auth";
+import { TicketPriority, TicketStatus } from "@/lib/db/schema";
+import { Loader2, Save } from "lucide-react";
 
 interface CreateTicketModalProps {
   isOpen: boolean;
@@ -18,42 +18,44 @@ interface CreateTicketModalProps {
   defaultProjectId?: string;
 }
 
-export function CreateTicketModal({ 
-  isOpen, 
-  onClose, 
-  defaultProjectId 
+export function CreateTicketModal({
+  isOpen,
+  onClose,
+  defaultProjectId,
 }: CreateTicketModalProps) {
   const [formData, setFormData] = useState({
-    title: '',
-    description: '',
-    priority: 'medium' as TicketPriority,
-    status: 'new' as TicketStatus,
-    project_id: defaultProjectId || '',
-    assignee_id: '', // Empty means unassigned
+    title: "",
+    description: "",
+    priority: "medium" as TicketPriority,
+    status: "new" as TicketStatus,
+    project_id: defaultProjectId || "",
+    assignee_id: "", // Empty means unassigned
   });
-  const [error, setError] = useState('');
-  
+  const [error, setError] = useState("");
+
   const { user } = useAuthStore();
   const { data: projects = [] } = useProjectsQuery();
   const createTicketMutation = useCreateTicketMutation();
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+  ) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       [name]: value,
     }));
   };
 
   const handleDescriptionChange = (value: string) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       description: value,
     }));
   };
 
   const handleSelectChange = (name: string, value: string) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       [name]: value,
     }));
@@ -61,19 +63,19 @@ export function CreateTicketModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!user) return;
 
-    setError('');
+    setError("");
 
     // Validation according to PRD: tickets require title and project
     if (!formData.title.trim()) {
-      setError('Ticket title is required');
+      setError("Ticket title is required");
       return;
     }
 
     if (!formData.project_id) {
-      setError('Please select a project');
+      setError("Please select a project");
       return;
     }
 
@@ -92,32 +94,32 @@ export function CreateTicketModal({
       };
 
       await createTicketMutation.mutateAsync(ticketData);
-      
+
       // Reset form and close modal
       setFormData({
-        title: '',
-        description: '',
-        priority: 'medium',
-        status: 'new',
-        project_id: defaultProjectId || '',
-        assignee_id: '',
+        title: "",
+        description: "",
+        priority: "medium",
+        status: "new",
+        project_id: defaultProjectId || "",
+        assignee_id: "",
       });
       onClose();
     } catch (err: any) {
-      setError(err.message || 'Failed to create ticket');
+      setError(err.message || "Failed to create ticket");
     }
   };
 
   const handleClose = () => {
     if (!createTicketMutation.isPending) {
-      setError('');
+      setError("");
       setFormData({
-        title: '',
-        description: '',
-        priority: 'medium',
-        status: 'new',
-        project_id: defaultProjectId || '',
-        assignee_id: '',
+        title: "",
+        description: "",
+        priority: "medium",
+        status: "new",
+        project_id: defaultProjectId || "",
+        assignee_id: "",
       });
       onClose();
     }
@@ -147,7 +149,7 @@ export function CreateTicketModal({
             id="project_id"
             name="project_id"
             value={formData.project_id}
-            onChange={(e) => handleSelectChange('project_id', e.target.value)}
+            onChange={(e) => handleSelectChange("project_id", e.target.value)}
             required
             disabled={createTicketMutation.isPending || !!defaultProjectId}
             className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
@@ -192,7 +194,8 @@ export function CreateTicketModal({
             preview="edit"
           />
           <p className="text-xs text-muted-foreground">
-            Supports markdown formatting: **bold**, *italic*, `code`, [links](url), lists, and more.
+            Supports markdown formatting: **bold**, *italic*, `code`,
+            [links](url), lists, and more.
           </p>
         </div>
 
@@ -204,7 +207,7 @@ export function CreateTicketModal({
               id="priority"
               name="priority"
               value={formData.priority}
-              onChange={(e) => handleSelectChange('priority', e.target.value)}
+              onChange={(e) => handleSelectChange("priority", e.target.value)}
               disabled={createTicketMutation.isPending}
               className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
             >
@@ -222,7 +225,7 @@ export function CreateTicketModal({
               id="status"
               name="status"
               value={formData.status}
-              onChange={(e) => handleSelectChange('status', e.target.value)}
+              onChange={(e) => handleSelectChange("status", e.target.value)}
               disabled={createTicketMutation.isPending}
               className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
             >
@@ -235,20 +238,24 @@ export function CreateTicketModal({
         </div>
 
         {/* TODO: Add assignee selection - requires loading team members */}
-        
+
         {/* Form Actions */}
         <div className="flex items-center justify-end space-x-4 pt-6">
-          <Button 
-            type="button" 
-            variant="outline" 
+          <Button
+            type="button"
+            variant="outline"
             onClick={handleClose}
             disabled={createTicketMutation.isPending}
           >
             Cancel
           </Button>
-          <Button 
-            type="submit" 
-            disabled={createTicketMutation.isPending || !formData.title.trim() || !formData.project_id}
+          <Button
+            type="submit"
+            disabled={
+              createTicketMutation.isPending ||
+              !formData.title.trim() ||
+              !formData.project_id
+            }
           >
             {createTicketMutation.isPending ? (
               <>

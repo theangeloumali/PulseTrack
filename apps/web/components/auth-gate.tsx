@@ -1,22 +1,22 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import { useRouter, usePathname } from 'next/navigation';
-import { Loader2 } from 'lucide-react';
-import { useAuthStore } from '@/lib/stores/auth';
+import { useEffect, useState } from "react";
+import { useRouter, usePathname } from "next/navigation";
+import { Loader2 } from "lucide-react";
+import { useAuthStore } from "@/lib/stores/auth";
 
 // Public routes that don't require authentication
 const PUBLIC_ROUTES = [
-  '/login',
-  '/signup', 
-  '/verify-email',
-  '/forgot-password',
-  '/reset-password',
-  '/auth/accept-invitation'
+  "/login",
+  "/signup",
+  "/verify-email",
+  "/forgot-password",
+  "/reset-password",
+  "/auth/accept-invitation",
 ];
 
 // Routes that should redirect to dashboard if user is already authenticated
-const AUTH_ROUTES = ['/login', '/signup'];
+const AUTH_ROUTES = ["/login", "/signup"];
 
 export function AuthGate({ children }: { children: React.ReactNode }) {
   const [isHydrated, setIsHydrated] = useState(false);
@@ -33,7 +33,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
   // Initialize auth when hydrated - do this as early as possible
   useEffect(() => {
     if (isHydrated && !isInitializing && isLoading) {
-      console.log('🔄 AuthGate: Initializing auth...');
+      console.log("🔄 AuthGate: Initializing auth...");
       // Start initialization immediately
       initialize();
     }
@@ -42,7 +42,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
   // Preload critical data when auth completes
   useEffect(() => {
     if (user && !isLoading && !isInitializing) {
-      console.log('🔄 AuthGate: Auth complete, preloading critical data...');
+      console.log("🔄 AuthGate: Auth complete, preloading critical data...");
       // You can add preloading logic here for user projects, notifications, etc.
       // This ensures the dashboard loads faster once the user gets there
     }
@@ -55,16 +55,20 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    const isPublicRoute = PUBLIC_ROUTES.some(route => pathname.startsWith(route));
-    const isAuthRoute = AUTH_ROUTES.some(route => pathname.startsWith(route));
-    const isResetPasswordRoute = pathname.startsWith('/reset-password');
-    const isAcceptInvitationRoute = pathname.startsWith('/auth/accept-invitation');
+    const isPublicRoute = PUBLIC_ROUTES.some((route) =>
+      pathname.startsWith(route),
+    );
+    const isAuthRoute = AUTH_ROUTES.some((route) => pathname.startsWith(route));
+    const isResetPasswordRoute = pathname.startsWith("/reset-password");
+    const isAcceptInvitationRoute = pathname.startsWith(
+      "/auth/accept-invitation",
+    );
 
-    console.log('🔄 AuthGate: Resolving route...', {
+    console.log("🔄 AuthGate: Resolving route...", {
       pathname,
       user: user?.email,
       isPublicRoute,
-      isAuthRoute
+      isAuthRoute,
     });
 
     // Special routes that always allow access
@@ -75,15 +79,19 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
 
     // If user is authenticated and trying to access auth pages, redirect to dashboard
     if (user && isAuthRoute) {
-      console.log('🔄 AuthGate: Authenticated user on auth page, redirecting to dashboard');
-      router.replace('/dashboard');
+      console.log(
+        "🔄 AuthGate: Authenticated user on auth page, redirecting to dashboard",
+      );
+      router.replace("/dashboard");
       return;
     }
 
     // If user is not authenticated and trying to access protected pages, redirect to login
     if (!user && !isPublicRoute) {
-      console.log('🔄 AuthGate: Unauthenticated user on protected page, redirecting to login');
-      router.replace('/login');
+      console.log(
+        "🔄 AuthGate: Unauthenticated user on protected page, redirecting to login",
+      );
+      router.replace("/login");
       return;
     }
 
@@ -100,15 +108,17 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
 }
 
 function AuthLoadingScreen() {
-  const [loadingText, setLoadingText] = useState('Initializing your workspace...');
+  const [loadingText, setLoadingText] = useState(
+    "Initializing your workspace...",
+  );
   const [progress, setProgress] = useState(0);
 
   useEffect(() => {
     const messages = [
-      'Initializing your workspace...',
-      'Loading your projects...',
-      'Setting up your dashboard...',
-      'Almost ready...'
+      "Initializing your workspace...",
+      "Loading your projects...",
+      "Setting up your dashboard...",
+      "Almost ready...",
     ];
 
     let index = 0;
@@ -136,27 +146,28 @@ function AuthLoadingScreen() {
         <div className="mx-auto w-20 h-20 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-2xl flex items-center justify-center shadow-lg animate-in zoom-in duration-300">
           <span className="text-white font-bold text-2xl">PT</span>
         </div>
-        
+
         {/* Loading spinner */}
         <div className="relative animate-in slide-in-from-bottom-4 duration-700 delay-150">
           <Loader2 className="h-10 w-10 animate-spin mx-auto text-blue-600" />
           <div className="absolute inset-0 rounded-full bg-blue-600 opacity-20 animate-ping"></div>
         </div>
-        
+
         {/* Loading text */}
         <div className="space-y-3 animate-in slide-in-from-bottom-4 duration-700 delay-300">
           <p className="text-xl font-semibold text-gray-900 dark:text-gray-100 transition-all duration-500">
             {loadingText}
           </p>
           <p className="text-sm text-gray-600 dark:text-gray-400 max-w-sm mx-auto">
-            PulseTrack is preparing your personalized experience. This will only take a moment.
+            PulseTrack is preparing your personalized experience. This will only
+            take a moment.
           </p>
         </div>
-        
+
         {/* Progress indicator */}
         <div className="w-80 mx-auto space-y-2 animate-in slide-in-from-bottom-4 duration-700 delay-500">
           <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-            <div 
+            <div
               className="h-full bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full transition-all duration-500 ease-out"
               style={{ width: `${progress}%` }}
             ></div>
@@ -166,7 +177,7 @@ function AuthLoadingScreen() {
             <span>{progress}%</span>
           </div>
         </div>
-        
+
         {/* Subtle animation elements */}
         <div className="absolute inset-0 pointer-events-none">
           <div className="absolute top-20 left-20 w-2 h-2 bg-blue-400 rounded-full animate-pulse opacity-40"></div>

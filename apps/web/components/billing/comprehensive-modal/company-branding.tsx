@@ -1,20 +1,26 @@
-'use client';
+"use client";
 
-import { useState, useRef } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@workspace/ui/components/card';
-import { Button } from '@workspace/ui/components/button';
-import { Input } from '@workspace/ui/components/input';
-import { Label } from '@workspace/ui/components/label';
-import { Textarea } from '@workspace/ui/components/textarea';
-import { Badge } from '@workspace/ui/components/badge';
-import { useUpdateBillingSettings } from '@/lib/hooks/useBilling';
-import { supabase } from '@/lib/supabase/client';
-import type { CompanyBillingSettings } from '@/lib/db/schema';
-import { 
-  Upload, 
-  Image as ImageIcon, 
-  Trash2, 
-  Save, 
+import { useState, useRef } from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@workspace/ui/components/card";
+import { Button } from "@workspace/ui/components/button";
+import { Input } from "@workspace/ui/components/input";
+import { Label } from "@workspace/ui/components/label";
+import { Textarea } from "@workspace/ui/components/textarea";
+import { Badge } from "@workspace/ui/components/badge";
+import { useUpdateBillingSettings } from "@/lib/hooks/useBilling";
+import { supabase } from "@/lib/supabase/client";
+import type { CompanyBillingSettings } from "@/lib/db/schema";
+import {
+  Upload,
+  Image as ImageIcon,
+  Trash2,
+  Save,
   Loader2,
   CheckCircle2,
   AlertCircle,
@@ -24,56 +30,60 @@ import {
   MapPin,
   Palette,
   FileText,
-  Building2
-} from 'lucide-react';
+  Building2,
+} from "lucide-react";
 
 interface CompanyBrandingProps {
   companyId: string;
   companySettings: CompanyBillingSettings | null | undefined;
 }
 
-export function CompanyBranding({ 
-  companyId, 
-  companySettings 
+export function CompanyBranding({
+  companyId,
+  companySettings,
 }: CompanyBrandingProps) {
   const [formData, setFormData] = useState({
-    company_logo_url: companySettings?.company_logo_url || '',
-    company_address: companySettings?.company_address || '',
-    company_phone: companySettings?.company_phone || '',
-    company_email: companySettings?.company_email || '',
-    company_website: companySettings?.company_website || '',
-    invoice_footer: companySettings?.invoice_footer || '',
-    brand_primary_color: companySettings?.brand_primary_color || '#3b82f6',
-    brand_secondary_color: companySettings?.brand_secondary_color || '#64748b',
+    company_logo_url: companySettings?.company_logo_url || "",
+    company_address: companySettings?.company_address || "",
+    company_phone: companySettings?.company_phone || "",
+    company_email: companySettings?.company_email || "",
+    company_website: companySettings?.company_website || "",
+    invoice_footer: companySettings?.invoice_footer || "",
+    brand_primary_color: companySettings?.brand_primary_color || "#3b82f6",
+    brand_secondary_color: companySettings?.brand_secondary_color || "#64748b",
   });
 
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(
-    companySettings?.company_logo_url || null
+    companySettings?.company_logo_url || null,
   );
-  
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const updateSettingsMutation = useUpdateBillingSettings(companyId);
 
   const handleInputChange = (field: string, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
     // Validate file type
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    const allowedTypes = ["image/jpeg", "image/png", "image/gif", "image/webp"];
     if (!allowedTypes.includes(file.type)) {
-      setUploadError('Please upload a valid image file (JPEG, PNG, GIF, or WebP)');
+      setUploadError(
+        "Please upload a valid image file (JPEG, PNG, GIF, or WebP)",
+      );
       return;
     }
 
     // Validate file size (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
-      setUploadError('File size must be less than 5MB');
+      setUploadError("File size must be less than 5MB");
       return;
     }
 
@@ -83,15 +93,15 @@ export function CompanyBranding({
     try {
       // Create a unique filename
       const timestamp = Date.now();
-      const extension = file.name.split('.').pop();
+      const extension = file.name.split(".").pop();
       const filename = `company-logos/${companyId}/${timestamp}.${extension}`;
 
       // Upload to Supabase Storage
       const { data, error } = await supabase.storage
-        .from('company-assets')
+        .from("company-assets")
         .upload(filename, file, {
-          cacheControl: '3600',
-          upsert: false
+          cacheControl: "3600",
+          upsert: false,
         });
 
       if (error) {
@@ -100,28 +110,29 @@ export function CompanyBranding({
 
       // Get public URL
       const { data: urlData } = supabase.storage
-        .from('company-assets')
+        .from("company-assets")
         .getPublicUrl(data.path);
 
       const publicUrl = urlData.publicUrl;
-      
-      // Update form data and preview
-      setFormData(prev => ({ ...prev, company_logo_url: publicUrl }));
-      setPreviewUrl(publicUrl);
 
+      // Update form data and preview
+      setFormData((prev) => ({ ...prev, company_logo_url: publicUrl }));
+      setPreviewUrl(publicUrl);
     } catch (error) {
-      console.error('Upload error:', error);
-      setUploadError(error instanceof Error ? error.message : 'Failed to upload image');
+      console.error("Upload error:", error);
+      setUploadError(
+        error instanceof Error ? error.message : "Failed to upload image",
+      );
     } finally {
       setIsUploading(false);
     }
   };
 
   const handleRemoveLogo = () => {
-    setFormData(prev => ({ ...prev, company_logo_url: '' }));
+    setFormData((prev) => ({ ...prev, company_logo_url: "" }));
     setPreviewUrl(null);
     if (fileInputRef.current) {
-      fileInputRef.current.value = '';
+      fileInputRef.current.value = "";
     }
   };
 
@@ -129,14 +140,15 @@ export function CompanyBranding({
     try {
       await updateSettingsMutation.mutateAsync(formData);
     } catch (error) {
-      console.error('Failed to save branding settings:', error);
+      console.error("Failed to save branding settings:", error);
     }
   };
 
   const isFormChanged = () => {
     return Object.keys(formData).some(
-      key => formData[key as keyof typeof formData] !== 
-             (companySettings?.[key as keyof CompanyBillingSettings] || '')
+      (key) =>
+        formData[key as keyof typeof formData] !==
+        (companySettings?.[key as keyof CompanyBillingSettings] || ""),
     );
   };
 
@@ -153,8 +165,8 @@ export function CompanyBranding({
             Customize your company branding for invoices and communications
           </p>
         </div>
-        
-        <Button 
+
+        <Button
           onClick={handleSave}
           disabled={updateSettingsMutation.isPending || !isFormChanged()}
           className="flex items-center gap-2"
@@ -173,7 +185,9 @@ export function CompanyBranding({
         <Card className="border-green-200 bg-green-50">
           <CardContent className="flex items-center gap-2 pt-6">
             <CheckCircle2 className="h-5 w-5 text-green-600" />
-            <span className="text-green-700">Branding settings saved successfully!</span>
+            <span className="text-green-700">
+              Branding settings saved successfully!
+            </span>
           </CardContent>
         </Card>
       )}
@@ -183,7 +197,7 @@ export function CompanyBranding({
           <CardContent className="flex items-center gap-2 pt-6">
             <AlertCircle className="h-5 w-5 text-red-600" />
             <span className="text-red-700">
-              {uploadError || 'Failed to save branding settings'}
+              {uploadError || "Failed to save branding settings"}
             </span>
           </CardContent>
         </Card>
@@ -205,9 +219,9 @@ export function CompanyBranding({
             {/* Logo Preview */}
             {previewUrl ? (
               <div className="relative">
-                <img 
-                  src={previewUrl} 
-                  alt="Company Logo" 
+                <img
+                  src={previewUrl}
+                  alt="Company Logo"
                   className="w-full max-w-xs h-32 object-contain border rounded-lg bg-gray-50"
                 />
                 <Button
@@ -251,7 +265,7 @@ export function CompanyBranding({
                 ) : (
                   <>
                     <Upload className="h-4 w-4 mr-2" />
-                    {previewUrl ? 'Change Logo' : 'Upload Logo'}
+                    {previewUrl ? "Change Logo" : "Upload Logo"}
                   </>
                 )}
               </Button>
@@ -281,12 +295,16 @@ export function CompanyBranding({
                   id="primary-color"
                   type="color"
                   value={formData.brand_primary_color}
-                  onChange={(e) => handleInputChange('brand_primary_color', e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("brand_primary_color", e.target.value)
+                  }
                   className="w-16 h-10 p-1 rounded"
                 />
                 <Input
                   value={formData.brand_primary_color}
-                  onChange={(e) => handleInputChange('brand_primary_color', e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("brand_primary_color", e.target.value)
+                  }
                   placeholder="#3b82f6"
                   className="flex-1"
                 />
@@ -300,12 +318,16 @@ export function CompanyBranding({
                   id="secondary-color"
                   type="color"
                   value={formData.brand_secondary_color}
-                  onChange={(e) => handleInputChange('brand_secondary_color', e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("brand_secondary_color", e.target.value)
+                  }
                   className="w-16 h-10 p-1 rounded"
                 />
                 <Input
                   value={formData.brand_secondary_color}
-                  onChange={(e) => handleInputChange('brand_secondary_color', e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("brand_secondary_color", e.target.value)
+                  }
                   placeholder="#64748b"
                   className="flex-1"
                 />
@@ -316,12 +338,12 @@ export function CompanyBranding({
             <div className="space-y-2">
               <Label>Preview</Label>
               <div className="flex gap-2">
-                <div 
+                <div
                   className="w-12 h-8 rounded border"
                   style={{ backgroundColor: formData.brand_primary_color }}
                   title="Primary Color"
                 />
-                <div 
+                <div
                   className="w-12 h-8 rounded border"
                   style={{ backgroundColor: formData.brand_secondary_color }}
                   title="Secondary Color"
@@ -346,7 +368,10 @@ export function CompanyBranding({
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="company-email" className="flex items-center gap-2">
+              <Label
+                htmlFor="company-email"
+                className="flex items-center gap-2"
+              >
                 <Mail className="h-4 w-4" />
                 Billing Email
               </Label>
@@ -354,13 +379,18 @@ export function CompanyBranding({
                 id="company-email"
                 type="email"
                 value={formData.company_email}
-                onChange={(e) => handleInputChange('company_email', e.target.value)}
+                onChange={(e) =>
+                  handleInputChange("company_email", e.target.value)
+                }
                 placeholder="billing@company.com"
               />
             </div>
 
             <div>
-              <Label htmlFor="company-phone" className="flex items-center gap-2">
+              <Label
+                htmlFor="company-phone"
+                className="flex items-center gap-2"
+              >
                 <Phone className="h-4 w-4" />
                 Phone Number
               </Label>
@@ -368,13 +398,18 @@ export function CompanyBranding({
                 id="company-phone"
                 type="tel"
                 value={formData.company_phone}
-                onChange={(e) => handleInputChange('company_phone', e.target.value)}
+                onChange={(e) =>
+                  handleInputChange("company_phone", e.target.value)
+                }
                 placeholder="+1 (555) 123-4567"
               />
             </div>
 
             <div>
-              <Label htmlFor="company-website" className="flex items-center gap-2">
+              <Label
+                htmlFor="company-website"
+                className="flex items-center gap-2"
+              >
                 <Globe className="h-4 w-4" />
                 Website
               </Label>
@@ -382,21 +417,28 @@ export function CompanyBranding({
                 id="company-website"
                 type="url"
                 value={formData.company_website}
-                onChange={(e) => handleInputChange('company_website', e.target.value)}
+                onChange={(e) =>
+                  handleInputChange("company_website", e.target.value)
+                }
                 placeholder="https://company.com"
               />
             </div>
           </div>
 
           <div>
-            <Label htmlFor="company-address" className="flex items-center gap-2">
+            <Label
+              htmlFor="company-address"
+              className="flex items-center gap-2"
+            >
               <MapPin className="h-4 w-4" />
               Company Address
             </Label>
             <Textarea
               id="company-address"
               value={formData.company_address}
-              onChange={(e) => handleInputChange('company_address', e.target.value)}
+              onChange={(e) =>
+                handleInputChange("company_address", e.target.value)
+              }
               placeholder="123 Business St, Suite 100&#10;City, State 12345&#10;Country"
               rows={3}
               className="mt-1"
@@ -422,7 +464,9 @@ export function CompanyBranding({
             <Textarea
               id="invoice-footer"
               value={formData.invoice_footer}
-              onChange={(e) => handleInputChange('invoice_footer', e.target.value)}
+              onChange={(e) =>
+                handleInputChange("invoice_footer", e.target.value)
+              }
               placeholder="Thank you for your business! Payment terms: Net 30 days."
               rows={3}
               className="mt-1"
@@ -441,8 +485,10 @@ export function CompanyBranding({
                 <AlertCircle className="h-4 w-4 text-yellow-600" />
               )}
               <span className="text-sm">Logo</span>
-              <Badge variant={formData.company_logo_url ? 'default' : 'secondary'}>
-                {formData.company_logo_url ? 'Set' : 'Not Set'}
+              <Badge
+                variant={formData.company_logo_url ? "default" : "secondary"}
+              >
+                {formData.company_logo_url ? "Set" : "Not Set"}
               </Badge>
             </div>
 
@@ -453,8 +499,10 @@ export function CompanyBranding({
                 <AlertCircle className="h-4 w-4 text-yellow-600" />
               )}
               <span className="text-sm">Address</span>
-              <Badge variant={formData.company_address ? 'default' : 'secondary'}>
-                {formData.company_address ? 'Set' : 'Not Set'}
+              <Badge
+                variant={formData.company_address ? "default" : "secondary"}
+              >
+                {formData.company_address ? "Set" : "Not Set"}
               </Badge>
             </div>
 
@@ -465,8 +513,8 @@ export function CompanyBranding({
                 <AlertCircle className="h-4 w-4 text-yellow-600" />
               )}
               <span className="text-sm">Email</span>
-              <Badge variant={formData.company_email ? 'default' : 'secondary'}>
-                {formData.company_email ? 'Set' : 'Not Set'}
+              <Badge variant={formData.company_email ? "default" : "secondary"}>
+                {formData.company_email ? "Set" : "Not Set"}
               </Badge>
             </div>
           </div>

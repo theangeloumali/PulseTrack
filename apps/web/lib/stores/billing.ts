@@ -1,5 +1,5 @@
-import { create } from 'zustand';
+import { create } from "zustand";
 
 export const useBillingStore = create(() => ({
-    // Add your billing store initial state and actions here
+  // Add your billing store initial state and actions here
 }));

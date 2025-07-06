@@ -1,44 +1,50 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { Users, UserPlus, Search, Edit, Shield } from 'lucide-react';
-import { Button } from '@workspace/ui/components/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@workspace/ui/components/card';
-import { Badge } from '@workspace/ui/components/badge';
-import { Input } from '@workspace/ui/components/input';
-import { useCompanyUsers } from '@/lib/hooks/useUsers';
-import { useCompanyStore, CompanyUser } from '@/lib/stores/company';
-import { useAuthStore } from '@/lib/stores/auth';
-import { useRoleAccess } from '@/lib/hooks/useRoleAccess';
-import { InviteUserModal } from '@/components/modals/invite-user-modal';
-import { EditUserModal } from '@/components/modals/edit-user-modal';
-import type { UserRole, UserStatus } from '@/lib/db/schema';
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { Users, UserPlus, Search, Edit, Shield } from "lucide-react";
+import { Button } from "@workspace/ui/components/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@workspace/ui/components/card";
+import { Badge } from "@workspace/ui/components/badge";
+import { Input } from "@workspace/ui/components/input";
+import { useCompanyUsers } from "@/lib/hooks/useUsers";
+import { useCompanyStore, CompanyUser } from "@/lib/stores/company";
+import { useAuthStore } from "@/lib/stores/auth";
+import { useRoleAccess } from "@/lib/hooks/useRoleAccess";
+import { InviteUserModal } from "@/components/modals/invite-user-modal";
+import { EditUserModal } from "@/components/modals/edit-user-modal";
+import type { UserRole, UserStatus } from "@/lib/db/schema";
 
 export default function CompanyUsersPage() {
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [editingUser, setEditingUser] = useState<CompanyUser | null>(null);
   const router = useRouter();
-  
+
   const { user: currentUser } = useAuthStore();
   const { canAccessCompany } = useRoleAccess();
-  const { 
-    getFilteredUsers, 
-    getUserStats, 
-    roleFilter, 
-    statusFilter, 
+  const {
+    getFilteredUsers,
+    getUserStats,
+    roleFilter,
+    statusFilter,
     searchQuery,
     setRoleFilter,
     setStatusFilter,
-    setSearchQuery 
+    setSearchQuery,
   } = useCompanyStore();
-  
+
   const { isLoading, error } = useCompanyUsers();
 
   // Redirect users without company access
   useEffect(() => {
     if (currentUser && !canAccessCompany()) {
-      router.push('/dashboard');
+      router.push("/dashboard");
     }
   }, [currentUser, canAccessCompany, router]);
 
@@ -46,36 +52,36 @@ export default function CompanyUsersPage() {
   if (currentUser && !canAccessCompany()) {
     return <div></div>;
   }
-  
+
   const filteredUsers = getFilteredUsers();
   const stats = getUserStats();
 
   const getRoleColor = (role: string) => {
     switch (role) {
-      case 'admin':
-        return 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400';
-      case 'manager':
-        return 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400';
-      case 'user':
-        return 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400';
+      case "admin":
+        return "bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400";
+      case "manager":
+        return "bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400";
+      case "user":
+        return "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400";
       default:
-        return 'bg-gray-100 text-gray-800 dark:bg-gray-800/50 dark:text-gray-300';
+        return "bg-gray-100 text-gray-800 dark:bg-gray-800/50 dark:text-gray-300";
     }
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'active':
-        return 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400';
-      case 'inactive':
-        return 'bg-gray-100 text-gray-800 dark:bg-gray-800/50 dark:text-gray-300';
+      case "active":
+        return "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400";
+      case "inactive":
+        return "bg-gray-100 text-gray-800 dark:bg-gray-800/50 dark:text-gray-300";
       default:
-        return 'bg-gray-100 text-gray-800 dark:bg-gray-800/50 dark:text-gray-300';
+        return "bg-gray-100 text-gray-800 dark:bg-gray-800/50 dark:text-gray-300";
     }
   };
 
   const formatHourlyRate = (rate: number | null | undefined) => {
-    if (!rate) return 'Not set';
+    if (!rate) return "Not set";
     return `$${rate}/hr`;
   };
 
@@ -103,11 +109,18 @@ export default function CompanyUsersPage() {
             <div className="flex items-center space-x-4">
               <Users className="h-8 w-8 text-muted-foreground" />
               <div>
-                <h1 className="text-3xl font-bold text-foreground">Company Users</h1>
-                <p className="text-muted-foreground mt-1">Manage your team members and permissions</p>
+                <h1 className="text-3xl font-bold text-foreground">
+                  Company Users
+                </h1>
+                <p className="text-muted-foreground mt-1">
+                  Manage your team members and permissions
+                </p>
               </div>
             </div>
-            <Button onClick={() => setShowInviteModal(true)} className="flex items-center space-x-2">
+            <Button
+              onClick={() => setShowInviteModal(true)}
+              className="flex items-center space-x-2"
+            >
               <UserPlus className="h-4 w-4" />
               <span>Invite User</span>
             </Button>
@@ -123,20 +136,28 @@ export default function CompanyUsersPage() {
               <CardContent className="p-6">
                 <div className="flex items-center">
                   <div className="flex-1">
-                    <p className="text-sm font-medium text-muted-foreground">Total Users</p>
-                    <p className="text-2xl font-bold text-foreground">{stats.total}</p>
+                    <p className="text-sm font-medium text-muted-foreground">
+                      Total Users
+                    </p>
+                    <p className="text-2xl font-bold text-foreground">
+                      {stats.total}
+                    </p>
                   </div>
                   <Users className="h-8 w-8 text-muted-foreground" />
                 </div>
               </CardContent>
             </Card>
-            
+
             <Card>
               <CardContent className="p-6">
                 <div className="flex items-center">
                   <div className="flex-1">
-                    <p className="text-sm font-medium text-muted-foreground">Active Users</p>
-                    <p className="text-2xl font-bold text-green-600 dark:text-green-400">{stats.active}</p>
+                    <p className="text-sm font-medium text-muted-foreground">
+                      Active Users
+                    </p>
+                    <p className="text-2xl font-bold text-green-600 dark:text-green-400">
+                      {stats.active}
+                    </p>
                   </div>
                   <div className="h-8 w-8 rounded-full bg-green-100 dark:bg-green-900/20 flex items-center justify-center">
                     <div className="h-3 w-3 rounded-full bg-green-500 dark:bg-green-400" />
@@ -144,25 +165,33 @@ export default function CompanyUsersPage() {
                 </div>
               </CardContent>
             </Card>
-            
+
             <Card>
               <CardContent className="p-6">
                 <div className="flex items-center">
                   <div className="flex-1">
-                    <p className="text-sm font-medium text-muted-foreground">Admins</p>
-                    <p className="text-2xl font-bold text-red-600 dark:text-red-400">{stats.admins}</p>
+                    <p className="text-sm font-medium text-muted-foreground">
+                      Admins
+                    </p>
+                    <p className="text-2xl font-bold text-red-600 dark:text-red-400">
+                      {stats.admins}
+                    </p>
                   </div>
                   <Shield className="h-8 w-8 text-muted-foreground" />
                 </div>
               </CardContent>
             </Card>
-            
+
             <Card>
               <CardContent className="p-6">
                 <div className="flex items-center">
                   <div className="flex-1">
-                    <p className="text-sm font-medium text-muted-foreground">Managers</p>
-                    <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">{stats.managers}</p>
+                    <p className="text-sm font-medium text-muted-foreground">
+                      Managers
+                    </p>
+                    <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                      {stats.managers}
+                    </p>
                   </div>
                   <Shield className="h-8 w-8 text-muted-foreground" />
                 </div>
@@ -186,7 +215,7 @@ export default function CompanyUsersPage() {
                     />
                   </div>
                 </div>
-                
+
                 {/* Role Filter */}
                 <select
                   value={roleFilter}
@@ -200,11 +229,13 @@ export default function CompanyUsersPage() {
                   <option value="manager">Manager</option>
                   <option value="user">User</option>
                 </select>
-                
+
                 {/* Status Filter */}
                 <select
                   value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value as UserStatus)}
+                  onChange={(e) =>
+                    setStatusFilter(e.target.value as UserStatus)
+                  }
                   className="px-3 py-2 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                 >
                   <option value="all">All Status</option>
@@ -231,11 +262,15 @@ export default function CompanyUsersPage() {
               ) : filteredUsers.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
                   <Users className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-                  <h3 className="text-sm font-medium text-foreground mb-2">No users found</h3>
+                  <h3 className="text-sm font-medium text-foreground mb-2">
+                    No users found
+                  </h3>
                   <p className="text-sm text-muted-foreground">
-                    {searchQuery || roleFilter !== 'all' || statusFilter !== 'all'
-                      ? 'Try adjusting your filters'
-                      : 'Invite your first team member to get started'}
+                    {searchQuery ||
+                    roleFilter !== "all" ||
+                    statusFilter !== "all"
+                      ? "Try adjusting your filters"
+                      : "Invite your first team member to get started"}
                   </p>
                 </div>
               ) : (
@@ -271,29 +306,36 @@ export default function CompanyUsersPage() {
                               <div className="flex-shrink-0 h-10 w-10">
                                 <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
                                   <span className="text-sm font-medium text-muted-foreground">
-                                    {user.first_name?.[0] || user.email?.[0]?.toUpperCase() || '?'}
+                                    {user.first_name?.[0] ||
+                                      user.email?.[0]?.toUpperCase() ||
+                                      "?"}
                                   </span>
                                 </div>
                               </div>
                               <div className="ml-4">
                                 <div className="text-sm font-medium text-foreground">
-                                  {user.first_name && user.last_name 
+                                  {user.first_name && user.last_name
                                     ? `${user.first_name} ${user.last_name}`
-                                    : user.email
-                                  }
+                                    : user.email}
                                 </div>
-                                <div className="text-sm text-muted-foreground">{user.email}</div>
+                                <div className="text-sm text-muted-foreground">
+                                  {user.email}
+                                </div>
                               </div>
                             </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <Badge className={`${getRoleColor(user.role)} border-0`}>
+                            <Badge
+                              className={`${getRoleColor(user.role)} border-0`}
+                            >
                               {user.role}
                             </Badge>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <Badge className={`${getStatusColor(user.status || 'active')} border-0`}>
-                              {user.status || 'active'}
+                            <Badge
+                              className={`${getStatusColor(user.status || "active")} border-0`}
+                            >
+                              {user.status || "active"}
                             </Badge>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-foreground">
@@ -304,15 +346,20 @@ export default function CompanyUsersPage() {
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                             {/* Only show actions if current user is admin or it's not themselves */}
-                            {(['super_admin', 'system_admin', 'company_admin'].includes(currentUser?.role || '') && currentUser?.id !== user.id) && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => setEditingUser(user)}
-                              >
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                            )}
+                            {[
+                              "super_admin",
+                              "system_admin",
+                              "company_admin",
+                            ].includes(currentUser?.role || "") &&
+                              currentUser?.id !== user.id && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => setEditingUser(user)}
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                              )}
                           </td>
                         </tr>
                       ))}
@@ -332,7 +379,7 @@ export default function CompanyUsersPage() {
           onClose={() => setShowInviteModal(false)}
         />
       )}
-      
+
       {editingUser && (
         <EditUserModal
           isOpen={!!editingUser}

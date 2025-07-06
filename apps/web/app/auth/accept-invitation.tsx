@@ -1,3 +1,3 @@
-import AcceptInvitationPage from '@/screens/accept-invitation';
+import AcceptInvitationPage from "@/screens/accept-invitation";
 
 export default AcceptInvitationPage;

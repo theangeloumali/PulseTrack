@@ -7,7 +7,9 @@ PulseTrack is a comprehensive project management and billing system designed spe
 ## 🎯 Core Features
 
 ### Project Management
+
 - **Project Creation & Organization**
+
   - Create unlimited projects per company
   - Project-specific settings and configurations
   - Project archiving and status management
@@ -20,7 +22,9 @@ PulseTrack is a comprehensive project management and billing system designed spe
   - Project profitability analysis
 
 ### Ticket Management System
+
 - **Comprehensive Ticket Lifecycle**
+
   - Create, assign, and track tickets
   - Drag-and-drop kanban board interface
   - Customizable ticket statuses (To Do, In Progress, In Review, Done, etc.)
@@ -28,6 +32,7 @@ PulseTrack is a comprehensive project management and billing system designed spe
   - Due date management and tracking
 
 - **Advanced Ticket Features**
+
   - Rich text descriptions with markdown support
   - File attachments and document management
   - Ticket commenting and collaboration
@@ -42,7 +47,9 @@ PulseTrack is a comprehensive project management and billing system designed spe
   - Ticket templates for common work types
 
 ### Time Tracking System
+
 - **Real-Time Time Tracking**
+
   - Start/stop timers with live updates
   - Multiple concurrent timers per user
   - Automatic time calculations
@@ -50,6 +57,7 @@ PulseTrack is a comprehensive project management and billing system designed spe
   - Manual time entry capabilities
 
 - **Time Entry Management**
+
   - Detailed time entry logs
   - Edit and delete time entries
   - Bulk time entry operations
@@ -66,7 +74,9 @@ PulseTrack is a comprehensive project management and billing system designed spe
 ## 💰 Billing & Financial Management
 
 ### Advanced Billing System
+
 - **Flexible Billing Rates**
+
   - Project-specific hourly rates
   - User-specific billing rates
   - Company default rate fallbacks
@@ -74,6 +84,7 @@ PulseTrack is a comprehensive project management and billing system designed spe
   - Rate change history and auditing
 
 - **Automated Billing Periods**
+
   - Weekly, bi-monthly, monthly billing cycles
   - Automatic period generation
   - User-specific billing periods
@@ -88,7 +99,9 @@ PulseTrack is a comprehensive project management and billing system designed spe
   - Summary totals and payment terms
 
 ### Payment Management
+
 - **Complete Payment Lifecycle**
+
   - Payment status tracking (Pending, Sent, Paid, Overdue, Cancelled)
   - Payment due date management
   - Payment reference tracking
@@ -96,6 +109,7 @@ PulseTrack is a comprehensive project management and billing system designed spe
   - Payment history and audit trails
 
 - **Outstanding Payment Management**
+
   - Outstanding payment dashboard
   - Overdue payment alerts
   - Bulk payment status updates
@@ -112,7 +126,9 @@ PulseTrack is a comprehensive project management and billing system designed spe
 ## 👥 User Management & Authentication
 
 ### Role-Based Access Control
+
 - **Five-Tier Role System**
+
   - **Super Admin**: Complete system access
   - **System Admin**: Multi-company management
   - **Company Admin**: Full company control
@@ -127,7 +143,9 @@ PulseTrack is a comprehensive project management and billing system designed spe
   - Custom permission sets
 
 ### User Administration
+
 - **User Lifecycle Management**
+
   - User invitation and onboarding
   - Profile management and settings
   - User activation/deactivation
@@ -142,7 +160,9 @@ PulseTrack is a comprehensive project management and billing system designed spe
   - Multi-tenant security architecture
 
 ### Authentication & Security
+
 - **Secure Authentication**
+
   - Supabase Auth integration
   - Email/password authentication
   - Session management and security
@@ -159,7 +179,9 @@ PulseTrack is a comprehensive project management and billing system designed spe
 ## 🎨 User Interface & Experience
 
 ### Modern Web Interface
+
 - **Responsive Design**
+
   - Mobile-first responsive layout
   - Touch-friendly interface elements
   - Progressive web app capabilities
@@ -174,7 +196,9 @@ PulseTrack is a comprehensive project management and billing system designed spe
   - Automatic system theme detection
 
 ### Advanced UI Components
+
 - **Interactive Elements**
+
   - Drag-and-drop functionality
   - Real-time updates and notifications
   - Modal dialogs and confirmations
@@ -191,7 +215,9 @@ PulseTrack is a comprehensive project management and billing system designed spe
 ## 🔧 Technical Features
 
 ### Performance & Scalability
+
 - **Optimized Architecture**
+
   - Next.js 15 with App Router
   - Server-side rendering (SSR)
   - Static site generation (SSG)
@@ -206,7 +232,9 @@ PulseTrack is a comprehensive project management and billing system designed spe
   - Code splitting and lazy loading
 
 ### Data Management
+
 - **Robust Database Layer**
+
   - PostgreSQL with Supabase
   - Drizzle ORM for type safety
   - Automated migrations
@@ -221,7 +249,9 @@ PulseTrack is a comprehensive project management and billing system designed spe
   - Webhook support (future)
 
 ### Export & Integration
+
 - **Data Export Capabilities**
+
   - PDF invoice generation
   - CSV/Excel time reports
   - JSON data exports
@@ -238,7 +268,9 @@ PulseTrack is a comprehensive project management and billing system designed spe
 ## 🚀 Advanced Features
 
 ### Automation & Workflows
+
 - **Automated Processes**
+
   - Automatic billing period generation
   - Scheduled payment reminders
   - Overdue payment detection
@@ -253,7 +285,9 @@ PulseTrack is a comprehensive project management and billing system designed spe
   - Audit trail maintenance
 
 ### Analytics & Reporting
+
 - **Comprehensive Analytics**
+
   - Time tracking analytics
   - Project performance metrics
   - User productivity insights
@@ -268,7 +302,9 @@ PulseTrack is a comprehensive project management and billing system designed spe
   - Customizable widgets
 
 ### Collaboration Features
+
 - **Team Collaboration**
+
   - Ticket commenting system
   - Real-time updates and notifications
   - Team activity feeds
@@ -285,7 +321,9 @@ PulseTrack is a comprehensive project management and billing system designed spe
 ## 🛠️ Administrative Features
 
 ### System Configuration
+
 - **Company Settings**
+
   - Billing frequency configuration
   - Default rate management
   - Currency and localization
@@ -300,7 +338,9 @@ PulseTrack is a comprehensive project management and billing system designed spe
   - Automated backups
 
 ### Audit & Compliance
+
 - **Comprehensive Auditing**
+
   - User action logging
   - Payment history tracking
   - Data change audits
@@ -317,6 +357,7 @@ PulseTrack is a comprehensive project management and billing system designed spe
 ## 📱 Mobile & Accessibility
 
 ### Mobile Experience
+
 - **Mobile-Optimized Interface**
   - Touch-friendly controls
   - Mobile navigation patterns
@@ -325,6 +366,7 @@ PulseTrack is a comprehensive project management and billing system designed spe
   - Offline capability (future)
 
 ### Accessibility Features
+
 - **Inclusive Design**
   - Screen reader compatibility
   - Keyboard navigation support
@@ -335,7 +377,9 @@ PulseTrack is a comprehensive project management and billing system designed spe
 ## 🔮 Future Roadmap
 
 ### Planned Enhancements
+
 - **Advanced Integrations**
+
   - Calendar synchronization
   - Email client integration
   - Slack/Teams notifications
@@ -350,6 +394,7 @@ PulseTrack is a comprehensive project management and billing system designed spe
   - Mobile applications
 
 ### Enterprise Features
+
 - **Scalability Improvements**
   - Multi-tenant architecture enhancements
   - Advanced caching strategies

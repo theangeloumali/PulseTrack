@@ -1,9 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { withAuth } from '@/lib/auth-utils';
-import { createServerClient } from '@supabase/ssr';
+import { NextRequest, NextResponse } from "next/server";
+import { withAuth } from "@/lib/auth-utils";
+import { createServerClient } from "@supabase/ssr";
 
 async function handler(req: NextRequest) {
-  if (req.method === 'GET') {
+  if (req.method === "GET") {
     try {
       const supabase = createServerClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -17,13 +17,14 @@ async function handler(req: NextRequest) {
               // No-op for read-only operations
             },
           },
-        }
+        },
       );
 
       // Get all users across all companies with company information
       const { data: users, error } = await supabase
-        .from('users')
-        .select(`
+        .from("users")
+        .select(
+          `
           id,
           email,
           first_name,
@@ -40,23 +41,33 @@ async function handler(req: NextRequest) {
             name,
             slug
           )
-        `)
-        .order('created_at', { ascending: false });
+        `,
+        )
+        .order("created_at", { ascending: false });
 
       if (error) {
-        console.error('Error fetching users:', error);
-        return NextResponse.json({ error: 'Failed to fetch users' }, { status: 500 });
+        console.error("Error fetching users:", error);
+        return NextResponse.json(
+          { error: "Failed to fetch users" },
+          { status: 500 },
+        );
       }
 
       return NextResponse.json(users);
     } catch (error) {
-      console.error('Super admin users API error:', error);
-      return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+      console.error("Super admin users API error:", error);
+      return NextResponse.json(
+        { error: "Internal server error" },
+        { status: 500 },
+      );
     }
   }
 
-  return NextResponse.json({ error: `Method ${req.method} Not Allowed` }, { status: 405 });
+  return NextResponse.json(
+    { error: `Method ${req.method} Not Allowed` },
+    { status: 405 },
+  );
 }
 
 // Only super_admins can access this endpoint
-export const GET = withAuth(handler, ['super_admin']);
+export const GET = withAuth(handler, ["super_admin"]);

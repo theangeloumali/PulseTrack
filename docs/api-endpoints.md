@@ -20,11 +20,13 @@ Authorization: Bearer <jwt_token>
 ### Admin Endpoints
 
 #### GET /api/admin/companies
+
 **Description**: Retrieve all companies (Super Admin only)
 
 **Authorization**: `super_admin`
 
 **Response**:
+
 ```json
 {
   "companies": [
@@ -40,16 +42,19 @@ Authorization: Bearer <jwt_token>
 ```
 
 #### GET /api/admin/users
+
 **Description**: Retrieve all users across all companies (Super Admin only)
 
 **Authorization**: `super_admin`
 
 **Query Parameters**:
+
 - `role`: Filter by user role
 - `status`: Filter by user status
 - `company_id`: Filter by company
 
 **Response**:
+
 ```json
 {
   "users": [
@@ -67,40 +72,45 @@ Authorization: Bearer <jwt_token>
 ```
 
 #### PUT /api/admin/users/[userId]
+
 **Description**: Update user information (Super Admin only)
 
 **Authorization**: `super_admin`
 
 **Request Body**:
+
 ```json
 {
   "first_name": "John",
   "last_name": "Doe",
   "role": "manager",
   "status": "active",
-  "hourly_rate": 75.00
+  "hourly_rate": 75.0
 }
 ```
 
 ### Billing Endpoints
 
 #### GET /api/billing/report
+
 **Description**: Generate billing report for a company
 
 **Authorization**: `super_admin`, `system_admin`, `company_admin`, `manager`
 
 **Query Parameters**:
+
 - `start_date`: Start date (YYYY-MM-DD)
 - `end_date`: End date (YYYY-MM-DD)
 - `user_id`: Filter by specific user (optional)
 
 **Response**:
+
 ```json
 {
   "report": {
     "total_hours": 120.5,
     "total_billable_hours": 115.0,
-    "total_amount": 8625.00,
+    "total_amount": 8625.0,
     "currency": "USD",
     "entries": [
       {
@@ -108,8 +118,8 @@ Authorization: Bearer <jwt_token>
         "user_name": "John Doe",
         "project_name": "Project Alpha",
         "hours": 8.0,
-        "hourly_rate": 75.00,
-        "amount": 600.00,
+        "hourly_rate": 75.0,
+        "amount": 600.0,
         "date": "2024-01-01"
       }
     ]
@@ -120,22 +130,25 @@ Authorization: Bearer <jwt_token>
 ### User Management Endpoints
 
 #### POST /api/invite-user
+
 **Description**: Invite a new user to the company
 
 **Authorization**: `super_admin`, `system_admin`, `company_admin`, `manager`
 
 **Request Body**:
+
 ```json
 {
   "email": "newuser@example.com",
   "first_name": "Jane",
   "last_name": "Smith",
   "role": "user",
-  "hourly_rate": 50.00
+  "hourly_rate": 50.0
 }
 ```
 
 **Response**:
+
 ```json
 {
   "message": "User invited successfully",
@@ -216,8 +229,8 @@ Authorization: Bearer <jwt_token>
 ```typescript
 // Extract Bearer token from request headers
 function extractToken(request: Request): string | null {
-  const authHeader = request.headers.get('authorization');
-  if (!authHeader?.startsWith('Bearer ')) return null;
+  const authHeader = request.headers.get("authorization");
+  if (!authHeader?.startsWith("Bearer ")) return null;
   return authHeader.substring(7);
 }
 ```
@@ -229,10 +242,13 @@ function extractToken(request: Request): string | null {
 async function authenticateUser(request: Request): Promise<AuthUser | null> {
   const token = extractToken(request);
   if (!token) return null;
-  
+
   const supabase = createServerComponentClient();
-  const { data: { user }, error } = await supabase.auth.getUser(token);
-  
+  const {
+    data: { user },
+    error,
+  } = await supabase.auth.getUser(token);
+
   if (error || !user) return null;
   return await getUserByEmail(user.email!);
 }
@@ -249,15 +265,15 @@ function authorizeRole(user: AuthUser, requiredRoles: UserRole[]): boolean {
 // Example API route with role check
 export async function GET(request: Request) {
   const user = await authenticateUser(request);
-  
+
   if (!user) {
-    return new Response('Unauthorized', { status: 401 });
+    return new Response("Unauthorized", { status: 401 });
   }
-  
-  if (!authorizeRole(user, ['super_admin', 'system_admin'])) {
-    return new Response('Forbidden', { status: 403 });
+
+  if (!authorizeRole(user, ["super_admin", "system_admin"])) {
+    return new Response("Forbidden", { status: 403 });
   }
-  
+
   // Handle authorized request
 }
 ```
@@ -267,6 +283,7 @@ export async function GET(request: Request) {
 ### Successful User Creation
 
 **Request**:
+
 ```bash
 POST /api/invite-user
 Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
@@ -282,6 +299,7 @@ Content-Type: application/json
 ```
 
 **Response**:
+
 ```json
 HTTP/1.1 201 Created
 Content-Type: application/json
@@ -296,12 +314,14 @@ Content-Type: application/json
 ### Unauthorized Access
 
 **Request**:
+
 ```bash
 GET /api/admin/users
 Authorization: Bearer invalid_token
 ```
 
 **Response**:
+
 ```json
 HTTP/1.1 401 Unauthorized
 Content-Type: application/json
@@ -317,12 +337,14 @@ Content-Type: application/json
 ### Insufficient Permissions
 
 **Request**:
+
 ```bash
 GET /api/admin/users
 Authorization: Bearer valid_user_token
 ```
 
 **Response**:
+
 ```json
 HTTP/1.1 403 Forbidden
 Content-Type: application/json
@@ -343,19 +365,26 @@ Content-Type: application/json
 // Simple rate limiting example
 const rateLimitMap = new Map();
 
-function checkRateLimit(clientId: string, limit: number, window: number): boolean {
+function checkRateLimit(
+  clientId: string,
+  limit: number,
+  window: number,
+): boolean {
   const now = Date.now();
-  const clientData = rateLimitMap.get(clientId) || { count: 0, resetTime: now + window };
-  
+  const clientData = rateLimitMap.get(clientId) || {
+    count: 0,
+    resetTime: now + window,
+  };
+
   if (now > clientData.resetTime) {
     clientData.count = 0;
     clientData.resetTime = now + window;
   }
-  
+
   if (clientData.count >= limit) {
     return false; // Rate limit exceeded
   }
-  
+
   clientData.count++;
   rateLimitMap.set(clientId, clientData);
   return true;
@@ -366,9 +395,13 @@ function checkRateLimit(clientId: string, limit: number, window: number): boolea
 
 ```typescript
 // Add rate limit headers to response
-function addRateLimitHeaders(response: Response, remaining: number, resetTime: number) {
-  response.headers.set('X-RateLimit-Remaining', remaining.toString());
-  response.headers.set('X-RateLimit-Reset', resetTime.toString());
+function addRateLimitHeaders(
+  response: Response,
+  remaining: number,
+  resetTime: number,
+) {
+  response.headers.set("X-RateLimit-Remaining", remaining.toString());
+  response.headers.set("X-RateLimit-Reset", resetTime.toString());
   return response;
 }
 ```
@@ -379,14 +412,20 @@ function addRateLimitHeaders(response: Response, remaining: number, resetTime: n
 
 ```typescript
 // Zod validation schemas
-import { z } from 'zod';
+import { z } from "zod";
 
 const InviteUserSchema = z.object({
-  email: z.string().email('Invalid email format'),
-  first_name: z.string().min(1, 'First name is required'),
-  last_name: z.string().min(1, 'Last name is required'),
-  role: z.enum(['super_admin', 'system_admin', 'company_admin', 'manager', 'user']),
-  hourly_rate: z.number().positive('Hourly rate must be positive').optional(),
+  email: z.string().email("Invalid email format"),
+  first_name: z.string().min(1, "First name is required"),
+  last_name: z.string().min(1, "Last name is required"),
+  role: z.enum([
+    "super_admin",
+    "system_admin",
+    "company_admin",
+    "manager",
+    "user",
+  ]),
+  hourly_rate: z.number().positive("Hourly rate must be positive").optional(),
 });
 
 // Usage in API route
@@ -394,17 +433,20 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
     const validatedData = InviteUserSchema.parse(body);
-    
+
     // Process validated data
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return Response.json({
-        error: {
-          code: 'VALIDATION_ERROR',
-          message: 'Input validation failed',
-          details: error.flatten().fieldErrors
-        }
-      }, { status: 422 });
+      return Response.json(
+        {
+          error: {
+            code: "VALIDATION_ERROR",
+            message: "Input validation failed",
+            details: error.flatten().fieldErrors,
+          },
+        },
+        { status: 422 },
+      );
     }
   }
 }
@@ -416,16 +458,20 @@ export async function POST(request: Request) {
 
 ```typescript
 // Log API requests for monitoring
-function logRequest(request: Request, user: AuthUser | null, startTime: number) {
+function logRequest(
+  request: Request,
+  user: AuthUser | null,
+  startTime: number,
+) {
   const duration = Date.now() - startTime;
-  
+
   console.log({
     method: request.method,
     url: request.url,
     user_id: user?.id,
     user_role: user?.role,
     duration_ms: duration,
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   });
 }
 ```
@@ -444,12 +490,14 @@ function logError(error: Error, request: Request, user: AuthUser | null) {
       method: request.method,
       url: request.url,
     },
-    user: user ? {
-      id: user.id,
-      email: user.email,
-      role: user.role,
-    } : null,
-    timestamp: new Date().toISOString()
+    user: user
+      ? {
+          id: user.id,
+          email: user.email,
+          role: user.role,
+        }
+      : null,
+    timestamp: new Date().toISOString(),
   });
 }
 ```
@@ -460,28 +508,28 @@ function logError(error: Error, request: Request, user: AuthUser | null) {
 
 ```typescript
 // Example API route test
-import { GET } from '../route';
+import { GET } from "../route";
 
-describe('/api/admin/users', () => {
-  it('should return users for super admin', async () => {
-    const mockRequest = new Request('http://localhost/api/admin/users', {
-      headers: { Authorization: `Bearer ${superAdminToken}` }
+describe("/api/admin/users", () => {
+  it("should return users for super admin", async () => {
+    const mockRequest = new Request("http://localhost/api/admin/users", {
+      headers: { Authorization: `Bearer ${superAdminToken}` },
     });
-    
+
     const response = await GET(mockRequest);
     const data = await response.json();
-    
+
     expect(response.status).toBe(200);
     expect(data.users).toBeInstanceOf(Array);
   });
-  
-  it('should return 403 for regular users', async () => {
-    const mockRequest = new Request('http://localhost/api/admin/users', {
-      headers: { Authorization: `Bearer ${userToken}` }
+
+  it("should return 403 for regular users", async () => {
+    const mockRequest = new Request("http://localhost/api/admin/users", {
+      headers: { Authorization: `Bearer ${userToken}` },
     });
-    
+
     const response = await GET(mockRequest);
-    
+
     expect(response.status).toBe(403);
   });
 });
@@ -491,25 +539,25 @@ describe('/api/admin/users', () => {
 
 ```typescript
 // Example integration test
-describe('User Invitation Flow', () => {
-  it('should complete full invitation process', async () => {
+describe("User Invitation Flow", () => {
+  it("should complete full invitation process", async () => {
     // 1. Admin invites user
-    const inviteResponse = await fetch('/api/invite-user', {
-      method: 'POST',
+    const inviteResponse = await fetch("/api/invite-user", {
+      method: "POST",
       headers: {
-        'Authorization': `Bearer ${adminToken}`,
-        'Content-Type': 'application/json',
+        Authorization: `Bearer ${adminToken}`,
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        email: 'test@example.com',
-        first_name: 'Test',
-        last_name: 'User',
-        role: 'user',
+        email: "test@example.com",
+        first_name: "Test",
+        last_name: "User",
+        role: "user",
       }),
     });
-    
+
     expect(inviteResponse.status).toBe(201);
-    
+
     // 2. Verify user can accept invitation
     // 3. Verify user can authenticate
     // 4. Verify user has correct permissions

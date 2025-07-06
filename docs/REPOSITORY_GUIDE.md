@@ -9,11 +9,13 @@ PulseTrack is a comprehensive project management and time tracking system built 
 ### Core Features
 
 1. **Project Management**
+
    - Create and manage projects
    - Organize work with structured ticket system
    - Track project progress and analytics
 
-2. **Ticket Management** 
+2. **Ticket Management**
+
    - Create, assign, and track tickets
    - Kanban-style board with drag-and-drop functionality
    - Ticket status workflows (To Do, In Progress, Done, etc.)
@@ -21,12 +23,14 @@ PulseTrack is a comprehensive project management and time tracking system built 
    - Comments and collaboration
 
 3. **Time Tracking**
+
    - Start/stop timers for tickets
    - Manual time entry logging
    - Automatic time calculations
    - Detailed time entry reports
 
 4. **Billing System**
+
    - Automated billing period generation
    - Flexible billing rates (project-specific, user-specific, company defaults)
    - Invoice generation and payment tracking
@@ -35,6 +39,7 @@ PulseTrack is a comprehensive project management and time tracking system built 
    - PDF export capabilities
 
 5. **User Management**
+
    - Role-based access control (Super Admin, System Admin, Company Admin, Manager, User)
    - Company-based user isolation
    - User invitation system
@@ -74,6 +79,7 @@ apps/web/                          # Main Next.js application
 ## Technology Stack
 
 ### Frontend
+
 - **Framework**: Next.js 15 with App Router
 - **React**: Version 19
 - **Styling**: Tailwind CSS with shadcn/ui components
@@ -84,6 +90,7 @@ apps/web/                          # Main Next.js application
 - **Icons**: Lucide React
 
 ### Backend
+
 - **API**: Next.js 15 API Routes
 - **Database**: Supabase (PostgreSQL)
 - **ORM**: Drizzle ORM for type-safe database queries
@@ -91,6 +98,7 @@ apps/web/                          # Main Next.js application
 - **File Storage**: Local filesystem (expandable to cloud storage)
 
 ### Development
+
 - **Monorepo**: Turbo with pnpm workspaces
 - **Package Manager**: pnpm
 - **TypeScript**: 5.7.3 for full type safety
@@ -100,24 +108,28 @@ apps/web/                          # Main Next.js application
 ## Key Architectural Decisions
 
 ### 1. Data Layer Architecture
+
 - **Service Layer Pattern**: All database operations go through `lib/db/service.ts`
 - **Type Safety**: Comprehensive TypeScript types from database schema
 - **Query Optimization**: Efficient joins and indexes for performance
 - **Data Isolation**: Company-based data separation for security
 
 ### 2. Authentication & Authorization
+
 - **Supabase Auth**: Handles user authentication and session management
 - **Role-Based Access Control**: Five-tier role system with granular permissions
 - **Company Isolation**: Users can only access data within their company
 - **Secure API Routes**: All endpoints verify user permissions
 
 ### 3. State Management Strategy
+
 - **Server State**: TanStack Query for API data with caching
 - **Client State**: Zustand for local UI state
 - **Form State**: React Hook Form for complex forms
 - **Global State**: Minimal global state, prefer component-level state
 
 ### 4. Component Architecture
+
 - **Compound Components**: Complex components broken into smaller, reusable parts
 - **Custom Hooks**: Business logic extracted into reusable hooks
 - **UI Components**: shadcn/ui for consistent design system
@@ -126,6 +138,7 @@ apps/web/                          # Main Next.js application
 ## How the System Works
 
 ### User Journey
+
 1. **Authentication**: Users log in via Supabase Auth
 2. **Company Context**: System determines user's company and role
 3. **Dashboard Access**: Users see role-appropriate dashboard
@@ -135,6 +148,7 @@ apps/web/                          # Main Next.js application
 7. **Payment Tracking**: Payment status is managed through completion
 
 ### Data Flow
+
 1. **User Actions**: UI interactions trigger React hooks
 2. **API Calls**: Hooks make authenticated API requests
 3. **Service Layer**: API routes call service functions
@@ -146,6 +160,7 @@ apps/web/                          # Main Next.js application
 ### Key Business Logic
 
 #### Billing System
+
 - **Rate Priority**: Project rates > User rates > Company defaults
 - **Time Entry Calculation**: Duration × Applicable rate = Billable amount
 - **Period Generation**: Automated based on company billing frequency
@@ -153,12 +168,14 @@ apps/web/                          # Main Next.js application
 - **Payment Tracking**: Complete audit trail of payment status changes
 
 #### Time Tracking
+
 - **Real-time Timers**: Start/stop functionality with live updates
 - **Manual Entries**: Direct time entry for flexibility
 - **Ticket Association**: All time must be associated with a ticket
 - **Validation**: Prevents overlapping time entries and invalid durations
 
 #### Project Management
+
 - **Hierarchical Structure**: Companies → Projects → Tickets → Time Entries
 - **Status Workflows**: Configurable ticket status transitions
 - **Assignment Logic**: Users can only be assigned within their company
@@ -167,11 +184,13 @@ apps/web/                          # Main Next.js application
 ## Getting Started
 
 ### Prerequisites
+
 - Node.js 18+
 - pnpm package manager
 - Supabase account and project
 
 ### Installation
+
 1. Clone the repository
 2. Install dependencies: `pnpm install`
 3. Set up environment variables (copy `.env.local.example`)
@@ -179,6 +198,7 @@ apps/web/                          # Main Next.js application
 5. Start development server: `pnpm dev`
 
 ### Common Development Tasks
+
 - **Add new component**: Create in appropriate `components/` subdirectory
 - **Add API endpoint**: Create in `app/api/` with proper authentication
 - **Add database table**: Update schema in `lib/db/schema.ts` and generate migration
@@ -187,6 +207,7 @@ apps/web/                          # Main Next.js application
 ## Development Workflow
 
 ### Making Changes
+
 1. Create feature branch from main
 2. Implement changes following existing patterns
 3. Update tests if applicable
@@ -196,6 +217,7 @@ apps/web/                          # Main Next.js application
 7. Create pull request
 
 ### Code Standards
+
 - Follow TypeScript best practices
 - Use consistent naming conventions
 - Implement proper error handling
@@ -203,6 +225,7 @@ apps/web/                          # Main Next.js application
 - Follow the established component patterns
 
 ### Testing
+
 - Run type checking before commits
 - Test in both light and dark modes
 - Verify responsive design

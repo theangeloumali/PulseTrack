@@ -1,5 +1,5 @@
-import DiagnosticsScreen from '@/screens/diagnostics';
+import DiagnosticsScreen from "@/screens/diagnostics";
 
 export default function Page() {
-	return <DiagnosticsScreen />;
+  return <DiagnosticsScreen />;
 }

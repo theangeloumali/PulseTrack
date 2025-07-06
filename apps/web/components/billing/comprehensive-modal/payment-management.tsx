@@ -1,24 +1,36 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@workspace/ui/components/card';
-import { Button } from '@workspace/ui/components/button';
-import { Input } from '@workspace/ui/components/input';
-import { Label } from '@workspace/ui/components/label';
-import { Textarea } from '@workspace/ui/components/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@workspace/ui/components/select';
-import { Badge } from '@workspace/ui/components/badge';
-import { PaymentStatusBadge } from '@/components/payments/payment-status-badge';
-import { 
-  useUpdatePaymentStatus, 
-  useMarkInvoiceSent, 
+import { useState } from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@workspace/ui/components/card";
+import { Button } from "@workspace/ui/components/button";
+import { Input } from "@workspace/ui/components/input";
+import { Label } from "@workspace/ui/components/label";
+import { Textarea } from "@workspace/ui/components/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@workspace/ui/components/select";
+import { Badge } from "@workspace/ui/components/badge";
+import { PaymentStatusBadge } from "@/components/payments/payment-status-badge";
+import {
+  useUpdatePaymentStatus,
+  useMarkInvoiceSent,
   useMarkPaymentReceived,
   useDeletePaymentHistory,
-  useResetPaymentStatus
-} from '@/lib/hooks/usePayments';
-import type { BillingPeriod, PaymentStatus } from '@/lib/db/schema';
-import { format } from 'date-fns';
-import { 
+  useResetPaymentStatus,
+} from "@/lib/hooks/usePayments";
+import type { BillingPeriod, PaymentStatus } from "@/lib/db/schema";
+import { format } from "date-fns";
+import {
   CreditCard,
   Send,
   CheckCircle2,
@@ -32,8 +44,8 @@ import {
   ExternalLink,
   Copy,
   QrCode,
-  Banknote
-} from 'lucide-react';
+  Banknote,
+} from "lucide-react";
 
 interface PaymentManagementProps {
   billingPeriod: BillingPeriod;
@@ -41,25 +53,29 @@ interface PaymentManagementProps {
   onClose: () => void;
 }
 
-export function PaymentManagement({ 
-  billingPeriod, 
-  companyId, 
-  onClose 
+export function PaymentManagement({
+  billingPeriod,
+  companyId,
+  onClose,
 }: PaymentManagementProps) {
-  const [activeAction, setActiveAction] = useState<'status' | 'send' | 'receive' | 'delete' | 'payment-links'>('status');
-  const [paymentStatus, setPaymentStatus] = useState<PaymentStatus>(billingPeriod.payment_status);
+  const [activeAction, setActiveAction] = useState<
+    "status" | "send" | "receive" | "delete" | "payment-links"
+  >("status");
+  const [paymentStatus, setPaymentStatus] = useState<PaymentStatus>(
+    billingPeriod.payment_status,
+  );
   const [dueDate, setDueDate] = useState(
-    billingPeriod.payment_due_date ? 
-    format(new Date(billingPeriod.payment_due_date), 'yyyy-MM-dd') : 
-    ''
+    billingPeriod.payment_due_date
+      ? format(new Date(billingPeriod.payment_due_date), "yyyy-MM-dd")
+      : "",
   );
   const [paymentAmount, setPaymentAmount] = useState(
-    billingPeriod.payment_amount?.toString() || ''
+    billingPeriod.payment_amount?.toString() || "",
   );
   const [paymentReference, setPaymentReference] = useState(
-    billingPeriod.payment_reference || ''
+    billingPeriod.payment_reference || "",
   );
-  const [notes, setNotes] = useState(billingPeriod.notes || '');
+  const [notes, setNotes] = useState(billingPeriod.notes || "");
 
   const updateStatusMutation = useUpdatePaymentStatus(companyId);
   const markSentMutation = useMarkInvoiceSent(companyId);
@@ -77,7 +93,7 @@ export function PaymentManagement({
         notes: notes || undefined,
       });
     } catch (error) {
-      console.error('Error updating payment status:', error);
+      console.error("Error updating payment status:", error);
     }
   };
 
@@ -89,7 +105,7 @@ export function PaymentManagement({
         due_date: dueDate || undefined,
       });
     } catch (error) {
-      console.error('Error marking invoice as sent:', error);
+      console.error("Error marking invoice as sent:", error);
     }
   };
 
@@ -102,42 +118,45 @@ export function PaymentManagement({
         reference: paymentReference || undefined,
       });
     } catch (error) {
-      console.error('Error marking payment as received:', error);
+      console.error("Error marking payment as received:", error);
     }
   };
 
-  const isLoading = updateStatusMutation.isPending || 
-                   markSentMutation.isPending || 
-                   markReceivedMutation.isPending ||
-                   deletePaymentHistoryMutation.isPending ||
-                   resetPaymentStatusMutation.isPending;
+  const isLoading =
+    updateStatusMutation.isPending ||
+    markSentMutation.isPending ||
+    markReceivedMutation.isPending ||
+    deletePaymentHistoryMutation.isPending ||
+    resetPaymentStatusMutation.isPending;
 
   // Mock payment methods - these would come from company settings
   const paymentMethods = [
     {
-      id: 'wise',
-      name: 'Wise Transfer',
-      type: 'bank_transfer',
-      description: 'International bank transfer via Wise',
+      id: "wise",
+      name: "Wise Transfer",
+      type: "bank_transfer",
+      description: "International bank transfer via Wise",
       icon: <Banknote className="h-4 w-4" />,
-      generateLink: (amount: number) => `https://wise.com/send?amount=${amount}&currency=USD`
+      generateLink: (amount: number) =>
+        `https://wise.com/send?amount=${amount}&currency=USD`,
     },
     {
-      id: 'paypal',
-      name: 'PayPal Invoice',
-      type: 'digital_wallet',
-      description: 'Send PayPal invoice',
+      id: "paypal",
+      name: "PayPal Invoice",
+      type: "digital_wallet",
+      description: "Send PayPal invoice",
       icon: <CreditCard className="h-4 w-4" />,
-      generateLink: (amount: number) => `https://paypal.me/company/${amount}`
+      generateLink: (amount: number) => `https://paypal.me/company/${amount}`,
     },
     {
-      id: 'stripe',
-      name: 'Credit Card',
-      type: 'card',
-      description: 'Credit/Debit card payment',
+      id: "stripe",
+      name: "Credit Card",
+      type: "card",
+      description: "Credit/Debit card payment",
       icon: <CreditCard className="h-4 w-4" />,
-      generateLink: (amount: number) => `https://checkout.stripe.com/pay/amount=${amount}`
-    }
+      generateLink: (amount: number) =>
+        `https://checkout.stripe.com/pay/amount=${amount}`,
+    },
   ];
 
   const copyToClipboard = (text: string) => {
@@ -158,41 +177,53 @@ export function PaymentManagement({
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <div>
-              <div className="text-sm text-muted-foreground mb-1">Current Status</div>
+              <div className="text-sm text-muted-foreground mb-1">
+                Current Status
+              </div>
               <PaymentStatusBadge status={billingPeriod.payment_status} />
             </div>
-            
+
             {billingPeriod.invoice_sent_date && (
               <div>
-                <div className="text-sm text-muted-foreground mb-1">Invoice Sent</div>
+                <div className="text-sm text-muted-foreground mb-1">
+                  Invoice Sent
+                </div>
                 <div className="flex items-center gap-2 text-sm">
                   <Send className="h-4 w-4 text-green-600" />
-                  {format(new Date(billingPeriod.invoice_sent_date), 'MMM dd, yyyy')}
+                  {format(
+                    new Date(billingPeriod.invoice_sent_date),
+                    "MMM dd, yyyy",
+                  )}
                 </div>
               </div>
             )}
-            
+
             {billingPeriod.payment_due_date && (
               <div>
-                <div className="text-sm text-muted-foreground mb-1">Due Date</div>
+                <div className="text-sm text-muted-foreground mb-1">
+                  Due Date
+                </div>
                 <div className="flex items-center gap-2 text-sm">
                   <Calendar className="h-4 w-4 text-orange-600" />
-                  {format(new Date(billingPeriod.payment_due_date), 'MMM dd, yyyy')}
+                  {format(
+                    new Date(billingPeriod.payment_due_date),
+                    "MMM dd, yyyy",
+                  )}
                 </div>
               </div>
             )}
-            
+
             {billingPeriod.payment_amount && (
               <div>
                 <div className="text-sm text-muted-foreground mb-1">Amount</div>
                 <div className="flex items-center gap-2 text-sm font-medium">
-                  <DollarSign className="h-4 w-4 text-green-600" />
-                  ${billingPeriod.payment_amount.toFixed(2)}
+                  <DollarSign className="h-4 w-4 text-green-600" />$
+                  {billingPeriod.payment_amount.toFixed(2)}
                 </div>
               </div>
             )}
           </div>
-          
+
           {billingPeriod.payment_received_date && (
             <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
               <div className="flex items-center gap-2 text-green-800">
@@ -200,7 +231,11 @@ export function PaymentManagement({
                 <span className="font-medium">Payment Received</span>
               </div>
               <div className="text-sm text-green-700 mt-1">
-                Received on {format(new Date(billingPeriod.payment_received_date), 'MMM dd, yyyy')}
+                Received on{" "}
+                {format(
+                  new Date(billingPeriod.payment_received_date),
+                  "MMM dd, yyyy",
+                )}
                 {billingPeriod.payment_reference && (
                   <> • Reference: {billingPeriod.payment_reference}</>
                 )}
@@ -214,56 +249,61 @@ export function PaymentManagement({
       <Card>
         <CardHeader>
           <CardTitle>Payment Actions</CardTitle>
-          <CardDescription>Choose an action to perform on this billing period</CardDescription>
+          <CardDescription>
+            Choose an action to perform on this billing period
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
             <Button
-              variant={activeAction === 'status' ? 'default' : 'outline'}
+              variant={activeAction === "status" ? "default" : "outline"}
               size="sm"
-              onClick={() => setActiveAction('status')}
+              onClick={() => setActiveAction("status")}
               className="flex items-center gap-2"
             >
               <FileText className="h-4 w-4" />
               Update Status
             </Button>
-            
+
             <Button
-              variant={activeAction === 'send' ? 'default' : 'outline'}
+              variant={activeAction === "send" ? "default" : "outline"}
               size="sm"
-              onClick={() => setActiveAction('send')}
+              onClick={() => setActiveAction("send")}
               className="flex items-center gap-2"
-              disabled={billingPeriod.payment_status === 'sent' || billingPeriod.payment_status === 'paid'}
+              disabled={
+                billingPeriod.payment_status === "sent" ||
+                billingPeriod.payment_status === "paid"
+              }
             >
               <Send className="h-4 w-4" />
               Send Invoice
             </Button>
-            
+
             <Button
-              variant={activeAction === 'receive' ? 'default' : 'outline'}
+              variant={activeAction === "receive" ? "default" : "outline"}
               size="sm"
-              onClick={() => setActiveAction('receive')}
+              onClick={() => setActiveAction("receive")}
               className="flex items-center gap-2"
-              disabled={billingPeriod.payment_status === 'paid'}
+              disabled={billingPeriod.payment_status === "paid"}
             >
               <CheckCircle2 className="h-4 w-4" />
               Mark Paid
             </Button>
-            
+
             <Button
-              variant={activeAction === 'payment-links' ? 'default' : 'outline'}
+              variant={activeAction === "payment-links" ? "default" : "outline"}
               size="sm"
-              onClick={() => setActiveAction('payment-links')}
+              onClick={() => setActiveAction("payment-links")}
               className="flex items-center gap-2"
             >
               <ExternalLink className="h-4 w-4" />
               Payment Links
             </Button>
-            
+
             <Button
-              variant={activeAction === 'delete' ? 'destructive' : 'outline'}
+              variant={activeAction === "delete" ? "destructive" : "outline"}
               size="sm"
-              onClick={() => setActiveAction('delete')}
+              onClick={() => setActiveAction("delete")}
               className="flex items-center gap-2"
             >
               <Trash2 className="h-4 w-4" />
@@ -277,12 +317,17 @@ export function PaymentManagement({
       <Card>
         <CardContent className="pt-6">
           {/* Status Update Form */}
-          {activeAction === 'status' && (
+          {activeAction === "status" && (
             <form onSubmit={handleStatusUpdate} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="status">Payment Status</Label>
-                  <Select value={paymentStatus} onValueChange={(value: PaymentStatus) => setPaymentStatus(value)}>
+                  <Select
+                    value={paymentStatus}
+                    onValueChange={(value: PaymentStatus) =>
+                      setPaymentStatus(value)
+                    }
+                  >
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -323,13 +368,13 @@ export function PaymentManagement({
               </div>
 
               <Button type="submit" disabled={isLoading} className="w-full">
-                {isLoading ? 'Updating...' : 'Update Payment Status'}
+                {isLoading ? "Updating..." : "Update Payment Status"}
               </Button>
             </form>
           )}
 
           {/* Send Invoice Form */}
-          {activeAction === 'send' && (
+          {activeAction === "send" && (
             <form onSubmit={handleMarkSent} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="send-due-date">Payment Due Date</Label>
@@ -354,19 +399,20 @@ export function PaymentManagement({
                   <span className="font-medium">Invoice Actions</span>
                 </div>
                 <div className="text-sm text-blue-700">
-                  This will mark the invoice as sent and set the payment status to "sent".
-                  Make sure you have already generated and sent the actual invoice to the client.
+                  This will mark the invoice as sent and set the payment status
+                  to "sent". Make sure you have already generated and sent the
+                  actual invoice to the client.
                 </div>
               </div>
 
               <Button type="submit" disabled={isLoading} className="w-full">
-                {isLoading ? 'Processing...' : 'Mark Invoice as Sent'}
+                {isLoading ? "Processing..." : "Mark Invoice as Sent"}
               </Button>
             </form>
           )}
 
           {/* Mark Payment Received Form */}
-          {activeAction === 'receive' && (
+          {activeAction === "receive" && (
             <form onSubmit={handleMarkReceived} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
@@ -402,22 +448,24 @@ export function PaymentManagement({
                   <span className="font-medium">Confirm Payment Received</span>
                 </div>
                 <div className="text-sm text-green-700">
-                  This will mark the payment as received and update the billing period status to "paid".
-                  This action should only be taken after you have confirmed the payment has been received.
+                  This will mark the payment as received and update the billing
+                  period status to "paid". This action should only be taken
+                  after you have confirmed the payment has been received.
                 </div>
               </div>
 
               <Button type="submit" disabled={isLoading} className="w-full">
-                {isLoading ? 'Processing...' : 'Mark Payment as Received'}
+                {isLoading ? "Processing..." : "Mark Payment as Received"}
               </Button>
             </form>
           )}
 
           {/* Payment Links */}
-          {activeAction === 'payment-links' && (
+          {activeAction === "payment-links" && (
             <div className="space-y-4">
               <div className="text-sm text-muted-foreground">
-                Generate payment links for different payment methods. These links can be included in invoices or sent directly to clients.
+                Generate payment links for different payment methods. These
+                links can be included in invoices or sent directly to clients.
               </div>
 
               <div className="space-y-3">
@@ -428,21 +476,36 @@ export function PaymentManagement({
                         {method.icon}
                         <div>
                           <div className="font-medium">{method.name}</div>
-                          <div className="text-sm text-muted-foreground">{method.description}</div>
+                          <div className="text-sm text-muted-foreground">
+                            {method.description}
+                          </div>
                         </div>
                       </div>
                       <div className="flex gap-2">
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => copyToClipboard(method.generateLink(billingPeriod.payment_amount || 0))}
+                          onClick={() =>
+                            copyToClipboard(
+                              method.generateLink(
+                                billingPeriod.payment_amount || 0,
+                              ),
+                            )
+                          }
                         >
                           <Copy className="h-4 w-4" />
                         </Button>
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => window.open(method.generateLink(billingPeriod.payment_amount || 0), '_blank')}
+                          onClick={() =>
+                            window.open(
+                              method.generateLink(
+                                billingPeriod.payment_amount || 0,
+                              ),
+                              "_blank",
+                            )
+                          }
                         >
                           <ExternalLink className="h-4 w-4" />
                         </Button>
@@ -458,32 +521,43 @@ export function PaymentManagement({
               <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
                 <div className="flex items-center gap-2 text-amber-800 mb-2">
                   <AlertCircle className="h-4 w-4" />
-                  <span className="font-medium">Payment Method Configuration</span>
+                  <span className="font-medium">
+                    Payment Method Configuration
+                  </span>
                 </div>
                 <div className="text-sm text-amber-700">
-                  Payment methods are configured in Company Settings. Contact your administrator to add or modify payment options.
+                  Payment methods are configured in Company Settings. Contact
+                  your administrator to add or modify payment options.
                 </div>
               </div>
             </div>
           )}
 
           {/* Delete/Reset Actions */}
-          {activeAction === 'delete' && (
+          {activeAction === "delete" && (
             <div className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <Button
                   variant="outline"
-                  onClick={() => resetPaymentStatusMutation.mutate({ billing_period_id: billingPeriod.id })}
+                  onClick={() =>
+                    resetPaymentStatusMutation.mutate({
+                      billing_period_id: billingPeriod.id,
+                    })
+                  }
                   disabled={isLoading}
                   className="flex items-center gap-2"
                 >
                   <RefreshCw className="h-4 w-4" />
                   Reset to Pending
                 </Button>
-                
+
                 <Button
                   variant="destructive"
-                  onClick={() => deletePaymentHistoryMutation.mutate({ billing_period_id: billingPeriod.id })}
+                  onClick={() =>
+                    deletePaymentHistoryMutation.mutate({
+                      billing_period_id: billingPeriod.id,
+                    })
+                  }
                   disabled={isLoading}
                   className="flex items-center gap-2"
                 >
@@ -498,8 +572,9 @@ export function PaymentManagement({
                   <span className="font-medium">Destructive Actions</span>
                 </div>
                 <div className="text-sm text-red-700">
-                  These actions will modify or delete payment history. Use with caution.
-                  Reset will change status back to pending. Delete will remove all payment history records.
+                  These actions will modify or delete payment history. Use with
+                  caution. Reset will change status back to pending. Delete will
+                  remove all payment history records.
                 </div>
               </div>
             </div>

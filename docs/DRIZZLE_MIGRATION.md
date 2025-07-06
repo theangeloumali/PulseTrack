@@ -5,47 +5,58 @@ This project has been migrated from raw SQL and Supabase client queries to Drizz
 ## What Changed
 
 ### Database Schema
+
 - **Before**: Raw SQL in `database.sql` with manual triggers
 - **After**: Type-safe Drizzle schema in `lib/db/schema.ts` with proper relations
 
 ### Database Operations
+
 - **Before**: Supabase client with raw SQL queries
 - **After**: Drizzle ORM with type-safe queries in `lib/db/service.ts`
 
 ### User Creation
+
 - **Before**: Database triggers + client-side fallback (causing race conditions)
 - **After**: Explicit client-side user creation with Drizzle
 
 ## Setup Instructions
 
 ### 1. Install Dependencies
+
 ```bash
 pnpm add drizzle-orm postgres
 pnpm add -D drizzle-kit
 ```
 
 ### 2. Environment Variables
+
 Add to your `.env.local`:
+
 ```bash
 DATABASE_URL=postgresql://postgres:[YOUR-PASSWORD]@db.tdpkueqdmnnzeqeunhia.supabase.co:5432/postgres
 ```
 
 Get the DATABASE_URL from your Supabase project:
+
 1. Go to Settings > Database
 2. Copy the Connection string for Nodejs
 3. Replace `[YOUR-PASSWORD]` with your database password
 
 ### 3. Run the Migration
+
 Execute the SQL in `lib/db/migrations/0000_initial.sql` in your Supabase SQL editor.
 
 This migration includes:
+
 - All table definitions with proper constraints
 - RLS policies for multi-tenant security
 - Updated triggers for `updated_at` columns
 - **Removed** the problematic user creation trigger
 
 ### 4. Update Your Code
+
 The migration maintains backward compatibility:
+
 - Existing type imports from `lib/types/database.ts` still work
 - All Zustand stores continue to work without changes
 - Auth flows now use explicit Drizzle-based user creation
@@ -53,21 +64,23 @@ The migration maintains backward compatibility:
 ## New Drizzle Features
 
 ### Type-Safe Queries
+
 ```typescript
-import { getUserWithCompany, createProject } from '@/lib/db/service'
+import { getUserWithCompany, createProject } from "@/lib/db/service";
 
 // Get user with company (type-safe)
-const user = await getUserWithCompany(userId)
+const user = await getUserWithCompany(userId);
 
 // Create project (with proper TypeScript types)
 const project = await createProject({
-  name: 'New Project',
+  name: "New Project",
   companyId: user.companyId,
-  ownerId: userId
-})
+  ownerId: userId,
+});
 ```
 
 ### Schema Management
+
 ```bash
 # Generate migrations from schema changes
 pnpm db:generate
@@ -80,20 +93,24 @@ pnpm db:studio
 ```
 
 ### Relations
+
 Drizzle automatically handles relations between tables:
+
 ```typescript
 // This automatically joins the company data
-const user = await getUserWithCompany(userId)
-console.log(user.company.name) // Type-safe access
+const user = await getUserWithCompany(userId);
+console.log(user.company.name); // Type-safe access
 ```
 
 ## Testing
 
 ### Test Pages
+
 - `/test-drizzle` - Test the Drizzle ORM integration
 - `/test-signup` - Test the signup flow with Drizzle
 
 ### Test the Setup
+
 1. Navigate to `/test-drizzle`
 2. Click "Test Drizzle Setup"
 3. Verify all steps complete successfully

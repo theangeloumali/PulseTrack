@@ -1,6 +1,6 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useSessionAwareQuery } from './useSessionAwareQuery';
-import { 
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useSessionAwareQuery } from "./useSessionAwareQuery";
+import {
   getTicketsByProject,
   getTicketsByCompany,
   getAccessibleTicketsByCompany,
@@ -11,17 +11,17 @@ import {
   updateTicketSortOrders,
   getRecentTicketsByProject,
   getTicketCountByProject,
-} from '@/lib/db/service';
-import { NewTicket, Ticket } from '@/lib/db/schema';
-import { useAuthStore } from '@/lib/stores/auth';
-import { useAuth } from './useAuth';
+} from "@/lib/db/service";
+import { NewTicket, Ticket } from "@/lib/db/schema";
+import { useAuthStore } from "@/lib/stores/auth";
+import { useAuth } from "./useAuth";
 
 // Query keys for tickets
 export const ticketKeys = {
-  all: ['tickets'] as const,
-  lists: () => [...ticketKeys.all, 'list'] as const,
+  all: ["tickets"] as const,
+  lists: () => [...ticketKeys.all, "list"] as const,
   list: (projectId: string) => [...ticketKeys.lists(), projectId] as const,
-  details: () => [...ticketKeys.all, 'detail'] as const,
+  details: () => [...ticketKeys.all, "detail"] as const,
   detail: (id: string) => [...ticketKeys.details(), id] as const,
 };
 
@@ -38,12 +38,12 @@ export function useProjectTicketsQuery(projectId: string) {
 // Tickets by company query with access control (for main tickets page)
 export function useCompanyTicketsQuery(companyId?: string) {
   const { user } = useAuthStore();
-  
+
   return useSessionAwareQuery({
-    queryKey: [...ticketKeys.all, 'company', companyId, user?.id, user?.role],
+    queryKey: [...ticketKeys.all, "company", companyId, user?.id, user?.role],
     queryFn: () => {
       if (!companyId || !user?.id || !user?.role) {
-        throw new Error('User or company information not available');
+        throw new Error("User or company information not available");
       }
       return getAccessibleTicketsByCompany(companyId, user.id, user.role);
     },
@@ -55,11 +55,14 @@ export function useCompanyTicketsQuery(companyId?: string) {
 // Admin-only hook to get all company tickets (unrestricted)
 export function useAllCompanyTicketsQuery(companyId?: string) {
   const { user } = useAuthStore();
-  
+
   return useSessionAwareQuery({
-    queryKey: [...ticketKeys.all, 'allCompanyTickets', companyId],
+    queryKey: [...ticketKeys.all, "allCompanyTickets", companyId],
     queryFn: () => getTicketsByCompany(companyId!),
-    enabled: !!companyId && !!user?.role && ['super_admin', 'system_admin', 'company_admin'].includes(user.role),
+    enabled:
+      !!companyId &&
+      !!user?.role &&
+      ["super_admin", "system_admin", "company_admin"].includes(user.role),
     staleTime: 1000 * 60 * 2, // 2 minutes
   });
 }
@@ -67,7 +70,7 @@ export function useAllCompanyTicketsQuery(companyId?: string) {
 // Single ticket query
 export function useTicketQuery(ticketId: string) {
   const { user } = useAuthStore();
-  
+
   return useSessionAwareQuery({
     queryKey: ticketKeys.detail(ticketId),
     queryFn: () => getTicketById(ticketId),
@@ -85,34 +88,34 @@ export function useCreateTicketMutation() {
     mutationFn: createTicket,
     onSuccess: (newTicket) => {
       // Invalidate all ticket-related queries
-      queryClient.invalidateQueries({ 
-        queryKey: ticketKeys.list(newTicket.project_id) 
+      queryClient.invalidateQueries({
+        queryKey: ticketKeys.list(newTicket.project_id),
       });
-      
+
       // Invalidate company tickets query
-      queryClient.invalidateQueries({ 
-        queryKey: [...ticketKeys.all, 'company'] 
+      queryClient.invalidateQueries({
+        queryKey: [...ticketKeys.all, "company"],
       });
-      
+
       // Invalidate project ticket count query
-      queryClient.invalidateQueries({ 
-        queryKey: [...ticketKeys.all, 'count', newTicket.project_id] 
+      queryClient.invalidateQueries({
+        queryKey: [...ticketKeys.all, "count", newTicket.project_id],
       });
-      
+
       // Invalidate recent tickets query
-      queryClient.invalidateQueries({ 
-        queryKey: [...ticketKeys.all, 'recent', newTicket.project_id] 
+      queryClient.invalidateQueries({
+        queryKey: [...ticketKeys.all, "recent", newTicket.project_id],
       });
-      
+
       // Invalidate projects with ticket counts (used in projects page)
-      queryClient.invalidateQueries({ 
-        queryKey: ['projects', 'withTicketCounts'] 
+      queryClient.invalidateQueries({
+        queryKey: ["projects", "withTicketCounts"],
       });
-      
+
       // Optimistically add to cache
       queryClient.setQueryData(
         ticketKeys.list(newTicket.project_id),
-        (old: Ticket[] = []) => [newTicket, ...old]
+        (old: Ticket[] = []) => [newTicket, ...old],
       );
     },
   });
@@ -124,41 +127,41 @@ export function useUpdateTicket() {
   const { user } = useAuth();
 
   return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Partial<NewTicket> }) => 
+    mutationFn: ({ id, data }: { id: string; data: Partial<NewTicket> }) =>
       updateTicket(id, data),
     onSuccess: (updatedTicket: Ticket) => {
       // Invalidate all ticket-related queries
-      queryClient.invalidateQueries({ 
-        queryKey: ticketKeys.list(updatedTicket.project_id) 
+      queryClient.invalidateQueries({
+        queryKey: ticketKeys.list(updatedTicket.project_id),
       });
-      queryClient.invalidateQueries({ 
-        queryKey: ticketKeys.detail(updatedTicket.id) 
+      queryClient.invalidateQueries({
+        queryKey: ticketKeys.detail(updatedTicket.id),
       });
-      
+
       // Invalidate company tickets query
-      queryClient.invalidateQueries({ 
-        queryKey: [...ticketKeys.all, 'company'] 
+      queryClient.invalidateQueries({
+        queryKey: [...ticketKeys.all, "company"],
       });
-      
+
       // Invalidate project ticket count query
-      queryClient.invalidateQueries({ 
-        queryKey: [...ticketKeys.all, 'count', updatedTicket.project_id] 
+      queryClient.invalidateQueries({
+        queryKey: [...ticketKeys.all, "count", updatedTicket.project_id],
       });
-      
+
       // Invalidate recent tickets query
-      queryClient.invalidateQueries({ 
-        queryKey: [...ticketKeys.all, 'recent', updatedTicket.project_id] 
+      queryClient.invalidateQueries({
+        queryKey: [...ticketKeys.all, "recent", updatedTicket.project_id],
       });
-      
+
       // Invalidate projects with ticket counts
-      queryClient.invalidateQueries({ 
-        queryKey: ['projects', 'withTicketCounts'] 
+      queryClient.invalidateQueries({
+        queryKey: ["projects", "withTicketCounts"],
       });
-      
+
       // Update the single ticket cache
       queryClient.setQueryData(
         ticketKeys.detail(updatedTicket.id),
-        updatedTicket
+        updatedTicket,
       );
     },
   });
@@ -175,10 +178,10 @@ export function useUpdateTicketSortOrders() {
     onSuccess: () => {
       // Don't invalidate immediately - let optimistic updates persist
       // Only invalidate on component unmount or explicit refresh
-      console.log('✅ Sort order update successful - keeping optimistic state');
+      console.log("✅ Sort order update successful - keeping optimistic state");
     },
     onError: (error) => {
-      console.log('❌ Sort order update failed - invalidating cache:', error);
+      console.log("❌ Sort order update failed - invalidating cache:", error);
       // Only invalidate on error to revert to server state
       queryClient.invalidateQueries({ queryKey: ticketKeys.all });
     },
@@ -186,9 +189,12 @@ export function useUpdateTicketSortOrders() {
 }
 
 // Get recent tickets for project dashboard
-export function useRecentProjectTicketsQuery(projectId: string, limit: number = 5) {
+export function useRecentProjectTicketsQuery(
+  projectId: string,
+  limit: number = 5,
+) {
   return useSessionAwareQuery({
-    queryKey: [...ticketKeys.all, 'recent', projectId, limit],
+    queryKey: [...ticketKeys.all, "recent", projectId, limit],
     queryFn: () => getRecentTicketsByProject(projectId, limit),
     enabled: !!projectId,
     staleTime: 1000 * 60 * 2, // 2 minutes
@@ -198,7 +204,7 @@ export function useRecentProjectTicketsQuery(projectId: string, limit: number = 
 // Get ticket count for project
 export function useProjectTicketCountQuery(projectId: string) {
   return useSessionAwareQuery({
-    queryKey: [...ticketKeys.all, 'count', projectId],
+    queryKey: [...ticketKeys.all, "count", projectId],
     queryFn: () => getTicketCountByProject(projectId),
     enabled: !!projectId,
     staleTime: 1000 * 60 * 2, // 2 minutes
@@ -214,23 +220,23 @@ export function useDeleteTicketMutation() {
     mutationFn: deleteTicket,
     onSuccess: (_, deletedTicketId) => {
       // Invalidate all ticket-related queries
-      queryClient.invalidateQueries({ 
-        queryKey: ticketKeys.all
+      queryClient.invalidateQueries({
+        queryKey: ticketKeys.all,
       });
-      
+
       // Invalidate company tickets query
-      queryClient.invalidateQueries({ 
-        queryKey: [...ticketKeys.all, 'company'] 
+      queryClient.invalidateQueries({
+        queryKey: [...ticketKeys.all, "company"],
       });
-      
+
       // Invalidate projects with ticket counts
-      queryClient.invalidateQueries({ 
-        queryKey: ['projects', 'withTicketCounts'] 
+      queryClient.invalidateQueries({
+        queryKey: ["projects", "withTicketCounts"],
       });
-      
+
       // Remove from cache optimistically
       queryClient.removeQueries({
-        queryKey: ticketKeys.detail(deletedTicketId)
+        queryKey: ticketKeys.detail(deletedTicketId),
       });
     },
   });

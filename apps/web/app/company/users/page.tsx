@@ -1,5 +1,5 @@
-import CompanyUsersScreen from '@/screens/company-users';
+import CompanyUsersScreen from "@/screens/company-users";
 
 export default function Page() {
-	return <CompanyUsersScreen />;
+  return <CompanyUsersScreen />;
 }

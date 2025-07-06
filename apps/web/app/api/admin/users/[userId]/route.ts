@@ -1,12 +1,15 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { withAuth } from '@/lib/auth-utils';
-import { createServerClient } from '@supabase/ssr';
-import type { UserRole, UserStatus } from '@/lib/db/schema';
+import { NextRequest, NextResponse } from "next/server";
+import { withAuth } from "@/lib/auth-utils";
+import { createServerClient } from "@supabase/ssr";
+import type { UserRole, UserStatus } from "@/lib/db/schema";
 
-async function handler(req: NextRequest, { params }: { params: { userId: string } }) {
+async function handler(
+  req: NextRequest,
+  { params }: { params: { userId: string } },
+) {
   const { userId } = params;
 
-  if (req.method === 'PATCH') {
+  if (req.method === "PATCH") {
     try {
       const supabase = createServerClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -20,7 +23,7 @@ async function handler(req: NextRequest, { params }: { params: { userId: string 
               // No-op for read-only operations
             },
           },
-        }
+        },
       );
 
       const body = await req.json();
@@ -33,18 +36,27 @@ async function handler(req: NextRequest, { params }: { params: { userId: string 
 
       if (role !== undefined) {
         // Validate role
-        const validRoles: UserRole[] = ['super_admin', 'system_admin', 'company_admin', 'manager', 'user'];
+        const validRoles: UserRole[] = [
+          "super_admin",
+          "system_admin",
+          "company_admin",
+          "manager",
+          "user",
+        ];
         if (!validRoles.includes(role)) {
-          return NextResponse.json({ error: 'Invalid role' }, { status: 400 });
+          return NextResponse.json({ error: "Invalid role" }, { status: 400 });
         }
         updates.role = role;
       }
 
       if (status !== undefined) {
         // Validate status
-        const validStatuses: UserStatus[] = ['active', 'inactive'];
+        const validStatuses: UserStatus[] = ["active", "inactive"];
         if (!validStatuses.includes(status)) {
-          return NextResponse.json({ error: 'Invalid status' }, { status: 400 });
+          return NextResponse.json(
+            { error: "Invalid status" },
+            { status: 400 },
+          );
         }
         updates.status = status;
       }
@@ -55,10 +67,11 @@ async function handler(req: NextRequest, { params }: { params: { userId: string 
 
       // Update the user
       const { data: updatedUser, error } = await supabase
-        .from('users')
+        .from("users")
         .update(updates)
-        .eq('id', userId)
-        .select(`
+        .eq("id", userId)
+        .select(
+          `
           id,
           email,
           first_name,
@@ -75,22 +88,29 @@ async function handler(req: NextRequest, { params }: { params: { userId: string 
             name,
             slug
           )
-        `)
+        `,
+        )
         .single();
 
       if (error) {
-        console.error('Error updating user:', error);
-        return NextResponse.json({ error: 'Failed to update user' }, { status: 500 });
+        console.error("Error updating user:", error);
+        return NextResponse.json(
+          { error: "Failed to update user" },
+          { status: 500 },
+        );
       }
 
       return NextResponse.json(updatedUser);
     } catch (error) {
-      console.error('Super admin user update API error:', error);
-      return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+      console.error("Super admin user update API error:", error);
+      return NextResponse.json(
+        { error: "Internal server error" },
+        { status: 500 },
+      );
     }
   }
 
-  if (req.method === 'DELETE') {
+  if (req.method === "DELETE") {
     try {
       const supabase = createServerClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -104,35 +124,47 @@ async function handler(req: NextRequest, { params }: { params: { userId: string 
               // No-op for read-only operations
             },
           },
-        }
+        },
       );
 
       // Soft delete by setting status to inactive
       const { data: deletedUser, error } = await supabase
-        .from('users')
-        .update({ 
-          status: 'inactive',
-          updated_at: new Date().toISOString()
+        .from("users")
+        .update({
+          status: "inactive",
+          updated_at: new Date().toISOString(),
         })
-        .eq('id', userId)
+        .eq("id", userId)
         .select()
         .single();
 
       if (error) {
-        console.error('Error deleting user:', error);
-        return NextResponse.json({ error: 'Failed to delete user' }, { status: 500 });
+        console.error("Error deleting user:", error);
+        return NextResponse.json(
+          { error: "Failed to delete user" },
+          { status: 500 },
+        );
       }
 
-      return NextResponse.json({ message: 'User deactivated successfully', user: deletedUser });
+      return NextResponse.json({
+        message: "User deactivated successfully",
+        user: deletedUser,
+      });
     } catch (error) {
-      console.error('Super admin user delete API error:', error);
-      return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+      console.error("Super admin user delete API error:", error);
+      return NextResponse.json(
+        { error: "Internal server error" },
+        { status: 500 },
+      );
     }
   }
 
-  return NextResponse.json({ error: `Method ${req.method} Not Allowed` }, { status: 405 });
+  return NextResponse.json(
+    { error: `Method ${req.method} Not Allowed` },
+    { status: 405 },
+  );
 }
 
 // Only super_admins can access this endpoint
-export const PATCH = withAuth(handler, ['super_admin']);
-export const DELETE = withAuth(handler, ['super_admin']);
+export const PATCH = withAuth(handler, ["super_admin"]);
+export const DELETE = withAuth(handler, ["super_admin"]);

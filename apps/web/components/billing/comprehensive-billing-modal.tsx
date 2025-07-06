@@ -1,23 +1,34 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@workspace/ui/components/card';
-import { Button } from '@workspace/ui/components/button';
-import { Badge } from '@workspace/ui/components/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@workspace/ui/components/tabs';
-import { PaymentStatusBadge } from '@/components/payments/payment-status-badge';
-import { useBillingReport, useBillingSettings } from '@/lib/hooks/useBilling';
-import { useRoleAccess } from '@/lib/hooks/useRoleAccess';
-import { extractTargetUserIdFromBillingPeriod } from '@/lib/db/billing-service';
-import type { BillingPeriod } from '@/lib/db/schema';
-import { format } from 'date-fns';
-import { 
-  X, 
-  Calendar, 
-  Clock, 
-  DollarSign, 
-  Users, 
-  FileText, 
+import { useState, useEffect } from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@workspace/ui/components/card";
+import { Button } from "@workspace/ui/components/button";
+import { Badge } from "@workspace/ui/components/badge";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@workspace/ui/components/tabs";
+import { PaymentStatusBadge } from "@/components/payments/payment-status-badge";
+import { useBillingReport, useBillingSettings } from "@/lib/hooks/useBilling";
+import { useRoleAccess } from "@/lib/hooks/useRoleAccess";
+import { extractTargetUserIdFromBillingPeriod } from "@/lib/db/billing-service";
+import type { BillingPeriod } from "@/lib/db/schema";
+import { format } from "date-fns";
+import {
+  X,
+  Calendar,
+  Clock,
+  DollarSign,
+  Users,
+  FileText,
   CreditCard,
   BarChart3,
   Download,
@@ -25,16 +36,16 @@ import {
   Eye,
   Settings,
   Printer,
-  Mail
-} from 'lucide-react';
+  Mail,
+} from "lucide-react";
 
 // Import sub-components (we'll create these)
-import { BillingOverview } from './comprehensive-modal/billing-overview';
-import { TimeDetailView } from './comprehensive-modal/time-detail-view';
-import { PaymentManagement } from './comprehensive-modal/payment-management';
-import { InvoiceGeneration } from './comprehensive-modal/invoice-generation';
-import { PaymentAnalytics } from './comprehensive-modal/payment-analytics';
-import { CompanyBranding } from './comprehensive-modal/company-branding';
+import { BillingOverview } from "./comprehensive-modal/billing-overview";
+import { TimeDetailView } from "./comprehensive-modal/time-detail-view";
+import { PaymentManagement } from "./comprehensive-modal/payment-management";
+import { InvoiceGeneration } from "./comprehensive-modal/invoice-generation";
+import { PaymentAnalytics } from "./comprehensive-modal/payment-analytics";
+import { CompanyBranding } from "./comprehensive-modal/company-branding";
 
 interface ComprehensiveBillingModalProps {
   billingPeriod: BillingPeriod;
@@ -47,20 +58,20 @@ export function ComprehensiveBillingModal({
   billingPeriod,
   isOpen,
   onClose,
-  companyId
+  companyId,
 }: ComprehensiveBillingModalProps) {
-  const [activeTab, setActiveTab] = useState('overview');
+  const [activeTab, setActiveTab] = useState("overview");
   const { isSuperAdmin, isCompanyAdmin } = useRoleAccess();
-  
+
   // Extract target user ID if this is a user-specific billing period
   const targetUserId = extractTargetUserIdFromBillingPeriod(billingPeriod);
-  
+
   // Fetch billing report data for the period (filtered by user if applicable)
   const { data: billingReport, isLoading: reportLoading } = useBillingReport(
     companyId,
     billingPeriod.start_date,
     billingPeriod.end_date,
-    targetUserId || undefined
+    targetUserId || undefined,
   );
 
   // Fetch company settings for branding
@@ -74,11 +85,11 @@ export function ComprehensiveBillingModal({
   const canManagePayments = isSuperAdmin() || isCompanyAdmin();
 
   return (
-    <div 
+    <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm"
       onClick={onClose}
     >
-      <Card 
+      <Card
         className="w-full max-w-6xl max-h-[95vh] overflow-hidden flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
@@ -90,21 +101,26 @@ export function ComprehensiveBillingModal({
               Billing Period Details
             </CardTitle>
             <CardDescription className="mt-1 text-base">
-              <span className="font-medium">{billingPeriod.name}</span> • 
-              {format(new Date(billingPeriod.start_date), 'MMM dd')} - {format(new Date(billingPeriod.end_date), 'MMM dd, yyyy')} • 
+              <span className="font-medium">{billingPeriod.name}</span> •
+              {format(new Date(billingPeriod.start_date), "MMM dd")} -{" "}
+              {format(new Date(billingPeriod.end_date), "MMM dd, yyyy")} •
               <PaymentStatusBadge status={billingPeriod.payment_status} />
             </CardDescription>
           </div>
-          
+
           {/* Quick Stats */}
           <div className="flex items-center gap-6 mr-4">
             <div className="text-center">
               <div className="text-sm text-muted-foreground">Total Hours</div>
-              <div className="text-lg font-bold">{summaryStats.totalHours.toFixed(1)}</div>
+              <div className="text-lg font-bold">
+                {summaryStats.totalHours.toFixed(1)}
+              </div>
             </div>
             <div className="text-center">
               <div className="text-sm text-muted-foreground">Total Amount</div>
-              <div className="text-lg font-bold">${summaryStats.totalAmount.toFixed(2)}</div>
+              <div className="text-lg font-bold">
+                ${summaryStats.totalAmount.toFixed(2)}
+              </div>
             </div>
             <div className="text-center">
               <div className="text-sm text-muted-foreground">Resources</div>
@@ -124,18 +140,28 @@ export function ComprehensiveBillingModal({
 
         {/* Tabs */}
         <div className="flex-1 overflow-hidden">
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
+          <Tabs
+            value={activeTab}
+            onValueChange={setActiveTab}
+            className="h-full flex flex-col"
+          >
             <TabsList className="w-full justify-start border-b rounded-none bg-transparent h-12">
               <TabsTrigger value="overview" className="flex items-center gap-2">
                 <BarChart3 className="h-4 w-4" />
                 Overview
               </TabsTrigger>
-              <TabsTrigger value="time-details" className="flex items-center gap-2">
+              <TabsTrigger
+                value="time-details"
+                className="flex items-center gap-2"
+              >
                 <Clock className="h-4 w-4" />
                 Time Details
               </TabsTrigger>
               {canManagePayments && (
-                <TabsTrigger value="payments" className="flex items-center gap-2">
+                <TabsTrigger
+                  value="payments"
+                  className="flex items-center gap-2"
+                >
                   <CreditCard className="h-4 w-4" />
                   Payment Management
                 </TabsTrigger>
@@ -144,12 +170,18 @@ export function ComprehensiveBillingModal({
                 <FileText className="h-4 w-4" />
                 Invoice Generation
               </TabsTrigger>
-              <TabsTrigger value="analytics" className="flex items-center gap-2">
+              <TabsTrigger
+                value="analytics"
+                className="flex items-center gap-2"
+              >
                 <BarChart3 className="h-4 w-4" />
                 Analytics
               </TabsTrigger>
               {canManagePayments && (
-                <TabsTrigger value="branding" className="flex items-center gap-2">
+                <TabsTrigger
+                  value="branding"
+                  className="flex items-center gap-2"
+                >
                   <Settings className="h-4 w-4" />
                   Company Branding
                 </TabsTrigger>
@@ -158,7 +190,7 @@ export function ComprehensiveBillingModal({
 
             <div className="flex-1 overflow-y-auto">
               <TabsContent value="overview" className="h-full m-0 p-6">
-                <BillingOverview 
+                <BillingOverview
                   billingPeriod={billingPeriod}
                   billingReport={billingReport}
                   summaryStats={summaryStats}
@@ -167,7 +199,7 @@ export function ComprehensiveBillingModal({
               </TabsContent>
 
               <TabsContent value="time-details" className="h-full m-0 p-6">
-                <TimeDetailView 
+                <TimeDetailView
                   billingPeriod={billingPeriod}
                   billingReport={billingReport}
                   companyId={companyId}
@@ -177,7 +209,7 @@ export function ComprehensiveBillingModal({
 
               {canManagePayments && (
                 <TabsContent value="payments" className="h-full m-0 p-6">
-                  <PaymentManagement 
+                  <PaymentManagement
                     billingPeriod={billingPeriod}
                     companyId={companyId}
                     onClose={() => {}} // Keep modal open after payment actions
@@ -186,7 +218,7 @@ export function ComprehensiveBillingModal({
               )}
 
               <TabsContent value="invoices" className="h-full m-0 p-6">
-                <InvoiceGeneration 
+                <InvoiceGeneration
                   billingPeriod={billingPeriod}
                   billingReport={billingReport}
                   companyId={companyId}
@@ -195,7 +227,7 @@ export function ComprehensiveBillingModal({
               </TabsContent>
 
               <TabsContent value="analytics" className="h-full m-0 p-6">
-                <PaymentAnalytics 
+                <PaymentAnalytics
                   billingPeriod={billingPeriod}
                   companyId={companyId}
                 />
@@ -203,7 +235,7 @@ export function ComprehensiveBillingModal({
 
               {canManagePayments && (
                 <TabsContent value="branding" className="h-full m-0 p-6">
-                  <CompanyBranding 
+                  <CompanyBranding
                     companyId={companyId}
                     companySettings={companySettings}
                   />
@@ -225,9 +257,9 @@ export function ComprehensiveBillingModal({
               Print Summary
             </Button>
           </div>
-          
+
           <div className="flex gap-2">
-            {billingPeriod.payment_status !== 'paid' && canManagePayments && (
+            {billingPeriod.payment_status !== "paid" && canManagePayments && (
               <>
                 <Button variant="outline" size="sm">
                   <Mail className="h-4 w-4 mr-2" />
@@ -258,7 +290,7 @@ function calculateSummaryStats(billingReport: any) {
       userCount: 0,
       projectCount: 0,
       billableHours: 0,
-      nonBillableHours: 0
+      nonBillableHours: 0,
     };
   }
 
@@ -274,15 +306,17 @@ function calculateSummaryStats(billingReport: any) {
       users.add(userId);
       const userHours = userData.totalHours || 0;
       const userAmount = userData.totalAmount || 0;
-      
+
       totalHours += userHours;
       totalAmount += userAmount;
-      
+
       // Track projects
       if (userData.projects) {
-        Object.keys(userData.projects).forEach(projectId => projects.add(projectId));
+        Object.keys(userData.projects).forEach((projectId) =>
+          projects.add(projectId),
+        );
       }
-      
+
       // For now, assume all tracked time is billable
       // This could be enhanced with actual billable tracking
       billableHours += userHours;
@@ -295,6 +329,6 @@ function calculateSummaryStats(billingReport: any) {
     userCount: users.size,
     projectCount: projects.size,
     billableHours,
-    nonBillableHours
+    nonBillableHours,
   };
 }

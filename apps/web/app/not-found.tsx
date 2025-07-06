@@ -1,14 +1,20 @@
-'use client';
+"use client";
 
-import Link from 'next/link';
-import { Button } from '@workspace/ui/components/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@workspace/ui/components/card';
-import { Home, Search, ArrowLeft, FileX } from 'lucide-react';
-import { useAuthStore } from '@/lib/stores/auth';
+import Link from "next/link";
+import { Button } from "@workspace/ui/components/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@workspace/ui/components/card";
+import { Home, Search, ArrowLeft, FileX } from "lucide-react";
+import { useAuthStore } from "@/lib/stores/auth";
 
 export default function NotFound() {
   const { user } = useAuthStore();
-  
+
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
       <Card className="w-full max-w-md">
@@ -23,7 +29,7 @@ export default function NotFound() {
             The page you're looking for doesn't exist or has been moved.
           </CardDescription>
         </CardHeader>
-        
+
         <CardContent className="space-y-4">
           <div className="space-y-3">
             {user ? (
@@ -34,16 +40,16 @@ export default function NotFound() {
                     Go to Dashboard
                   </Button>
                 </Link>
-                
+
                 <Link href="/projects">
                   <Button variant="outline" className="w-full justify-start">
                     <Search className="w-4 h-4 mr-2" />
                     Browse Projects
                   </Button>
                 </Link>
-                
-                <Button 
-                  variant="ghost" 
+
+                <Button
+                  variant="ghost"
                   onClick={() => window.history.back()}
                   className="w-full justify-start"
                 >
@@ -59,7 +65,7 @@ export default function NotFound() {
                     Go to Login
                   </Button>
                 </Link>
-                
+
                 <Link href="/signup">
                   <Button variant="outline" className="w-full justify-start">
                     <Search className="w-4 h-4 mr-2" />
@@ -69,7 +75,7 @@ export default function NotFound() {
               </>
             )}
           </div>
-          
+
           <div className="pt-4 border-t text-center">
             <p className="text-sm text-gray-500">
               If you believe this is an error, please contact support.

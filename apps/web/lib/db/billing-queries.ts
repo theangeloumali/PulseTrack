@@ -1,4 +1,4 @@
-import { userBasicFields } from './queries';
+import { userBasicFields } from "./queries";
 
 export const billingPeriodBasicFields = `
     id,

@@ -1,5 +1,5 @@
-import ProjectsScreen from '@/screens/projects';
+import ProjectsScreen from "@/screens/projects";
 
 export default function Page() {
-    return <ProjectsScreen />;
+  return <ProjectsScreen />;
 }

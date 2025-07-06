@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import { Fragment } from 'react';
-import { Dialog, Transition } from '@headlessui/react';
-import { X } from 'lucide-react';
-import { Button } from '@workspace/ui/components/button';
+import { Fragment } from "react";
+import { Dialog, Transition } from "@headlessui/react";
+import { X } from "lucide-react";
+import { Button } from "@workspace/ui/components/button";
 
 interface ModalProps {
   isOpen: boolean;
@@ -11,23 +11,23 @@ interface ModalProps {
   title: string;
   description?: string;
   children: React.ReactNode;
-  size?: 'sm' | 'md' | 'lg' | 'xl';
+  size?: "sm" | "md" | "lg" | "xl";
 }
 
 const sizeClasses = {
-  sm: 'max-w-md',
-  md: 'max-w-lg',
-  lg: 'max-w-2xl',
-  xl: 'max-w-4xl',
+  sm: "max-w-md",
+  md: "max-w-lg",
+  lg: "max-w-2xl",
+  xl: "max-w-4xl",
 };
 
-export function Modal({ 
-  isOpen, 
-  onClose, 
-  title, 
-  description, 
-  children, 
-  size = 'md' 
+export function Modal({
+  isOpen,
+  onClose,
+  title,
+  description,
+  children,
+  size = "md",
 }: ModalProps) {
   return (
     <Transition appear show={isOpen} as={Fragment}>
@@ -55,7 +55,9 @@ export function Modal({
               leaveFrom="opacity-100 scale-100"
               leaveTo="opacity-0 scale-95"
             >
-              <Dialog.Panel className={`w-full ${sizeClasses[size]} transform overflow-hidden rounded-lg bg-card text-left align-middle shadow-xl transition-all`}>
+              <Dialog.Panel
+                className={`w-full ${sizeClasses[size]} transform overflow-hidden rounded-lg bg-card text-left align-middle shadow-xl transition-all`}
+              >
                 {/* Header */}
                 <div className="flex items-center justify-between px-6 py-4 border-b border-border">
                   <div>
@@ -82,9 +84,7 @@ export function Modal({
                 </div>
 
                 {/* Content */}
-                <div className="px-6 py-4">
-                  {children}
-                </div>
+                <div className="px-6 py-4">{children}</div>
               </Dialog.Panel>
             </Transition.Child>
           </div>

@@ -19,6 +19,7 @@
 ### Tech Stack
 
 **Frontend:**
+
 - Next.js 15 (React 19) with App Router
 - TypeScript 5.7.3
 - Tailwind CSS + shadcn/ui components
@@ -28,6 +29,7 @@
 - Drag-and-drop with @dnd-kit
 
 **Backend:**
+
 - Next.js 15 API Routes
 - Supabase (PostgreSQL) for database
 - Drizzle ORM for type-safe database operations
@@ -35,6 +37,7 @@
 - Row Level Security (RLS) for data isolation
 
 **Development:**
+
 - Turbo monorepo with pnpm workspaces
 - ESLint + Prettier for code quality
 - Vercel Analytics for monitoring
@@ -65,7 +68,7 @@ PulseTrack/
 
 ### Prerequisites
 
-- Node.js 20+ 
+- Node.js 20+
 - pnpm 10+
 - Supabase account and project
 
@@ -94,6 +97,7 @@ NEXT_PUBLIC_SITE_URL=http://localhost:4649
 ```
 
 **Where to find these values:**
+
 1. Go to your [Supabase Dashboard](https://supabase.com/dashboard)
 2. Select your project
 3. Go to Settings → API
@@ -162,6 +166,7 @@ pnpm migration:run
 PulseTrack uses Supabase Auth with a comprehensive role-based access control system:
 
 ### User Roles (Hierarchical)
+
 - **Super Admin**: Global system access
 - **System Admin**: Multi-company management
 - **Company Admin**: Company-wide management
@@ -169,6 +174,7 @@ PulseTrack uses Supabase Auth with a comprehensive role-based access control sys
 - **User**: Basic project access + personal billing period generation
 
 ### Data Isolation
+
 - Company-based data isolation using Row Level Security (RLS)
 - Users can only access data within their company
 - Admins have appropriate cross-company access based on role
@@ -191,11 +197,13 @@ For complete schema documentation, see [docs/database-schema.md](./docs/database
 ## 🎯 Key Features Detail
 
 ### Project Management
+
 - Create projects with team member assignment
 - Role-based project access (public, company, private)
 - Project-specific billing rates and settings
 
 ### Ticket Tracking
+
 - Kanban board with drag-and-drop reordering
 - Status tracking (New → In Progress → Review → Done)
 - Priority levels (Low, Medium, High, Critical)
@@ -203,12 +211,14 @@ For complete schema documentation, see [docs/database-schema.md](./docs/database
 - Complete change history logging
 
 ### Time Tracking
+
 - Start/stop timers linked to specific tickets
 - Manual time entry with duration
 - Automatic billing rate calculation
 - Time entry validation and integrity checks
 
 ### Billing System
+
 - Automatic billing period generation (admin and user self-service)
 - Flexible billing rates (per-user, per-project, company default)
 - Invoice generation with PDF export
@@ -228,14 +238,15 @@ The app supports both standalone and proxy deployments:
 ```javascript
 // next.config.mjs
 const nextConfig = {
-  basePath: "/pulse",      // For proxy deployment
-  assetPrefix: "/pulse",   // Ensures assets load correctly
-}
+  basePath: "/pulse", // For proxy deployment
+  assetPrefix: "/pulse", // Ensures assets load correctly
+};
 ```
 
 ### Theme Configuration
 
 Built-in dark/light mode with system preference detection:
+
 - Uses `next-themes` for theme management
 - Tailwind CSS with CSS variables for theme colors
 - Persistent theme selection per user
@@ -271,10 +282,10 @@ node apps/web/tests/test/test-invitation-flow.cjs
 
 ```javascript
 // Check for data integrity issues
-import { checkTimeEntryIntegrity } from '@/lib/db/service';
+import { checkTimeEntryIntegrity } from "@/lib/db/service";
 
-const issues = await checkTimeEntryIntegrity('company-id');
-console.log('Database health:', issues);
+const issues = await checkTimeEntryIntegrity("company-id");
+console.log("Database health:", issues);
 ```
 
 ## 🚀 Deployment
@@ -330,16 +341,19 @@ This project is proprietary software. All rights reserved.
 ### Common Issues
 
 **Authentication Problems:**
+
 - Verify Supabase credentials in `.env.local`
 - Check Supabase project settings and RLS policies
 - Ensure database migrations are applied
 
 **Build Errors:**
+
 - Run `pnpm typecheck` to identify TypeScript issues
 - Check for missing dependencies with `pnpm install`
 - Verify Node.js version compatibility (20+)
 
 **Database Issues:**
+
 - Apply pending migrations: `cd apps/web && pnpm migration:run`
 - Check database connection in Supabase dashboard
 - Verify RLS policies are properly configured
