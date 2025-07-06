@@ -1,13 +1,14 @@
 'use client'
 
 import { useState } from 'react'
-import { Edit, Trash2, Clock } from 'lucide-react'
+import { Edit, Trash2, Clock, Shield } from 'lucide-react'
 import { Button } from '@workspace/ui/components/button'
 import { Card } from '@workspace/ui/components/card'
 import { Input } from '@workspace/ui/components/input'
 import { Label } from '@workspace/ui/components/label'
 import { Textarea } from '@workspace/ui/components/textarea'
 import { useTimeEntriesByTicket, useUpdateTimeEntry, useDeleteTimeEntry } from '@/lib/hooks/useTimeTracking'
+import { useRoleAccess } from '@/lib/hooks/useRoleAccess'
 import type { TimeEntryWithUser } from '@/lib/db/schema'
 
 interface TimeEntriesListProps {
@@ -25,6 +26,7 @@ export function TimeEntriesList({ ticketId }: TimeEntriesListProps) {
   const { data: timeEntries = [], isLoading } = useTimeEntriesByTicket(ticketId)
   const updateTimeEntryMutation = useUpdateTimeEntry()
   const deleteTimeEntryMutation = useDeleteTimeEntry()
+  const { canDeleteTimeEntry } = useRoleAccess()
   
   const [editingEntry, setEditingEntry] = useState<EditingEntry | null>(null)
 
@@ -93,13 +95,34 @@ export function TimeEntriesList({ ticketId }: TimeEntriesListProps) {
     setEditingEntry(null)
   }
 
-  const deleteEntry = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this time entry?')) return
+  const deleteEntry = async (entry: TimeEntryWithUser) => {
+    // Check permissions first
+    const { canDelete, reason } = canDeleteTimeEntry({
+      user_id: entry.user_id,
+      // Note: We don't have billing info in the list view, so the backend will handle that check
+      isPaidPeriod: false, // Will be properly checked on backend
+    })
+    
+    if (!canDelete && reason) {
+      alert(`Cannot delete time entry: ${reason}`)
+      return
+    }
+    
+    // Show confirmation dialog
+    const confirmMessage = `Are you sure you want to delete this time entry?\n\nDuration: ${formatDuration(entry.duration)}\nDate: ${formatDate(entry.start_time)}\n\nThis action cannot be undone.`
+    if (!confirm(confirmMessage)) return
     
     try {
-      await deleteTimeEntryMutation.mutateAsync(id)
-    } catch (error) {
+      const result = await deleteTimeEntryMutation.mutateAsync(entry.id)
+      
+      // Show success message if it was a paid period deletion (super admin)
+      if (result?.wasPaidPeriod) {
+        alert(`⚠️ Super Admin Action: Time entry deleted from paid billing period "${result.billingPeriodName}". This action has been logged for audit purposes.`)
+      }
+    } catch (error: any) {
       console.error('Failed to delete time entry:', error)
+      const errorMessage = error?.message || 'Failed to delete time entry. Please try again.'
+      alert(`Error: ${errorMessage}`)
     }
   }
 
@@ -227,14 +250,38 @@ export function TimeEntriesList({ ticketId }: TimeEntriesListProps) {
                       >
                         <Edit className="w-3 h-3" />
                       </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => deleteEntry(entry.id)}
-                        disabled={deleteTimeEntryMutation.isPending}
-                      >
-                        <Trash2 className="w-3 h-3" />
-                      </Button>
+                      {(() => {
+                        const { canDelete, reason } = canDeleteTimeEntry({
+                          user_id: entry.user_id,
+                          isPaidPeriod: false, // Backend will handle the real check
+                        })
+                        
+                        if (!canDelete) {
+                          return (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              disabled
+                              title={reason}
+                              className="opacity-50"
+                            >
+                              <Shield className="w-3 h-3" />
+                            </Button>
+                          )
+                        }
+                        
+                        return (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => deleteEntry(entry)}
+                            disabled={deleteTimeEntryMutation.isPending}
+                            title="Delete time entry"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </Button>
+                        )
+                      })()}
                     </div>
                   </div>
                 )}

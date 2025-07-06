@@ -183,7 +183,15 @@ export const billingPeriods = pgTable('billing_periods', {
     end_date: date('end_date').notNull(),
     frequency: text('frequency').notNull(), // 'weekly', 'bi_monthly', 'monthly'
     status: text('status').default('draft'), // 'draft', 'active', 'closed'
-    created_by: uuid('created_by').notNull().references(() => users.id, { onDelete: 'set null' }),
+    created_by: uuid('created_by').references(() => users.id, { onDelete: 'set null' }),
+    // Payment tracking fields
+    payment_status: text('payment_status').default('pending'), // enum: 'pending', 'sent', 'paid', 'overdue', 'cancelled'
+    invoice_sent_date: timestamp('invoice_sent_date', { withTimezone: true }),
+    payment_due_date: timestamp('payment_due_date', { withTimezone: true }),
+    payment_received_date: timestamp('payment_received_date', { withTimezone: true }),
+    payment_amount: decimal('payment_amount', { precision: 10, scale: 2 }),
+    payment_reference: text('payment_reference'),
+    notes: text('notes'),
     created_at: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
     updated_at: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 }, (table) => ({
@@ -224,6 +232,15 @@ export const companyBillingSettings = pgTable('company_billing_settings', {
     currency: text('currency').default('USD'),
     billing_frequency: text('billing_frequency'), // 'weekly', 'bi_monthly', 'monthly'
     invoice_prefix: text('invoice_prefix'),
+    // Branding fields
+    company_logo_url: text('company_logo_url'), // URL to company logo
+    company_address: text('company_address'), // Full company address
+    company_phone: text('company_phone'), // Company phone number
+    company_email: text('company_email'), // Company billing email
+    company_website: text('company_website'), // Company website URL
+    invoice_footer: text('invoice_footer'), // Custom footer text for invoices
+    brand_primary_color: text('brand_primary_color').default('#3b82f6'), // Hex color for primary brand
+    brand_secondary_color: text('brand_secondary_color').default('#64748b'), // Hex color for secondary brand
     created_at: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
     updated_at: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 }, (table) => ({
@@ -286,4 +303,23 @@ export const activities = pgTable('activities', {
 	userIdIdx: index('activities_user_id_idx').on(table.user_id),
 	targetUserIdIdx: index('activities_target_user_id_idx').on(table.target_user_id),
 	createdAtIdx: index('activities_created_at_idx').on(table.created_at),
+})).enableRLS();
+
+// Payment History table for tracking payment-related changes
+export const paymentHistory = pgTable('payment_history', {
+	id: uuid('id').primaryKey().defaultRandom(),
+	billing_period_id: uuid('billing_period_id').notNull().references(() => billingPeriods.id, { onDelete: 'cascade' }),
+	user_id: uuid('user_id').notNull().references(() => users.id),
+	action: text('action').notNull(), // 'status_changed', 'invoice_sent', 'payment_received', 'due_date_set', 'notes_updated'
+	old_value: text('old_value'),
+	new_value: text('new_value'),
+	notes: text('notes'),
+	created_at: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+	updated_at: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+}, (table) => ({
+	// Performance indexes
+	billingPeriodIdIdx: index('payment_history_billing_period_id_idx').on(table.billing_period_id),
+	userIdIdx: index('payment_history_user_id_idx').on(table.user_id),
+	actionIdx: index('payment_history_action_idx').on(table.action),
+	createdAtIdx: index('payment_history_created_at_idx').on(table.created_at),
 })).enableRLS();

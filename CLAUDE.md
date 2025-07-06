@@ -212,6 +212,20 @@ This configuration allows:
 * Be consistent with naming across the project
 
 ### Task Master Update Workflow
+
+**IMPORTANT**: Task Master commands must be run from the **project root directory** (`/Users/angelo/Desktop/Work/ZKidz/PulseTrack`), NOT from `apps/web/`. The `.taskmaster/` directory is located at the project root.
+
+```bash
+# Always navigate to project root first
+cd /Users/angelo/Desktop/Work/ZKidz/PulseTrack
+
+# Then run task-master commands
+task-master next
+task-master add-task --prompt="..." --research
+task-master set-status --id=<task-id> --status=done
+```
+
+**Workflow Steps**:
 1. Before starting work: `task-master next`
 2. Mark task as in-progress: `task-master set-status --id=<current-task-id> --status=in-progress`
 3. Implement feature/fix

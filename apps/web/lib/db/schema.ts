@@ -9,6 +9,7 @@ export type TicketStatus = 'new' | 'in_progress' | 'review' | 'done'
 export type TicketPriority = 'low' | 'medium' | 'high' | 'critical'
 export type BillingFrequency = 'weekly' | 'bi_monthly' | 'monthly'
 export type BillingStatus = 'draft' | 'active' | 'closed'
+export type PaymentStatus = 'pending' | 'sent' | 'paid' | 'overdue' | 'cancelled'
 export type ActivityType = 'project_created' | 'project_updated' | 'project_archived' | 'ticket_created' | 'ticket_updated' | 'ticket_deleted' | 'ticket_assigned' | 'comment_created' | 'user_added_to_project' | 'user_removed_from_project' | 'time_entry_created' | 'time_entry_updated'
 export type ProjectVisibility = 'public' | 'company' | 'private'
 
@@ -175,7 +176,14 @@ export interface BillingPeriod extends BaseRecord {
   end_date: string
   frequency: BillingFrequency
   status: BillingStatus
-  created_by: string
+  payment_status: PaymentStatus
+  invoice_sent_date?: string | null
+  payment_due_date?: string | null
+  payment_received_date?: string | null
+  payment_amount?: number | null
+  payment_reference?: string | null
+  notes?: string | null
+  created_by?: string | null
 }
 
 export interface NewBillingPeriod {
@@ -185,7 +193,14 @@ export interface NewBillingPeriod {
   end_date: string
   frequency: BillingFrequency
   status?: BillingStatus
-  created_by: string
+  payment_status?: PaymentStatus
+  invoice_sent_date?: string | null
+  payment_due_date?: string | null
+  payment_received_date?: string | null
+  payment_amount?: number | null
+  payment_reference?: string | null
+  notes?: string | null
+  created_by?: string | null
 }
 
 // Billing Rate types
@@ -216,6 +231,15 @@ export interface CompanyBillingSettings extends BaseRecord {
   currency?: string | null
   billing_frequency?: BillingFrequency | null
   invoice_prefix?: string | null
+  // Branding fields
+  company_logo_url?: string | null
+  company_address?: string | null
+  company_phone?: string | null
+  company_email?: string | null
+  company_website?: string | null
+  invoice_footer?: string | null
+  brand_primary_color?: string | null
+  brand_secondary_color?: string | null
 }
 
 export interface NewCompanyBillingSettings {
@@ -223,6 +247,15 @@ export interface NewCompanyBillingSettings {
   currency?: string | null
   billing_frequency?: BillingFrequency | null
   invoice_prefix?: string | null
+  // Branding fields
+  company_logo_url?: string | null
+  company_address?: string | null
+  company_phone?: string | null
+  company_email?: string | null
+  company_website?: string | null
+  invoice_footer?: string | null
+  brand_primary_color?: string | null
+  brand_secondary_color?: string | null
 }
 
 // Time Entry Billing types
@@ -290,6 +323,25 @@ export interface ActivityWithUser extends Activity {
   ticket?: Pick<Ticket, 'id' | 'title'> | null
 }
 
+// Payment History types
+export interface PaymentHistory extends BaseRecord {
+  billing_period_id: string
+  user_id: string
+  action: 'status_changed' | 'invoice_sent' | 'payment_received' | 'due_date_set' | 'notes_updated' | 'outstanding_payment_deletion' | 'bulk_payment_history_deletion' | 'payment_status_reset'
+  old_value?: string | null
+  new_value?: string | null
+  notes?: string | null
+}
+
+export interface NewPaymentHistory {
+  billing_period_id: string
+  user_id: string
+  action: 'status_changed' | 'invoice_sent' | 'payment_received' | 'due_date_set' | 'notes_updated' | 'outstanding_payment_deletion' | 'bulk_payment_history_deletion' | 'payment_status_reset'
+  old_value?: string | null
+  new_value?: string | null
+  notes?: string | null
+}
+
 // Database table names for Supabase queries
 export const TABLE_NAMES = {
   companies: 'companies',
@@ -305,4 +357,5 @@ export const TABLE_NAMES = {
   time_entry_billing: 'time_entry_billing',
   ticket_history: 'ticket_history',
   activities: 'activities',
+  payment_history: 'payment_history',
 } as const

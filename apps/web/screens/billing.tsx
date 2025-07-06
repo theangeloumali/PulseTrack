@@ -15,6 +15,8 @@ import type { BillingFrequency, NewBillingRate } from '@/lib/db/schema';
 import { startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfYear, endOfYear, format } from 'date-fns';
 import { Clock, DollarSign, Calendar, Users, Settings } from 'lucide-react';
 import { DateRangePicker } from '@/components/ui/date-range-picker';
+import { PaymentDashboard } from '@/components/payments/payment-dashboard';
+import { BillingPeriodsList } from '@/components/billing/billing-periods-list';
 import { BillingFilters, getDefaultBillingFilters, saveBillingFiltersToStorage, loadBillingFiltersFromStorage } from '@/lib/utils';
 
 const currencies = ['USD', 'EUR', 'GBP', 'JPY', 'AUD', 'CAD', 'CHF', 'CNY', 'SEK', 'NZD'];
@@ -46,7 +48,7 @@ const BillingPage = () => {
 	const [filters, setFilters] = useState<BillingFilters>(getDefaultBillingFilters());
 	const [isInitialized, setIsInitialized] = useState(false);
 	const [showReport, setShowReport] = useState(false);
-	const [activeTab, setActiveTab] = useState('timesheet');
+	const [activeTab, setActiveTab] = useState('periods');
 
 	const { data: billingReport, isLoading: isReportLoading, isError: isReportError, error: reportError } = useBillingReport(companyId || '', filters.reportStartDate, filters.reportEndDate);
 
@@ -342,7 +344,19 @@ console.log('filteredBillingReport:', filteredBillingReport);
 			{/* Navigation Tabs */}
 			<div className="flex border-b border-border mb-6">
 				<button 
-					className={`px-4 py-2 font-medium ${activeTab === 'timesheet' ? 'border-b-2 border-blue-500 text-blue-600 dark:text-blue-400' : 'text-muted-foreground hover:text-foreground'}`}
+					className={`px-4 py-2 font-medium ${activeTab === 'payments' ? 'border-b-2 border-blue-500 text-blue-600 dark:text-blue-400' : 'text-muted-foreground hover:text-foreground'}`}
+					onClick={() => setActiveTab('payments')}
+				>
+					{isAdmin ? 'Payments' : 'My Payments'}
+				</button>
+				<button 
+					className={`px-4 py-2 font-medium ml-4 ${activeTab === 'periods' ? 'border-b-2 border-blue-500 text-blue-600 dark:text-blue-400' : 'text-muted-foreground hover:text-foreground'}`}
+					onClick={() => setActiveTab('periods')}
+				>
+					{isAdmin ? 'Billing Periods' : 'My Billing Periods'}
+				</button>
+				<button 
+					className={`px-4 py-2 font-medium ml-4 ${activeTab === 'timesheet' ? 'border-b-2 border-blue-500 text-blue-600 dark:text-blue-400' : 'text-muted-foreground hover:text-foreground'}`}
 					onClick={() => setActiveTab('timesheet')}
 				>
 					Timesheet
@@ -362,6 +376,16 @@ console.log('filteredBillingReport:', filteredBillingReport);
 					</button>
 				)}
 			</div>
+
+			{/* Payments Tab */}
+			{activeTab === 'payments' && (
+				<PaymentDashboard companyId={companyId!} isAdmin={isAdmin} />
+			)}
+
+			{/* Billing Periods Tab */}
+			{activeTab === 'periods' && (
+				<BillingPeriodsList companyId={companyId!} isAdmin={isAdmin} />
+			)}
 
 			{/* Timesheet Tab */}
 			{activeTab === 'timesheet' && (

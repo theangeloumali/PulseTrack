@@ -393,7 +393,7 @@ export async function updateTicket(id: string, data: Partial<NewTicket>, updated
   
   if (error) throw error
   
-  // Log ticket update activity
+  // Log ticket update activity and history
   if (currentTicket && result && updatedBy) {
     try {
       await logTicketUpdated(id, result.project_id, updatedBy, result.title, data)
@@ -402,8 +402,25 @@ export async function updateTicket(id: string, data: Partial<NewTicket>, updated
       if (data.assignee_id && data.assignee_id !== currentTicket.assignee_id) {
         await logTicketAssigned(id, result.project_id, updatedBy, data.assignee_id, result.title)
       }
+
+      // Log detailed field changes in ticket history
+      const fieldMappings = [
+        { field: 'title', oldValue: currentTicket.title, newValue: data.title },
+        { field: 'description', oldValue: currentTicket.description, newValue: data.description },
+        { field: 'status', oldValue: currentTicket.status, newValue: data.status },
+        { field: 'priority', oldValue: currentTicket.priority, newValue: data.priority },
+        { field: 'assignee_id', oldValue: currentTicket.assignee_id, newValue: data.assignee_id },
+        { field: 'due_date', oldValue: currentTicket.due_date, newValue: data.due_date },
+      ]
+
+      // Log changes for each field that was updated
+      for (const { field, oldValue, newValue } of fieldMappings) {
+        if (newValue !== undefined && oldValue !== newValue) {
+          await logTicketFieldChange(id, updatedBy, field, oldValue, newValue)
+        }
+      }
     } catch (activityError) {
-      console.error('Failed to log ticket update activity:', activityError)
+      console.error('Failed to log ticket update activity or history:', activityError)
     }
   }
   
@@ -595,12 +612,110 @@ export async function updateTimeEntry(id: string, data: Partial<NewTimeEntry>) {
 }
 
 export async function deleteTimeEntry(id: string) {
+  // Get the current authenticated user
+  const { data: { user: authUser }, error: authError } = await supabase.auth.getUser()
+  if (authError || !authUser) {
+    throw new Error('Authentication required to delete time entries')
+  }
+
+  // Get user profile with role information
+  const { data: currentUser, error: userError } = await supabase
+    .from('users')
+    .select('id, role, company_id')
+    .eq('id', authUser.id)
+    .single()
+  
+  if (userError || !currentUser) {
+    throw new Error('User profile not found')
+  }
+
+  // Get the time entry with billing information
+  const { data: timeEntry, error: fetchError } = await supabase
+    .from('time_entries')
+    .select(`
+      id,
+      user_id,
+      ticket_id,
+      start_time,
+      duration,
+      description,
+      time_entry_billing (
+        id,
+        billing_period_id,
+        billing_periods (
+          id,
+          payment_status,
+          name
+        )
+      )
+    `)
+    .eq('id', id)
+    .single()
+  
+  if (fetchError || !timeEntry) {
+    throw new Error('Time entry not found')
+  }
+
+  // Check if time entry is associated with a paid billing period
+  const billingRecord = timeEntry.time_entry_billing as any
+  const isPaidPeriod = billingRecord?.billing_periods?.payment_status === 'paid'
+
+  // Role-based permission checks
+  const isSuperAdmin = currentUser.role === 'super_admin'
+  const isSystemAdmin = currentUser.role === 'system_admin'
+  const isCompanyAdmin = currentUser.role === 'company_admin'
+  const isManager = currentUser.role === 'manager'
+  const isOwner = timeEntry.user_id === currentUser.id
+
+  // Super admins can delete anything
+  if (isSuperAdmin) {
+    // Proceed with deletion - super admin override
+  }
+  // For paid periods, only super admins can delete
+  else if (isPaidPeriod) {
+    throw new Error('Only super administrators can delete time entries from paid billing periods. This protects financial audit trails.')
+  }
+  // System/Company admins and managers can delete within their company
+  else if (isSystemAdmin || isCompanyAdmin || isManager) {
+    // Need to verify the time entry belongs to their company
+    const { data: entryUser, error: entryUserError } = await supabase
+      .from('users')
+      .select('company_id')
+      .eq('id', timeEntry.user_id)
+      .single()
+    
+    if (entryUserError || !entryUser) {
+      throw new Error('Cannot verify time entry ownership')
+    }
+    
+    if (entryUser.company_id !== currentUser.company_id) {
+      throw new Error('You can only delete time entries from your company')
+    }
+  }
+  // Regular users can only delete their own time entries
+  else if (isOwner) {
+    // User can delete their own time entry (if not billed)
+  }
+  else {
+    throw new Error('You do not have permission to delete this time entry')
+  }
+
+  // Proceed with deletion
   const { error } = await supabase
     .from('time_entries')
     .delete()
     .eq('id', id)
   
   if (error) throw error
+
+  // Return deletion info for logging/audit purposes
+  return {
+    deletedTimeEntryId: id,
+    deletedByUserId: currentUser.id,
+    deletedByRole: currentUser.role,
+    wasPaidPeriod: isPaidPeriod,
+    billingPeriodName: billingRecord?.billing_periods?.name || null
+  }
 }
 
 export async function getActiveTimeEntry(userId: string) {
@@ -916,51 +1031,77 @@ export async function getTimeEntriesForBilling(companyId: string, startDate: str
     throw new Error(`Failed to fetch time entries: ${error.message}`);
   }
 
-  console.log(`✅ Supabase query completed. Found ${data?.length || 0} time entries`);
+  console.log('📊 Found time entries for billing:', data?.length || 0);
+  return data || [];
+}
 
-  if (!data || data.length === 0) {
-    console.log('⚠️ No time entries found for the given criteria');
-    return [];
+export async function getTimeEntriesForBillingByUser(
+  companyId: string, 
+  targetUserId: string, 
+  startDate: string, 
+  endDate: string
+) {
+  // First validate that the target user belongs to the company
+  const { data: userValidation, error: userError } = await supabase
+    .from('users')
+    .select('id, company_id, first_name, last_name')
+    .eq('id', targetUserId)
+    .eq('company_id', companyId)
+    .single();
+
+  if (userError || !userValidation) {
+    throw new Error('Target user not found or does not belong to the company');
   }
+  
+  // Create proper end date timestamp
+  const endDateTime = new Date(endDate);
+  endDateTime.setHours(23, 59, 59, 999);
+  const endDateString = endDateTime.toISOString();
+  
+  const { data, error } = await supabase
+    .from('time_entries')
+    .select(
+      `
+      id,
+      start_time,
+      end_time,
+      duration,
+      description,
+      user_id,
+      ticket_id,
+      tickets!inner (
+        id,
+        title,
+        deleted_at,
+        project_id,
+        projects!inner (
+          id,
+          name,
+          company_id
+        )
+      ),
+      users!inner (
+        id,
+        first_name,
+        last_name,
+        email,
+        hourly_rate
+      )
+    `
+    )
+    .eq('tickets.projects.company_id', companyId)
+    .eq('user_id', targetUserId)  // KEY DIFFERENCE: Filter by specific user
+    .gte('start_time', startDate)
+    .lte('start_time', endDateString)
+    .not('duration', 'is', null)
+    .gt('duration', 0)
+    .order('start_time', { ascending: true });
 
-  // Flatten the structure for easier processing with better error handling
-  const flattenedData = data
-    .map((entry, index) => {
-      try {
-        const ticket = Array.isArray(entry.tickets) ? entry.tickets[0] : entry.tickets;
-        const project = ticket && Array.isArray(ticket.projects) ? ticket.projects[0] : ticket?.projects;
-        const user = Array.isArray(entry.users) ? entry.users[0] : entry.users;
-
-        if (!ticket) {
-          console.warn(`⚠️ Entry ${index} missing ticket data:`, entry.id);
-          return null;
-        }
-        if (!project) {
-          console.warn(`⚠️ Entry ${index} missing project data:`, entry.id, ticket);
-          return null;
-        }
-        if (!user) {
-          console.warn(`⚠️ Entry ${index} missing user data:`, entry.id);
-          return null;
-        }
-
-        return {
-          ...entry,
-          ticket,
-          project,
-          user,
-        };
-      } catch (flattenError) {
-        console.error(`❌ Error flattening entry ${index}:`, flattenError, entry);
-        return null;
-      }
-    })
-    .filter(entry => entry !== null);
-
-  console.log(`✅ Successfully flattened ${flattenedData.length} time entries`);
-  console.log('📋 Sample flattened entry:', flattenedData[0]);
-
-  return flattenedData;
+  if (error) {
+    console.error('❌ Error fetching time entries for billing by user:', error);
+    throw new Error(`Failed to fetch time entries for user: ${error.message}`);
+  }
+  return data || [];
 }
 
 // Company User Management Operations
@@ -1484,4 +1625,254 @@ export async function logTimeEntryCreated(projectId: string, ticketId: string, u
     description: `${hours} hours logged on ticket "${ticketTitle}"`,
     metadata: { ticketTitle, duration, hours }
   })
+}
+
+// ==============================================
+// TICKET HISTORY FUNCTIONS
+// ==============================================
+
+/**
+ * Create a ticket history entry
+ */
+export async function createTicketHistory(data: NewTicketHistory) {
+  const { data: result, error } = await supabase
+    .from('ticket_history')
+    .insert(data)
+    .select()
+    .single()
+  
+  if (error) throw error
+  return result
+}
+
+/**
+ * Get ticket history for a specific ticket
+ */
+export async function getTicketHistory(ticketId: string) {
+  const { data, error } = await supabase
+    .from('ticket_history')
+    .select(`
+      *,
+      users(first_name, last_name, email)
+    `)
+    .eq('ticket_id', ticketId)
+    .order('created_at', { ascending: false })
+  
+  if (error) throw error
+  return data || []
+}
+
+/**
+ * Log ticket field changes
+ */
+export async function logTicketFieldChange(
+  ticketId: string, 
+  userId: string, 
+  fieldName: string, 
+  oldValue: string | null, 
+  newValue: string | null
+) {
+  // Only log if values are actually different
+  if (oldValue === newValue) return null
+  
+  return await createTicketHistory({
+    ticket_id: ticketId,
+    user_id: userId,
+    field_name: fieldName,
+    old_value: oldValue,
+    new_value: newValue
+  })
+}
+
+// ==============================================
+// DATABASE HEALTH CHECK FUNCTIONS
+// ==============================================
+
+/**
+ * Check for orphaned time entries and provide repair suggestions
+ */
+export async function checkTimeEntryIntegrity(companyId: string) {
+  console.log('🔍 Running time entry integrity check for company:', companyId);
+  
+  const issues = {
+    orphanedEntries: [],
+    missingUsers: [],
+    missingTickets: [],
+    missingProjects: [],
+    summary: {
+      totalChecked: 0,
+      totalIssues: 0,
+      orphanedCount: 0
+    }
+  };
+
+  try {
+    // Get all time entries for the company
+    const { data: timeEntries, error: entriesError } = await supabase
+      .from('time_entries')
+      .select(`
+        id,
+        user_id,
+        ticket_id,
+        start_time,
+        duration,
+        tickets!left (
+          id,
+          title,
+          deleted_at,
+          projects!left (
+            id,
+            name,
+            company_id
+          )
+        ),
+        users!left (
+          id,
+          first_name,
+          last_name
+        )
+      `)
+      .eq('tickets.projects.company_id', companyId)
+      .not('duration', 'is', null)
+      .gt('duration', 0);
+
+    if (entriesError) {
+      throw new Error(`Failed to fetch time entries: ${entriesError.message}`);
+    }
+
+    issues.summary.totalChecked = timeEntries?.length || 0;
+
+    if (!timeEntries || timeEntries.length === 0) {
+      console.log('✅ No time entries found for this company');
+      return issues;
+    }
+
+    timeEntries.forEach((entry, index) => {
+      let hasIssues = false;
+
+      // Check for missing user
+      if (!entry.users) {
+        issues.missingUsers.push({
+          timeEntryId: entry.id,
+          userId: entry.user_id,
+          startTime: entry.start_time
+        });
+        hasIssues = true;
+      }
+
+      // Check for missing ticket
+      if (!entry.tickets) {
+        issues.missingTickets.push({
+          timeEntryId: entry.id,
+          ticketId: entry.ticket_id,
+          startTime: entry.start_time
+        });
+        hasIssues = true;
+      } else {
+        // Check for missing project (if ticket exists)
+        if (!entry.tickets.projects) {
+          issues.missingProjects.push({
+            timeEntryId: entry.id,
+            ticketId: entry.ticket_id,
+            ticketTitle: entry.tickets.title,
+            startTime: entry.start_time
+          });
+          hasIssues = true;
+        }
+      }
+
+      // Check for completely orphaned entries
+      if (!entry.users && !entry.tickets) {
+        issues.orphanedEntries.push({
+          timeEntryId: entry.id,
+          userId: entry.user_id,
+          ticketId: entry.ticket_id,
+          startTime: entry.start_time,
+          duration: entry.duration
+        });
+        hasIssues = true;
+      }
+
+      if (hasIssues) {
+        issues.summary.totalIssues++;
+      }
+    });
+
+    issues.summary.orphanedCount = issues.orphanedEntries.length;
+
+    console.log('📊 Time entry integrity check results:', {
+      totalChecked: issues.summary.totalChecked,
+      totalIssues: issues.summary.totalIssues,
+      orphanedEntries: issues.orphanedEntries.length,
+      missingUsers: issues.missingUsers.length,
+      missingTickets: issues.missingTickets.length,
+      missingProjects: issues.missingProjects.length
+    });
+
+    return issues;
+  } catch (error) {
+    console.error('❌ Error during time entry integrity check:', error);
+    throw error;
+  }
+}
+
+/**
+ * Clean up orphaned time entries (use with caution)
+ */
+export async function cleanupOrphanedTimeEntries(companyId: string, dryRun: boolean = true) {
+  console.log('🧹 Starting orphaned time entries cleanup (dry run:', dryRun, ')');
+  
+  const integrityCheck = await checkTimeEntryIntegrity(companyId);
+  const cleanupResults = {
+    deletedEntries: [],
+    errors: [],
+    summary: {
+      totalDeleted: 0,
+      totalErrors: 0
+    }
+  };
+
+  if (integrityCheck.orphanedEntries.length === 0) {
+    console.log('✅ No orphaned time entries found to clean up');
+    return cleanupResults;
+  }
+
+  if (dryRun) {
+    console.log('🔍 DRY RUN - Would delete the following orphaned entries:', 
+      integrityCheck.orphanedEntries.map(e => e.timeEntryId));
+    return {
+      ...cleanupResults,
+      wouldDelete: integrityCheck.orphanedEntries
+    };
+  }
+
+  // Actual deletion (only if dryRun is false)
+  for (const orphanedEntry of integrityCheck.orphanedEntries) {
+    try {
+      const { error } = await supabase
+        .from('time_entries')
+        .delete()
+        .eq('id', orphanedEntry.timeEntryId);
+
+      if (error) {
+        cleanupResults.errors.push({
+          timeEntryId: orphanedEntry.timeEntryId,
+          error: error.message
+        });
+        cleanupResults.summary.totalErrors++;
+      } else {
+        cleanupResults.deletedEntries.push(orphanedEntry.timeEntryId);
+        cleanupResults.summary.totalDeleted++;
+      }
+    } catch (error) {
+      cleanupResults.errors.push({
+        timeEntryId: orphanedEntry.timeEntryId,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+      cleanupResults.summary.totalErrors++;
+    }
+  }
+
+  console.log('✅ Cleanup completed:', cleanupResults.summary);
+  return cleanupResults;
 }

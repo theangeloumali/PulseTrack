@@ -24,12 +24,18 @@ export function useUpdateBillingSettings(companyId: string) {
     const queryClient = useQueryClient();
     return useMutation<CompanyBillingSettings, Error, Partial<NewCompanyBillingSettings>>({
         mutationFn: async (updates) => {
-            let result = await updateCompanyBillingSettings(companyId, updates);
-            if (!result) {
-                // If update returns null, it means no record existed, so create it
-                result = await createCompanyBillingSettings({ ...updates, company_id: companyId });
+            // First check if a record exists
+            const existingSettings = await getCompanyBillingSettings(companyId);
+            
+            if (existingSettings) {
+                // Record exists, update it
+                const result = await updateCompanyBillingSettings(companyId, updates);
+                return result!; // Should not be null since record exists
+            } else {
+                // No record exists, create it
+                const result = await createCompanyBillingSettings({ ...updates, company_id: companyId });
+                return result!; // Should not be null on successful creation
             }
-            return result;
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['billing-settings', companyId] });
@@ -37,21 +43,24 @@ export function useUpdateBillingSettings(companyId: string) {
     });
 }
 
-export function useBillingReport(companyId: string, startDate: string, endDate: string) {
+export function useBillingReport(companyId: string, startDate: string, endDate: string, targetUserId?: string) {
     return useSessionAwareQuery<any, Error>({
-        queryKey: ['billing-report', companyId, startDate, endDate],
+        queryKey: ['billing-report', companyId, startDate, endDate, targetUserId],
         queryFn: async () => {
-            const apiPath = getApiPath(`billing/report?companyId=${companyId}&startDate=${startDate}&endDate=${endDate}`);
-            console.log('🔍 Fetching billing report from:', apiPath);
+            let apiPath = getApiPath(`billing/report?companyId=${companyId}&startDate=${startDate}&endDate=${endDate}`);
+            if (targetUserId) {
+                apiPath += `&targetUserId=${targetUserId}`;
+            }
+            
             const response = await fetch(apiPath);
             if (!response.ok) {
                 const errorText = await response.text();
-                console.error('❌ Billing report API error:', response.status, errorText);
                 throw new Error(`Failed to fetch billing report: ${response.status} ${errorText}`);
             }
+            
             return response.json();
         },
-        enabled: !!companyId && !!startDate && !!endDate, // Only run if all parameters are available
+        enabled: !!companyId && !!startDate && !!endDate,
     });
 }
 

@@ -23,6 +23,58 @@ export function useRoleAccess() {
   const canManageUsers = (): boolean => hasRole(['super_admin', 'system_admin', 'company_admin', 'manager']);
   const canCreateProjects = (): boolean => hasRole(['super_admin', 'system_admin', 'company_admin', 'manager']);
 
+  // Time entry deletion permission checker
+  const canDeleteTimeEntry = (timeEntry: {
+    user_id: string;
+    isPaidPeriod?: boolean;
+    userCompanyId?: string;
+  }): { canDelete: boolean; reason?: string } => {
+    if (!user || !user.role) {
+      return { canDelete: false, reason: 'User not authenticated' };
+    }
+
+    const isSuperAdmin = user.role === 'super_admin';
+    const isSystemAdmin = user.role === 'system_admin';
+    const isCompanyAdmin = user.role === 'company_admin';
+    const isManager = user.role === 'manager';
+    const isOwner = timeEntry.user_id === user.id;
+
+    // Super admins can delete anything
+    if (isSuperAdmin) {
+      return { canDelete: true };
+    }
+
+    // For paid periods, only super admins can delete
+    if (timeEntry.isPaidPeriod) {
+      return { 
+        canDelete: false, 
+        reason: 'Only super administrators can delete time entries from paid billing periods'
+      };
+    }
+
+    // System/Company admins and managers can delete within their company
+    if (isSystemAdmin || isCompanyAdmin || isManager) {
+      // Check company match if provided
+      if (timeEntry.userCompanyId && timeEntry.userCompanyId !== user.company_id) {
+        return { 
+          canDelete: false, 
+          reason: 'You can only delete time entries from your company'
+        };
+      }
+      return { canDelete: true };
+    }
+
+    // Regular users can only delete their own time entries (if not billed)
+    if (isOwner) {
+      return { canDelete: true };
+    }
+
+    return { 
+      canDelete: false, 
+      reason: 'You do not have permission to delete this time entry'
+    };
+  };
+
   return {
     user,
     hasRole,
@@ -35,5 +87,6 @@ export function useRoleAccess() {
     canAccessDiagnostics,
     canManageUsers,
     canCreateProjects,
+    canDeleteTimeEntry,
   };
 }
