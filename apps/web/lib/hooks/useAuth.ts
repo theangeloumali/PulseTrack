@@ -1,10 +1,10 @@
-'use client'
+"use client";
 
-import { useAuthStore } from '@/lib/stores/auth'
-import type { AuthState } from '@/lib/stores/auth'
+import { useAuthStore } from "@/lib/stores/auth";
+import type { AuthState } from "@/lib/stores/auth";
 
 export function useAuth(): AuthState {
-  return useAuthStore()
+  return useAuthStore();
 }
 
-export type { CreateUserData } from '@/lib/stores/auth'
+export type { CreateUserData } from "@/lib/stores/auth";

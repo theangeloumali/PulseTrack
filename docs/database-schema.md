@@ -23,10 +23,11 @@ CREATE TABLE companies (
 ```
 
 **TypeScript Interface:**
+
 ```typescript
 export interface Company extends BaseRecord {
-  name: string
-  slug: string
+  name: string;
+  slug: string;
 }
 ```
 
@@ -53,18 +54,19 @@ CREATE TABLE users (
 ```
 
 **TypeScript Interface:**
+
 ```typescript
 export interface User extends BaseRecord {
-  email: string
-  first_name?: string | null
-  last_name?: string | null
-  avatar_url?: string | null
-  role: UserRole
-  company_id: string
-  hourly_rate?: number | null
-  status?: 'active' | 'inactive'
-  invited_by?: string | null
-  invited_at?: string | null
+  email: string;
+  first_name?: string | null;
+  last_name?: string | null;
+  avatar_url?: string | null;
+  role: UserRole;
+  company_id: string;
+  hourly_rate?: number | null;
+  status?: "active" | "inactive";
+  invited_by?: string | null;
+  invited_at?: string | null;
 }
 ```
 
@@ -88,15 +90,16 @@ CREATE TABLE projects (
 ```
 
 **TypeScript Interface:**
+
 ```typescript
 export interface Project extends BaseRecord {
-  name: string
-  description?: string | null
-  status: ProjectStatus
-  company_id: string
-  created_by: string
-  start_date?: string | null
-  end_date?: string | null
+  name: string;
+  description?: string | null;
+  status: ProjectStatus;
+  company_id: string;
+  created_by: string;
+  start_date?: string | null;
+  end_date?: string | null;
 }
 ```
 
@@ -122,17 +125,18 @@ CREATE TABLE tickets (
 ```
 
 **TypeScript Interface:**
+
 ```typescript
 export interface Ticket extends BaseRecord {
-  title: string
-  description?: string | null
-  status: TicketStatus
-  priority: TicketPriority
-  project_id: string
-  assigned_to?: string | null
-  created_by: string
-  estimated_hours?: number | null
-  actual_hours?: number | null
+  title: string;
+  description?: string | null;
+  status: TicketStatus;
+  priority: TicketPriority;
+  project_id: string;
+  assigned_to?: string | null;
+  created_by: string;
+  estimated_hours?: number | null;
+  actual_hours?: number | null;
 }
 ```
 
@@ -157,16 +161,17 @@ CREATE TABLE time_entries (
 ```
 
 **TypeScript Interface:**
+
 ```typescript
 export interface TimeEntry extends BaseRecord {
-  user_id: string
-  project_id: string
-  ticket_id?: string | null
-  description?: string | null
-  hours: number
-  date: string
-  billable?: boolean
-  hourly_rate?: number | null
+  user_id: string;
+  project_id: string;
+  ticket_id?: string | null;
+  description?: string | null;
+  hours: number;
+  date: string;
+  billable?: boolean;
+  hourly_rate?: number | null;
 }
 ```
 
@@ -177,7 +182,7 @@ export interface TimeEntry extends BaseRecord {
 ```sql
 CREATE TYPE user_role AS ENUM (
   'super_admin',
-  'system_admin', 
+  'system_admin',
   'company_admin',
   'manager',
   'user'
@@ -185,8 +190,14 @@ CREATE TYPE user_role AS ENUM (
 ```
 
 **TypeScript Type:**
+
 ```typescript
-export type UserRole = 'super_admin' | 'system_admin' | 'company_admin' | 'manager' | 'user'
+export type UserRole =
+  | "super_admin"
+  | "system_admin"
+  | "company_admin"
+  | "manager"
+  | "user";
 ```
 
 ### User Status
@@ -196,8 +207,9 @@ CREATE TYPE user_status AS ENUM ('active', 'inactive');
 ```
 
 **TypeScript Type:**
+
 ```typescript
-export type UserStatus = 'active' | 'inactive'
+export type UserStatus = "active" | "inactive";
 ```
 
 ### Project Status
@@ -207,8 +219,9 @@ CREATE TYPE project_status AS ENUM ('active', 'archived', 'completed');
 ```
 
 **TypeScript Type:**
+
 ```typescript
-export type ProjectStatus = 'active' | 'archived' | 'completed'
+export type ProjectStatus = "active" | "archived" | "completed";
 ```
 
 ### Ticket Status
@@ -218,8 +231,9 @@ CREATE TYPE ticket_status AS ENUM ('new', 'in_progress', 'review', 'done');
 ```
 
 **TypeScript Type:**
+
 ```typescript
-export type TicketStatus = 'new' | 'in_progress' | 'review' | 'done'
+export type TicketStatus = "new" | "in_progress" | "review" | "done";
 ```
 
 ### Ticket Priority
@@ -229,8 +243,9 @@ CREATE TYPE ticket_priority AS ENUM ('low', 'medium', 'high', 'critical');
 ```
 
 **TypeScript Type:**
+
 ```typescript
-export type TicketPriority = 'low' | 'medium' | 'high' | 'critical'
+export type TicketPriority = "low" | "medium" | "high" | "critical";
 ```
 
 ## Billing System Tables

@@ -1,40 +1,43 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { useSessionAwareQuery } from './useSessionAwareQuery'
-import { useEffect } from 'react'
-import { useAuth } from './useAuth'
-import { 
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useSessionAwareQuery } from "./useSessionAwareQuery";
+import { useEffect } from "react";
+import { useAuth } from "./useAuth";
+import {
   getUsersInCompany,
-  getCompanyUsers, 
-  updateUserRole, 
-  updateUserStatus, 
+  getCompanyUsers,
+  updateUserRole,
+  updateUserStatus,
   updateUserHourlyRate,
   removeUserFromCompany,
   inviteUserToCompany,
-  getAssignableUsers
-} from '@/lib/db/service'
-import { canElevateRole } from '@/lib/auth-utils'
-import type { UserRole } from '@/lib/db/schema'
-import { useAuthStore } from '@/lib/stores/auth'
-import { useCompanyStore } from '@/lib/stores/company'
+  getAssignableUsers,
+} from "@/lib/db/service";
+import { canElevateRole } from "@/lib/auth-utils";
+import type { UserRole } from "@/lib/db/schema";
+import { useAuthStore } from "@/lib/stores/auth";
+import { useCompanyStore } from "@/lib/stores/company";
 
 // Query keys
 export const userKeys = {
-  all: ['users'] as const,
-  byCompany: (companyId: string) => [...userKeys.all, 'company', companyId] as const,
-  companyUsers: (companyId: string) => [...userKeys.all, 'company-users', companyId] as const,
-  assignableUsers: (companyId: string) => [...userKeys.all, 'assignable', companyId] as const,
-}
+  all: ["users"] as const,
+  byCompany: (companyId: string) =>
+    [...userKeys.all, "company", companyId] as const,
+  companyUsers: (companyId: string) =>
+    [...userKeys.all, "company-users", companyId] as const,
+  assignableUsers: (companyId: string) =>
+    [...userKeys.all, "assignable", companyId] as const,
+};
 
 // Get users in the current user's company (for assignment)
 export function useUsersInCompany() {
-  const { user } = useAuth()
-  
+  const { user } = useAuth();
+
   return useSessionAwareQuery({
-    queryKey: userKeys.byCompany(user?.company_id || ''),
-    queryFn: () => getUsersInCompany(user?.company_id || ''),
+    queryKey: userKeys.byCompany(user?.company_id || ""),
+    queryFn: () => getUsersInCompany(user?.company_id || ""),
     enabled: !!user?.company_id,
     staleTime: 1000 * 60 * 10, // 10 minutes (users don't change often)
-  })
+  });
 }
 
 /**
@@ -45,9 +48,9 @@ export function useCompanyUsers() {
   const { setUsers, setUsersLoading, setUsersError } = useCompanyStore();
 
   const query = useSessionAwareQuery({
-    queryKey: userKeys.companyUsers(user?.company_id || ''),
+    queryKey: userKeys.companyUsers(user?.company_id || ""),
     queryFn: async () => {
-      if (!user?.company_id) throw new Error('No company ID available');
+      if (!user?.company_id) throw new Error("No company ID available");
       return getCompanyUsers(user.company_id);
     },
     enabled: !!user?.company_id,
@@ -61,12 +64,23 @@ export function useCompanyUsers() {
       setUsersLoading(false);
       setUsersError(null);
     } else if (query.error) {
-      setUsersError(query.error instanceof Error ? query.error.message : 'Failed to load users');
+      setUsersError(
+        query.error instanceof Error
+          ? query.error.message
+          : "Failed to load users",
+      );
       setUsersLoading(false);
     } else if (query.isLoading) {
       setUsersLoading(true);
     }
-  }, [query.data, query.error, query.isLoading, setUsers, setUsersLoading, setUsersError]);
+  }, [
+    query.data,
+    query.error,
+    query.isLoading,
+    setUsers,
+    setUsersLoading,
+    setUsersError,
+  ]);
 
   return query;
 }
@@ -78,9 +92,9 @@ export function useAssignableUsers() {
   const { user } = useAuthStore();
 
   return useSessionAwareQuery({
-    queryKey: userKeys.assignableUsers(user?.company_id || ''),
+    queryKey: userKeys.assignableUsers(user?.company_id || ""),
     queryFn: async () => {
-      if (!user?.company_id) throw new Error('No company ID available');
+      if (!user?.company_id) throw new Error("No company ID available");
       return getAssignableUsers(user.company_id);
     },
     enabled: !!user?.company_id,
@@ -96,13 +110,29 @@ export function useUpdateUserRole() {
   const { user } = useAuthStore();
 
   return useMutation({
-    mutationFn: ({ userId, role }: { userId: string; role: 'super_admin' | 'system_admin' | 'company_admin' | 'manager' | 'user' }) =>
-      updateUserRole(userId, role),
+    mutationFn: ({
+      userId,
+      role,
+    }: {
+      userId: string;
+      role:
+        | "super_admin"
+        | "system_admin"
+        | "company_admin"
+        | "manager"
+        | "user";
+    }) => updateUserRole(userId, role),
     onSuccess: () => {
       // Invalidate and refetch company users
-      queryClient.invalidateQueries({ queryKey: userKeys.companyUsers(user?.company_id || '') });
-      queryClient.invalidateQueries({ queryKey: userKeys.assignableUsers(user?.company_id || '') });
-      queryClient.invalidateQueries({ queryKey: userKeys.byCompany(user?.company_id || '') });
+      queryClient.invalidateQueries({
+        queryKey: userKeys.companyUsers(user?.company_id || ""),
+      });
+      queryClient.invalidateQueries({
+        queryKey: userKeys.assignableUsers(user?.company_id || ""),
+      });
+      queryClient.invalidateQueries({
+        queryKey: userKeys.byCompany(user?.company_id || ""),
+      });
     },
   });
 }
@@ -115,13 +145,24 @@ export function useUpdateUserStatus() {
   const { user } = useAuthStore();
 
   return useMutation({
-    mutationFn: ({ userId, status }: { userId: string; status: 'active' | 'inactive' }) =>
-      updateUserStatus(userId, status),
+    mutationFn: ({
+      userId,
+      status,
+    }: {
+      userId: string;
+      status: "active" | "inactive";
+    }) => updateUserStatus(userId, status),
     onSuccess: () => {
       // Invalidate and refetch company users
-      queryClient.invalidateQueries({ queryKey: userKeys.companyUsers(user?.company_id || '') });
-      queryClient.invalidateQueries({ queryKey: userKeys.assignableUsers(user?.company_id || '') });
-      queryClient.invalidateQueries({ queryKey: userKeys.byCompany(user?.company_id || '') });
+      queryClient.invalidateQueries({
+        queryKey: userKeys.companyUsers(user?.company_id || ""),
+      });
+      queryClient.invalidateQueries({
+        queryKey: userKeys.assignableUsers(user?.company_id || ""),
+      });
+      queryClient.invalidateQueries({
+        queryKey: userKeys.byCompany(user?.company_id || ""),
+      });
     },
   });
 }
@@ -134,14 +175,21 @@ export function useUpdateUserHourlyRate() {
   const { user } = useAuthStore();
 
   return useMutation({
-    mutationFn: ({ userId, hourlyRate }: { userId: string; hourlyRate: number | null }) =>
-      updateUserHourlyRate(userId, hourlyRate),
+    mutationFn: ({
+      userId,
+      hourlyRate,
+    }: {
+      userId: string;
+      hourlyRate: number | null;
+    }) => updateUserHourlyRate(userId, hourlyRate),
     onSuccess: () => {
       // Invalidate and refetch company users
-      queryClient.invalidateQueries({ queryKey: userKeys.companyUsers(user?.company_id || '') });
-      
+      queryClient.invalidateQueries({
+        queryKey: userKeys.companyUsers(user?.company_id || ""),
+      });
+
       // Invalidate billing reports since hourly rates affect billing calculations
-      queryClient.invalidateQueries({ queryKey: ['billing-report'] });
+      queryClient.invalidateQueries({ queryKey: ["billing-report"] });
     },
   });
 }
@@ -157,9 +205,15 @@ export function useRemoveUser() {
     mutationFn: (userId: string) => removeUserFromCompany(userId),
     onSuccess: () => {
       // Invalidate and refetch company users
-      queryClient.invalidateQueries({ queryKey: userKeys.companyUsers(user?.company_id || '') });
-      queryClient.invalidateQueries({ queryKey: userKeys.assignableUsers(user?.company_id || '') });
-      queryClient.invalidateQueries({ queryKey: userKeys.byCompany(user?.company_id || '') });
+      queryClient.invalidateQueries({
+        queryKey: userKeys.companyUsers(user?.company_id || ""),
+      });
+      queryClient.invalidateQueries({
+        queryKey: userKeys.assignableUsers(user?.company_id || ""),
+      });
+      queryClient.invalidateQueries({
+        queryKey: userKeys.byCompany(user?.company_id || ""),
+      });
     },
   });
 }
@@ -174,15 +228,20 @@ export function useInviteUser() {
   return useMutation({
     mutationFn: (data: {
       email: string;
-      role: 'super_admin' | 'system_admin' | 'company_admin' | 'manager' | 'user';
+      role:
+        | "super_admin"
+        | "system_admin"
+        | "company_admin"
+        | "manager"
+        | "user";
       firstName?: string;
       lastName?: string;
       hourlyRate?: number;
     }) => {
       if (!user?.company_id || !user?.id) {
-        throw new Error('User or company information not available');
+        throw new Error("User or company information not available");
       }
-      
+
       return inviteUserToCompany({
         ...data,
         companyId: user.company_id,
@@ -191,7 +250,9 @@ export function useInviteUser() {
     },
     onSuccess: () => {
       // Invalidate and refetch company users
-      queryClient.invalidateQueries({ queryKey: userKeys.companyUsers(user?.company_id || '') });
+      queryClient.invalidateQueries({
+        queryKey: userKeys.companyUsers(user?.company_id || ""),
+      });
     },
   });
 }
@@ -204,22 +265,36 @@ export function useElevateUserRole() {
   const { user } = useAuthStore();
 
   return useMutation({
-    mutationFn: ({ userId, newRole }: { userId: string; newRole: UserRole }) => {
+    mutationFn: ({
+      userId,
+      newRole,
+    }: {
+      userId: string;
+      newRole: UserRole;
+    }) => {
       if (!user?.role) {
-        throw new Error('Current user role not available');
+        throw new Error("Current user role not available");
       }
-      
+
       if (!canElevateRole(user.role as UserRole, newRole)) {
-        throw new Error(`You don't have permission to elevate users to ${newRole} role`);
+        throw new Error(
+          `You don't have permission to elevate users to ${newRole} role`,
+        );
       }
-      
+
       return updateUserRole(userId, newRole);
     },
     onSuccess: () => {
       // Invalidate and refetch company users
-      queryClient.invalidateQueries({ queryKey: userKeys.companyUsers(user?.company_id || '') });
-      queryClient.invalidateQueries({ queryKey: userKeys.assignableUsers(user?.company_id || '') });
-      queryClient.invalidateQueries({ queryKey: userKeys.byCompany(user?.company_id || '') });
+      queryClient.invalidateQueries({
+        queryKey: userKeys.companyUsers(user?.company_id || ""),
+      });
+      queryClient.invalidateQueries({
+        queryKey: userKeys.assignableUsers(user?.company_id || ""),
+      });
+      queryClient.invalidateQueries({
+        queryKey: userKeys.byCompany(user?.company_id || ""),
+      });
     },
   });
 }
@@ -229,7 +304,7 @@ export function useElevateUserRole() {
  */
 export function useCanElevateRole() {
   const { user } = useAuthStore();
-  
+
   return (targetRole: UserRole): boolean => {
     if (!user?.role) return false;
     return canElevateRole(user.role as UserRole, targetRole);
@@ -241,10 +316,16 @@ export function useCanElevateRole() {
  */
 export function useAvailableRoles() {
   const { user } = useAuthStore();
-  
-  const allRoles: UserRole[] = ['super_admin', 'system_admin', 'company_admin', 'manager', 'user'];
-  
-  return allRoles.filter(role => {
+
+  const allRoles: UserRole[] = [
+    "super_admin",
+    "system_admin",
+    "company_admin",
+    "manager",
+    "user",
+  ];
+
+  return allRoles.filter((role) => {
     if (!user?.role) return false;
     return canElevateRole(user.role as UserRole, role);
   });

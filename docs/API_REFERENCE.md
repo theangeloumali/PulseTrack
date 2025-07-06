@@ -10,12 +10,12 @@ All API endpoints require a valid Supabase session. Authentication is handled th
 
 ```typescript
 // Example authenticated request
-const response = await fetch('/api/endpoint', {
-  method: 'GET',
+const response = await fetch("/api/endpoint", {
+  method: "GET",
   headers: {
-    'Content-Type': 'application/json',
+    "Content-Type": "application/json",
     // Supabase session is automatically included via cookies
-  }
+  },
 });
 ```
 
@@ -29,14 +29,18 @@ Development: http://localhost:3000/api
 ## Common Response Patterns
 
 ### Success Response
+
 ```json
 {
-  "data": { /* response data */ },
+  "data": {
+    /* response data */
+  },
   "success": true
 }
 ```
 
 ### Error Response
+
 ```json
 {
   "error": "Error message",
@@ -49,11 +53,13 @@ Development: http://localhost:3000/api
 ### 🔐 Authentication & Users
 
 #### Get Current User
+
 ```http
 GET /api/auth/user
 ```
 
 **Response:**
+
 ```json
 {
   "id": "user-id",
@@ -67,14 +73,17 @@ GET /api/auth/user
 ```
 
 #### Get Company Users
+
 ```http
 GET /api/users?companyId=company-id
 ```
 
 **Query Parameters:**
+
 - `companyId` (required): Company identifier
 
 **Response:**
+
 ```json
 [
   {
@@ -91,11 +100,13 @@ GET /api/users?companyId=company-id
 ### 🏢 Projects
 
 #### Get Projects
+
 ```http
 GET /api/projects?companyId=company-id
 ```
 
 **Response:**
+
 ```json
 [
   {
@@ -109,11 +120,13 @@ GET /api/projects?companyId=company-id
 ```
 
 #### Create Project
+
 ```http
 POST /api/projects
 ```
 
 **Request Body:**
+
 ```json
 {
   "name": "New Project",
@@ -125,17 +138,20 @@ POST /api/projects
 ### 🎫 Tickets
 
 #### Get Tickets
+
 ```http
 GET /api/tickets?companyId=company-id&projectId=project-id
 ```
 
 **Query Parameters:**
+
 - `companyId` (required): Company identifier
 - `projectId` (optional): Filter by project
 - `status` (optional): Filter by status
 - `assignee` (optional): Filter by assigned user
 
 **Response:**
+
 ```json
 [
   {
@@ -153,11 +169,13 @@ GET /api/tickets?companyId=company-id&projectId=project-id
 ```
 
 #### Create Ticket
+
 ```http
 POST /api/tickets
 ```
 
 **Request Body:**
+
 ```json
 {
   "title": "New Ticket",
@@ -170,11 +188,13 @@ POST /api/tickets
 ```
 
 #### Update Ticket
+
 ```http
 PATCH /api/tickets/[ticketId]
 ```
 
 **Request Body:**
+
 ```json
 {
   "status": "done",
@@ -186,11 +206,13 @@ PATCH /api/tickets/[ticketId]
 ### ⏱️ Time Tracking
 
 #### Get Time Entries
+
 ```http
 GET /api/time-entries?companyId=company-id&userId=user-id
 ```
 
 **Query Parameters:**
+
 - `companyId` (required): Company identifier
 - `userId` (optional): Filter by user
 - `ticketId` (optional): Filter by ticket
@@ -198,6 +220,7 @@ GET /api/time-entries?companyId=company-id&userId=user-id
 - `endDate` (optional): Filter to date (YYYY-MM-DD)
 
 **Response:**
+
 ```json
 [
   {
@@ -214,11 +237,13 @@ GET /api/time-entries?companyId=company-id&userId=user-id
 ```
 
 #### Create Time Entry
+
 ```http
 POST /api/time-entries
 ```
 
 **Request Body:**
+
 ```json
 {
   "ticket_id": "ticket-id",
@@ -229,11 +254,13 @@ POST /api/time-entries
 ```
 
 #### Start Timer
+
 ```http
 POST /api/time-entries/timer/start
 ```
 
 **Request Body:**
+
 ```json
 {
   "ticket_id": "ticket-id",
@@ -242,11 +269,13 @@ POST /api/time-entries/timer/start
 ```
 
 #### Stop Timer
+
 ```http
 POST /api/time-entries/timer/stop
 ```
 
 **Request Body:**
+
 ```json
 {
   "time_entry_id": "entry-id"
@@ -256,17 +285,20 @@ POST /api/time-entries/timer/stop
 ### 💰 Billing
 
 #### Generate Billing Report
+
 ```http
 GET /api/billing/report?companyId=company-id&startDate=2024-01-01&endDate=2024-01-31&targetUserId=user-id
 ```
 
 **Query Parameters:**
+
 - `companyId` (required): Company identifier
 - `startDate` (required): Start date (YYYY-MM-DD)
 - `endDate` (required): End date (YYYY-MM-DD)
 - `targetUserId` (optional): Generate for specific user
 
 **Response:**
+
 ```json
 {
   "2024-01-01": {
@@ -297,11 +329,13 @@ GET /api/billing/report?companyId=company-id&startDate=2024-01-01&endDate=2024-0
 ```
 
 #### Get Billing Periods
+
 ```http
 GET /api/billing/periods?companyId=company-id
 ```
 
 **Response:**
+
 ```json
 [
   {
@@ -319,11 +353,13 @@ GET /api/billing/periods?companyId=company-id
 ```
 
 #### Create Billing Period
+
 ```http
 POST /api/billing/periods
 ```
 
 **Request Body:**
+
 ```json
 {
   "action": "generate",
@@ -333,6 +369,7 @@ POST /api/billing/periods
 ```
 
 **For User-Specific Billing:**
+
 ```json
 {
   "action": "generate_for_user",
@@ -343,6 +380,7 @@ POST /api/billing/periods
 ```
 
 #### Delete Billing Period
+
 ```http
 DELETE /api/billing/periods?id=period-id
 ```
@@ -350,11 +388,13 @@ DELETE /api/billing/periods?id=period-id
 ### 💳 Payments
 
 #### Get Outstanding Payments
+
 ```http
 GET /api/billing/payment-status?action=outstanding
 ```
 
 **Response:**
+
 ```json
 [
   {
@@ -369,16 +409,19 @@ GET /api/billing/payment-status?action=outstanding
 ```
 
 #### Get Overdue Payments
+
 ```http
 GET /api/billing/payment-status?action=overdue
 ```
 
 #### Get Payment Statistics
+
 ```http
 GET /api/billing/payment-status?action=stats&year=2024
 ```
 
 **Response:**
+
 ```json
 {
   "stats": {
@@ -393,11 +436,13 @@ GET /api/billing/payment-status?action=stats&year=2024
 ```
 
 #### Update Payment Status
+
 ```http
 PATCH /api/billing/payment-status
 ```
 
 **Request Body:**
+
 ```json
 {
   "billing_period_id": "period-id",
@@ -409,11 +454,13 @@ PATCH /api/billing/payment-status
 ```
 
 #### Mark Invoice as Sent
+
 ```http
 PATCH /api/billing/payment-status
 ```
 
 **Request Body:**
+
 ```json
 {
   "billing_period_id": "period-id",
@@ -423,11 +470,13 @@ PATCH /api/billing/payment-status
 ```
 
 #### Mark Payment as Received
+
 ```http
 PATCH /api/billing/payment-status
 ```
 
 **Request Body:**
+
 ```json
 {
   "billing_period_id": "period-id",
@@ -440,16 +489,19 @@ PATCH /api/billing/payment-status
 ### 🗑️ Payment Deletion (Admin Only)
 
 #### Delete Multiple Outstanding Payments
+
 ```http
 DELETE /api/billing/payments?action=delete_multiple_outstanding&billing_period_ids=id1,id2,id3
 ```
 
 #### Delete Payments by Status
+
 ```http
 DELETE /api/billing/payments?action=delete_by_status&statuses=pending,overdue
 ```
 
 #### Reset Payment Status
+
 ```http
 DELETE /api/billing/payments?action=reset_payment_status&billing_period_id=period-id
 ```
@@ -457,11 +509,13 @@ DELETE /api/billing/payments?action=reset_payment_status&billing_period_id=perio
 ### 📊 Billing Rates
 
 #### Get Billing Rates
+
 ```http
 GET /api/billing/rates?companyId=company-id
 ```
 
 **Response:**
+
 ```json
 [
   {
@@ -477,11 +531,13 @@ GET /api/billing/rates?companyId=company-id
 ```
 
 #### Create Billing Rate
+
 ```http
 POST /api/billing/rates
 ```
 
 **Request Body:**
+
 ```json
 {
   "company_id": "company-id",
@@ -494,11 +550,13 @@ POST /api/billing/rates
 ### ⚙️ Company Settings
 
 #### Get Company Billing Settings
+
 ```http
 GET /api/billing/settings?companyId=company-id
 ```
 
 **Response:**
+
 ```json
 {
   "company_id": "company-id",
@@ -510,11 +568,13 @@ GET /api/billing/settings?companyId=company-id
 ```
 
 #### Update Company Billing Settings
+
 ```http
 PATCH /api/billing/settings
 ```
 
 **Request Body:**
+
 ```json
 {
   "company_id": "company-id",
@@ -563,6 +623,7 @@ PATCH /api/billing/settings
 ## Rate Limiting
 
 API endpoints are rate-limited to prevent abuse:
+
 - **General endpoints**: 100 requests per minute per user
 - **Authentication endpoints**: 20 requests per minute per IP
 - **Billing operations**: 50 requests per minute per company
@@ -576,6 +637,7 @@ GET /api/time-entries?companyId=company-id&limit=50&cursor=cursor-value
 ```
 
 **Response:**
+
 ```json
 {
   "data": [...],
@@ -595,6 +657,7 @@ POST /api/webhooks/register
 ```
 
 **Request Body:**
+
 ```json
 {
   "url": "https://your-app.com/webhook",
@@ -608,29 +671,36 @@ POST /api/webhooks/register
 While no official SDK exists yet, the API is designed for easy integration with popular HTTP clients:
 
 ### JavaScript/TypeScript
+
 ```typescript
 const pulseTrack = {
-  baseURL: 'https://pulsetrack-zkidz-web.vercel.app/pulse/api',
-  
+  baseURL: "https://pulsetrack-zkidz-web.vercel.app/pulse/api",
+
   async request(endpoint: string, options: RequestInit = {}) {
     const response = await fetch(`${this.baseURL}${endpoint}`, {
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
         ...options.headers,
       },
       ...options,
     });
-    
+
     if (!response.ok) {
       throw new Error(`API Error: ${response.statusText}`);
     }
-    
+
     return response.json();
   },
-  
-  async getBillingReport(companyId: string, startDate: string, endDate: string) {
-    return this.request(`/billing/report?companyId=${companyId}&startDate=${startDate}&endDate=${endDate}`);
-  }
+
+  async getBillingReport(
+    companyId: string,
+    startDate: string,
+    endDate: string,
+  ) {
+    return this.request(
+      `/billing/report?companyId=${companyId}&startDate=${startDate}&endDate=${endDate}`,
+    );
+  },
 };
 ```
 

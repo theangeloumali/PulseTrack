@@ -25,14 +25,17 @@ Time Entry → Rate Calculation → Billing Amount → Billing Period → Invoic
 The system uses a priority-based rate selection system:
 
 1. **Project-Specific Rates** (Highest Priority)
+
    - Rates assigned to specific projects
    - Overrides all other rates for that project
 
 2. **User-Specific Rates** (Medium Priority)
+
    - Rates assigned to individual users
    - Applied when no project rate exists
 
 3. **Company Default Rate** (Low Priority)
+
    - Company-wide fallback rate
    - Used when no specific rates are defined
 
@@ -44,15 +47,18 @@ The system uses a priority-based rate selection system:
 
 ```typescript
 function calculateApplicableRate(timeEntry) {
-  const projectRate = findProjectRate(timeEntry.project_id, timeEntry.start_time);
+  const projectRate = findProjectRate(
+    timeEntry.project_id,
+    timeEntry.start_time,
+  );
   if (projectRate) return projectRate.hourly_rate;
-  
+
   const userRate = findUserRate(timeEntry.user_id, timeEntry.start_time);
   if (userRate) return userRate.hourly_rate;
-  
+
   const companyDefault = getCompanyDefaultRate(timeEntry.company_id);
   if (companyDefault) return companyDefault.default_hourly_rate;
-  
+
   const userFallback = getUserHourlyRate(timeEntry.user_id);
   return userFallback || 0;
 }
@@ -63,6 +69,7 @@ function calculateApplicableRate(timeEntry) {
 ### Types of Billing Periods
 
 1. **Company-Wide Periods**
+
    - Include all time entries for the company
    - Used for general invoicing
 
@@ -79,6 +86,7 @@ function calculateApplicableRate(timeEntry) {
 ### Period Generation
 
 Billing periods are automatically generated based on:
+
 - Company billing frequency settings
 - Time range (start and end dates)
 - Optional user targeting
@@ -99,12 +107,12 @@ function calculateBilling(timeEntry) {
   const applicableRate = calculateApplicableRate(timeEntry);
   const durationHours = timeEntry.duration; // Already in hours
   const billableAmount = durationHours * applicableRate;
-  
+
   return {
     time_entry_id: timeEntry.id,
     hourly_rate: applicableRate.toString(),
     billable_amount: billableAmount.toString(),
-    is_billable: true
+    is_billable: true,
   };
 }
 ```
@@ -112,6 +120,7 @@ function calculateBilling(timeEntry) {
 ### Automatic Billing Record Creation
 
 When time entries are created or updated:
+
 1. System calculates applicable billing rate
 2. Creates or updates `time_entry_billing` record
 3. Stores hourly rate and billable amount
@@ -122,11 +131,13 @@ When time entries are created or updated:
 ### Invoice Components
 
 1. **Header Information**
+
    - Company details
    - Billing period dates
    - Invoice number and date
 
 2. **Time Entry Details**
+
    - Daily breakdown by user
    - Project and ticket information
    - Hours worked and amounts
@@ -193,20 +204,30 @@ The system supports bulk management of outstanding payments:
 The system supports generating billing periods for individual users:
 
 ```typescript
-function generateUserSpecificBilling(companyId, targetUserId, frequency, startDate) {
+function generateUserSpecificBilling(
+  companyId,
+  targetUserId,
+  frequency,
+  startDate,
+) {
   // Validate user belongs to company
   const user = validateUserAccess(targetUserId, companyId);
-  
+
   // Generate period with user-specific data
   const billingPeriod = createBillingPeriod({
     company_id: companyId,
     name: `${user.first_name} ${user.last_name} - ${periodName}`,
-    notes: `Generated for user: ${user.first_name} ${user.last_name} (${user.id})`
+    notes: `Generated for user: ${user.first_name} ${user.last_name} (${user.id})`,
   });
-  
+
   // Fetch only target user's time entries
-  const timeEntries = getTimeEntriesForBillingByUser(companyId, targetUserId, startDate, endDate);
-  
+  const timeEntries = getTimeEntriesForBillingByUser(
+    companyId,
+    targetUserId,
+    startDate,
+    endDate,
+  );
+
   return generateBillingReport(companyId, startDate, endDate, targetUserId);
 }
 ```
@@ -214,6 +235,7 @@ function generateUserSpecificBilling(companyId, targetUserId, frequency, startDa
 ### Data Isolation
 
 User-specific billing ensures complete data isolation:
+
 - Only target user's time entries are included
 - Proper company validation prevents cross-company access
 - Billing calculations respect user-specific rates
@@ -253,6 +275,7 @@ DELETE /api/billing/payments?action=delete_by_status&statuses=...
 ### Authentication & Authorization
 
 All billing APIs require:
+
 - Valid authentication (Supabase session)
 - Company membership validation
 - Role-based permission checks (typically admin-only for modifications)
@@ -289,6 +312,7 @@ billing_rates.user_id → users.id (optional)
 ### Company Billing Settings
 
 Companies can configure:
+
 - **Default Hourly Rate**: Fallback rate for billing calculations
 - **Billing Frequency**: Default frequency for period generation
 - **Currency**: Currency for monetary displays
@@ -297,6 +321,7 @@ Companies can configure:
 ### Rate Management
 
 Administrators can create rates with:
+
 - **Effective Date Ranges**: Rates valid between specific dates
 - **Project Targeting**: Rates specific to projects
 - **User Targeting**: Rates specific to users
@@ -305,18 +330,21 @@ Administrators can create rates with:
 ## Best Practices
 
 ### Rate Management
+
 1. Set company default rates as fallbacks
 2. Use project rates for fixed-price work
 3. Use user rates for role-based billing
 4. Regular rate audits and updates
 
 ### Billing Period Management
+
 1. Generate periods consistently
 2. Review and approve before sending invoices
 3. Track payment status diligently
 4. Maintain payment history for auditing
 
 ### Data Integrity
+
 1. Validate time entries before billing
 2. Verify rate calculations
 3. Backup billing data regularly
@@ -334,6 +362,7 @@ Administrators can create rates with:
 ### Debugging Tools
 
 The system includes comprehensive logging:
+
 - Billing report generation logs
 - Rate calculation tracing
 - Payment status change history
@@ -342,6 +371,7 @@ The system includes comprehensive logging:
 ### Data Validation
 
 Built-in validation prevents:
+
 - Negative billing amounts
 - Invalid rate configurations
 - Cross-company data access
@@ -350,6 +380,7 @@ Built-in validation prevents:
 ## Future Enhancements
 
 ### Planned Features
+
 1. **Recurring Billing**: Automatic period generation
 2. **Multi-Currency Support**: International billing capabilities
 3. **Tax Calculations**: Automatic tax handling

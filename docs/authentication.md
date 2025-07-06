@@ -11,6 +11,7 @@ The system uses **Supabase Auth** for authentication with custom authorization l
 ### User Registration
 
 1. **Signup Process**:
+
    ```typescript
    // File: apps/web/screens/signup/page.tsx
    const { signUp } = useAuthStore();
@@ -18,6 +19,7 @@ The system uses **Supabase Auth** for authentication with custom authorization l
    ```
 
 2. **Email Verification**:
+
    - User receives verification email from Supabase
    - Clicks verification link
    - Redirected to `/auth/callback` for session creation
@@ -30,6 +32,7 @@ The system uses **Supabase Auth** for authentication with custom authorization l
 ### User Login
 
 1. **Login Process**:
+
    ```typescript
    // File: apps/web/screens/login/page.tsx
    const { signIn } = useAuthStore();
@@ -45,6 +48,7 @@ The system uses **Supabase Auth** for authentication with custom authorization l
 ### Invitation Flow
 
 1. **Admin Invites User**:
+
    ```typescript
    // File: apps/web/lib/db/service.ts
    export async function inviteUser(userData: NewUser): Promise<void> {
@@ -75,7 +79,12 @@ interface AuthStore {
   user: AuthUser | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
-  signUp: (email: string, password: string, firstName?: string, lastName?: string) => Promise<void>;
+  signUp: (
+    email: string,
+    password: string,
+    firstName?: string,
+    lastName?: string,
+  ) => Promise<void>;
   signOut: () => Promise<void>;
   updateProfile: (updates: Partial<AuthUser>) => Promise<void>;
   refreshUserData: () => Promise<void>;
@@ -90,13 +99,13 @@ Handles authentication state on app startup:
 // File: apps/web/components/auth-initializer.tsx
 export function AuthInitializer({ children }: { children: React.ReactNode }) {
   const { user, loading, refreshUserData } = useAuthStore();
-  
+
   useEffect(() => {
     // Check for existing session
     // Subscribe to auth state changes
     // Refresh user data if authenticated
   }, []);
-  
+
   if (loading) return <LoadingSpinner />;
   return <>{children}</>;
 }
@@ -111,13 +120,13 @@ Pages are protected using role-based guards:
 export default function CompanyUsersPage() {
   const { canAccessCompany } = useRoleAccess();
   const router = useRouter();
-  
+
   useEffect(() => {
     if (!canAccessCompany()) {
-      router.push('/dashboard');
+      router.push("/dashboard");
     }
   }, [canAccessCompany, router]);
-  
+
   // Page content
 }
 ```
@@ -132,16 +141,18 @@ The system implements hierarchical RBAC as documented in [`role-system.md`](./ro
 // File: apps/web/lib/hooks/useRoleAccess.ts
 export function useRoleAccess() {
   const { user } = useAuthStore();
-  
+
   const hasRole = (requiredRoles: UserRole | UserRole[]): boolean => {
     if (!user || !user.role) return false;
-    const roles = Array.isArray(requiredRoles) ? requiredRoles : [requiredRoles];
+    const roles = Array.isArray(requiredRoles)
+      ? requiredRoles
+      : [requiredRoles];
     return roles.includes(user.role as UserRole);
   };
-  
+
   // Hierarchical permission checks
-  const canAccessCompany = (): boolean => 
-    hasRole(['super_admin', 'system_admin', 'company_admin', 'manager']);
+  const canAccessCompany = (): boolean =>
+    hasRole(["super_admin", "system_admin", "company_admin", "manager"]);
 }
 ```
 
@@ -154,7 +165,7 @@ Multi-tenancy is enforced through company-based data isolation:
 const projects = await getProjects(user.company_id);
 
 // Super admins can override company isolation
-if (user.role === 'super_admin') {
+if (user.role === "super_admin") {
   const allProjects = await getAllProjects();
 }
 ```
@@ -169,17 +180,17 @@ export async function GET(request: Request) {
   try {
     // Extract and verify JWT token
     const user = await getAuthenticatedUser(request);
-    
+
     // Check role permissions
-    if (!user || !['super_admin'].includes(user.role)) {
-      return new Response('Forbidden', { status: 403 });
+    if (!user || !["super_admin"].includes(user.role)) {
+      return new Response("Forbidden", { status: 403 });
     }
-    
+
     // Handle authorized request
     const users = await getAllUsers();
     return Response.json(users);
   } catch (error) {
-    return new Response('Unauthorized', { status: 401 });
+    return new Response("Unauthorized", { status: 401 });
   }
 }
 ```
@@ -199,7 +210,7 @@ export const supabase = createClientComponentClient({
 
 // Automatic token refresh
 supabase.auth.onAuthStateChange((event, session) => {
-  if (event === 'TOKEN_REFRESHED') {
+  if (event === "TOKEN_REFRESHED") {
     // Update auth store with new session
   }
 });
@@ -217,16 +228,20 @@ supabase.auth.onAuthStateChange((event, session) => {
 // File: apps/web/lib/supabase/middleware.ts
 export async function middleware(request: NextRequest) {
   const response = NextResponse.next();
-  const supabase = createServerComponentClient({ cookies: () => request.cookies });
-  
+  const supabase = createServerComponentClient({
+    cookies: () => request.cookies,
+  });
+
   // Verify session validity
-  const { data: { session } } = await supabase.auth.getSession();
-  
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+
   // Redirect unauthenticated users
   if (!session && isProtectedRoute(request.nextUrl.pathname)) {
-    return NextResponse.redirect(new URL('/login', request.url));
+    return NextResponse.redirect(new URL("/login", request.url));
   }
-  
+
   return response;
 }
 ```
@@ -237,22 +252,27 @@ export async function middleware(request: NextRequest) {
 
 ```typescript
 // File: apps/web/lib/auth-utils.ts
-export async function getAuthenticatedUser(request: Request): Promise<AuthUser | null> {
+export async function getAuthenticatedUser(
+  request: Request,
+): Promise<AuthUser | null> {
   try {
-    const authHeader = request.headers.get('authorization');
-    if (!authHeader?.startsWith('Bearer ')) return null;
-    
+    const authHeader = request.headers.get("authorization");
+    if (!authHeader?.startsWith("Bearer ")) return null;
+
     const token = authHeader.substring(7);
     const supabase = createServerComponentClient();
-    
-    const { data: { user }, error } = await supabase.auth.getUser(token);
+
+    const {
+      data: { user },
+      error,
+    } = await supabase.auth.getUser(token);
     if (error || !user) return null;
-    
+
     // Fetch full user data from database
     const userData = await getUserByEmail(user.email!);
     return userData;
   } catch (error) {
-    console.error('Authentication error:', error);
+    console.error("Authentication error:", error);
     return null;
   }
 }
@@ -262,7 +282,10 @@ export async function getAuthenticatedUser(request: Request): Promise<AuthUser |
 
 ```typescript
 // File: apps/web/lib/auth-utils.ts
-export function hasPermission(userRole: UserRole, requiredRoles: UserRole[]): boolean {
+export function hasPermission(
+  userRole: UserRole,
+  requiredRoles: UserRole[],
+): boolean {
   const roleHierarchy: Record<UserRole, number> = {
     user: 1,
     manager: 2,
@@ -270,10 +293,12 @@ export function hasPermission(userRole: UserRole, requiredRoles: UserRole[]): bo
     system_admin: 4,
     super_admin: 5,
   };
-  
+
   const userLevel = roleHierarchy[userRole];
-  const minRequiredLevel = Math.min(...requiredRoles.map(role => roleHierarchy[role]));
-  
+  const minRequiredLevel = Math.min(
+    ...requiredRoles.map((role) => roleHierarchy[role]),
+  );
+
   return userLevel >= minRequiredLevel;
 }
 ```
@@ -287,12 +312,12 @@ export function hasPermission(userRole: UserRole, requiredRoles: UserRole[]): bo
 try {
   await signIn(email, password);
 } catch (error) {
-  if (error.message === 'Invalid login credentials') {
-    setError('Email or password is incorrect');
-  } else if (error.message === 'Email not confirmed') {
-    setError('Please check your email and verify your account');
+  if (error.message === "Invalid login credentials") {
+    setError("Email or password is incorrect");
+  } else if (error.message === "Email not confirmed") {
+    setError("Please check your email and verify your account");
   } else {
-    setError('An error occurred during login');
+    setError("An error occurred during login");
   }
 }
 ```
@@ -302,16 +327,16 @@ try {
 ```typescript
 // API route error handling
 if (!user) {
-  return new Response('Unauthorized', { 
+  return new Response("Unauthorized", {
     status: 401,
-    headers: { 'Content-Type': 'application/json' }
+    headers: { "Content-Type": "application/json" },
   });
 }
 
-if (!hasPermission(user.role, ['super_admin', 'system_admin'])) {
-  return new Response('Forbidden', { 
+if (!hasPermission(user.role, ["super_admin", "system_admin"])) {
+  return new Response("Forbidden", {
     status: 403,
-    headers: { 'Content-Type': 'application/json' }
+    headers: { "Content-Type": "application/json" },
   });
 }
 ```
@@ -322,18 +347,18 @@ if (!hasPermission(user.role, ['super_admin', 'system_admin'])) {
 
 ```typescript
 // Example test for role permissions
-describe('useRoleAccess', () => {
-  it('should allow super admin access to all features', () => {
-    const mockUser = { role: 'super_admin' };
+describe("useRoleAccess", () => {
+  it("should allow super admin access to all features", () => {
+    const mockUser = { role: "super_admin" };
     const { canAccessCompany } = renderHookWithUser(useRoleAccess, mockUser);
-    
+
     expect(canAccessCompany()).toBe(true);
   });
-  
-  it('should deny user access to company features', () => {
-    const mockUser = { role: 'user' };
+
+  it("should deny user access to company features", () => {
+    const mockUser = { role: "user" };
     const { canAccessCompany } = renderHookWithUser(useRoleAccess, mockUser);
-    
+
     expect(canAccessCompany()).toBe(false);
   });
 });
@@ -343,13 +368,13 @@ describe('useRoleAccess', () => {
 
 ```typescript
 // Example API route test
-describe('/api/admin/users', () => {
-  it('should return 403 for non-admin users', async () => {
-    const token = await getTokenForRole('user');
-    const response = await fetch('/api/admin/users', {
-      headers: { Authorization: `Bearer ${token}` }
+describe("/api/admin/users", () => {
+  it("should return 403 for non-admin users", async () => {
+    const token = await getTokenForRole("user");
+    const response = await fetch("/api/admin/users", {
+      headers: { Authorization: `Bearer ${token}` },
     });
-    
+
     expect(response.status).toBe(403);
   });
 });
@@ -386,15 +411,19 @@ describe('/api/admin/users', () => {
 ### Common Issues
 
 1. **Token Expiration**:
+
    ```typescript
    // Check token validity
-   const { data: { session } } = await supabase.auth.getSession();
+   const {
+     data: { session },
+   } = await supabase.auth.getSession();
    if (!session) {
      // Token expired, redirect to login
    }
    ```
 
 2. **Role Synchronization**:
+
    ```typescript
    // Refresh user data after role changes
    await refreshUserData();
@@ -403,19 +432,19 @@ describe('/api/admin/users', () => {
 3. **Company Isolation**:
    ```typescript
    // Verify company_id in queries
-   console.log('User company:', user.company_id);
-   console.log('Query company:', queryCompanyId);
+   console.log("User company:", user.company_id);
+   console.log("Query company:", queryCompanyId);
    ```
 
 ### Debug Tools
 
 ```typescript
 // Add debug logging
-const DEBUG_AUTH = process.env.NODE_ENV === 'development';
+const DEBUG_AUTH = process.env.NODE_ENV === "development";
 
 if (DEBUG_AUTH) {
-  console.log('Auth state:', { user, loading, error });
-  console.log('Role permissions:', { canAccessCompany, isSuperAdmin });
+  console.log("Auth state:", { user, loading, error });
+  console.log("Role permissions:", { canAccessCompany, isSuperAdmin });
 }
 ```
 

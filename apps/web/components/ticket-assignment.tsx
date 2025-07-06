@@ -1,40 +1,43 @@
-'use client'
+"use client";
 
-import { useState } from 'react'
-import { User, UserPlus } from 'lucide-react'
-import { Button } from '@workspace/ui/components/button'
-import { Card } from '@workspace/ui/components/card'
-import { Label } from '@workspace/ui/components/label'
-import { useAssignableUsers } from '@/lib/hooks/useUsers'
-import { useUpdateTicket } from '@/lib/hooks/useTickets'
-import type { Ticket } from '@/lib/db/schema'
+import { useState } from "react";
+import { User, UserPlus } from "lucide-react";
+import { Button } from "@workspace/ui/components/button";
+import { Card } from "@workspace/ui/components/card";
+import { Label } from "@workspace/ui/components/label";
+import { useAssignableUsers } from "@/lib/hooks/useUsers";
+import { useUpdateTicket } from "@/lib/hooks/useTickets";
+import type { Ticket } from "@/lib/db/schema";
 
 interface TicketAssignmentProps {
-  ticket: Ticket
-  compact?: boolean
+  ticket: Ticket;
+  compact?: boolean;
 }
 
-export function TicketAssignment({ ticket, compact = false }: TicketAssignmentProps) {
-  const { data: users = [], isLoading: usersLoading } = useAssignableUsers()
-  const updateTicketMutation = useUpdateTicket()
-  
-  const [isAssigning, setIsAssigning] = useState(false)
+export function TicketAssignment({
+  ticket,
+  compact = false,
+}: TicketAssignmentProps) {
+  const { data: users = [], isLoading: usersLoading } = useAssignableUsers();
+  const updateTicketMutation = useUpdateTicket();
 
-  const assignedUser = users.find(user => user.id === ticket.assignee_id)
+  const [isAssigning, setIsAssigning] = useState(false);
+
+  const assignedUser = users.find((user) => user.id === ticket.assignee_id);
 
   const assignTicket = async (userId: string | null) => {
     try {
       await updateTicketMutation.mutateAsync({
         id: ticket.id,
-        data: { assignee_id: userId }
-      })
-      setIsAssigning(false)
+        data: { assignee_id: userId },
+      });
+      setIsAssigning(false);
       // The mutation will automatically invalidate the ticket cache and update the UI
     } catch (error) {
-      console.error('Failed to assign ticket:', error)
-      alert('Failed to assign ticket. Please try again.')
+      console.error("Failed to assign ticket:", error);
+      alert("Failed to assign ticket. Please try again.");
     }
-  }
+  };
 
   if (compact) {
     return (
@@ -42,7 +45,9 @@ export function TicketAssignment({ ticket, compact = false }: TicketAssignmentPr
         {assignedUser ? (
           <div className="flex items-center gap-2 text-sm">
             <User className="w-4 h-4" />
-            <span>{assignedUser.first_name} {assignedUser.last_name}</span>
+            <span>
+              {assignedUser.first_name} {assignedUser.last_name}
+            </span>
           </div>
         ) : (
           <Button
@@ -56,7 +61,7 @@ export function TicketAssignment({ ticket, compact = false }: TicketAssignmentPr
           </Button>
         )}
       </div>
-    )
+    );
   }
 
   return (
@@ -136,7 +141,9 @@ export function TicketAssignment({ ticket, compact = false }: TicketAssignmentPr
                       onClick={() => assignTicket(user.id)}
                       disabled={updateTicketMutation.isPending}
                       className={`w-full text-left p-3 border rounded-lg hover:bg-gray-50 flex items-center gap-3 ${
-                        user.id === ticket.assignee_id ? 'bg-blue-50 border-blue-200' : ''
+                        user.id === ticket.assignee_id
+                          ? "bg-blue-50 border-blue-200"
+                          : ""
                       }`}
                     >
                       <div className="w-5 h-5 rounded-full bg-blue-100 flex items-center justify-center">
@@ -174,5 +181,5 @@ export function TicketAssignment({ ticket, compact = false }: TicketAssignmentPr
         )}
       </div>
     </Card>
-  )
+  );
 }

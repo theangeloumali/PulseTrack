@@ -1,3 +1,3 @@
-import RecoveryCallbackPage from '../../recovery';
+import RecoveryCallbackPage from "../../recovery";
 
 export default RecoveryCallbackPage;

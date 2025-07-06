@@ -1,18 +1,30 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@workspace/ui/components/card';
-import { Button } from '@workspace/ui/components/button';
-import { Badge } from '@workspace/ui/components/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@workspace/ui/components/select';
-import { useBillingSettings } from '@/lib/hooks/useBilling';
-import { useMarkInvoiceSent } from '@/lib/hooks/usePayments';
-import type { BillingPeriod } from '@/lib/db/schema';
-import { format } from 'date-fns';
-import { 
-  FileText, 
-  Download, 
-  Send, 
+import { useState } from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@workspace/ui/components/card";
+import { Button } from "@workspace/ui/components/button";
+import { Badge } from "@workspace/ui/components/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@workspace/ui/components/select";
+import { useBillingSettings } from "@/lib/hooks/useBilling";
+import { useMarkInvoiceSent } from "@/lib/hooks/usePayments";
+import type { BillingPeriod } from "@/lib/db/schema";
+import { format } from "date-fns";
+import {
+  FileText,
+  Download,
+  Send,
   Eye,
   Printer,
   Mail,
@@ -26,8 +38,8 @@ import {
   DollarSign,
   Building,
   Globe,
-  Loader2
-} from 'lucide-react';
+  Loader2,
+} from "lucide-react";
 
 interface InvoiceGenerationProps {
   billingPeriod: BillingPeriod;
@@ -51,13 +63,13 @@ interface InvoiceTemplate {
   isPremium?: boolean;
 }
 
-export function InvoiceGeneration({ 
-  billingPeriod, 
-  billingReport, 
-  companyId, 
-  summaryStats 
+export function InvoiceGeneration({
+  billingPeriod,
+  billingReport,
+  companyId,
+  summaryStats,
 }: InvoiceGenerationProps) {
-  const [selectedTemplate, setSelectedTemplate] = useState('modern');
+  const [selectedTemplate, setSelectedTemplate] = useState("modern");
   const [includeTimeDetails, setIncludeTimeDetails] = useState(true);
   const [includeProjectBreakdown, setIncludeProjectBreakdown] = useState(true);
   const [includePaymentLinks, setIncludePaymentLinks] = useState(true);
@@ -69,57 +81,60 @@ export function InvoiceGeneration({
 
   const invoiceTemplates: InvoiceTemplate[] = [
     {
-      id: 'modern',
-      name: 'Modern Professional',
-      description: 'Clean, modern design with visual charts and professional layout',
-      preview: '/preview-modern.png'
+      id: "modern",
+      name: "Modern Professional",
+      description:
+        "Clean, modern design with visual charts and professional layout",
+      preview: "/preview-modern.png",
     },
     {
-      id: 'classic',
-      name: 'Classic Business',
-      description: 'Traditional invoice format with detailed breakdown tables',
-      preview: '/preview-classic.png'
+      id: "classic",
+      name: "Classic Business",
+      description: "Traditional invoice format with detailed breakdown tables",
+      preview: "/preview-classic.png",
     },
     {
-      id: 'minimal',
-      name: 'Minimal Clean',
-      description: 'Simple, minimal design focusing on essential information',
-      preview: '/preview-minimal.png'
+      id: "minimal",
+      name: "Minimal Clean",
+      description: "Simple, minimal design focusing on essential information",
+      preview: "/preview-minimal.png",
     },
     {
-      id: 'branded',
-      name: 'Custom Branded',
-      description: 'Fully branded template with your company colors and logo',
-      preview: '/preview-branded.png',
-      isPremium: true
-    }
+      id: "branded",
+      name: "Custom Branded",
+      description: "Fully branded template with your company colors and logo",
+      preview: "/preview-branded.png",
+      isPremium: true,
+    },
   ];
 
-  const generateInvoice = async (action: 'preview' | 'download' | 'send') => {
+  const generateInvoice = async (action: "preview" | "download" | "send") => {
     setIsGenerating(true);
-    
+
     try {
       // Simulate invoice generation
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+
       switch (action) {
-        case 'preview':
+        case "preview":
           setPreviewMode(true);
           break;
-        case 'download':
+        case "download":
           // Generate and download PDF
           downloadInvoicePDF();
           break;
-        case 'send':
+        case "send":
           // Mark as sent and potentially send email
           await markSentMutation.mutateAsync({
             billing_period_id: billingPeriod.id,
-            due_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 30 days from now
+            due_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+              .toISOString()
+              .split("T")[0], // 30 days from now
           });
           break;
       }
     } catch (error) {
-      console.error('Error generating invoice:', error);
+      console.error("Error generating invoice:", error);
     } finally {
       setIsGenerating(false);
     }
@@ -128,11 +143,11 @@ export function InvoiceGeneration({
   const downloadInvoicePDF = () => {
     // For now, create a mock HTML invoice
     const invoiceHTML = generateInvoiceHTML();
-    const blob = new Blob([invoiceHTML], { type: 'text/html' });
+    const blob = new Blob([invoiceHTML], { type: "text/html" });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
+    const a = document.createElement("a");
     a.href = url;
-    a.download = `invoice-${billingPeriod.name.toLowerCase().replace(/\s+/g, '-')}-${format(new Date(), 'yyyy-MM-dd')}.html`;
+    a.download = `invoice-${billingPeriod.name.toLowerCase().replace(/\s+/g, "-")}-${format(new Date(), "yyyy-MM-dd")}.html`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -140,13 +155,13 @@ export function InvoiceGeneration({
   };
 
   const generateInvoiceHTML = (): string => {
-    const currency = companySettings?.currency || 'USD';
-    const invoiceNumber = `${companySettings?.invoice_prefix || 'INV'}-${format(new Date(), 'yyyyMMdd')}-${billingPeriod.id.slice(0, 8)}`;
-    
+    const currency = companySettings?.currency || "USD";
+    const invoiceNumber = `${companySettings?.invoice_prefix || "INV"}-${format(new Date(), "yyyyMMdd")}-${billingPeriod.id.slice(0, 8)}`;
+
     // Use branding colors
-    const primaryColor = companySettings?.brand_primary_color || '#2563eb';
-    const secondaryColor = companySettings?.brand_secondary_color || '#64748b';
-    
+    const primaryColor = companySettings?.brand_primary_color || "#2563eb";
+    const secondaryColor = companySettings?.brand_secondary_color || "#64748b";
+
     return `
 <!DOCTYPE html>
 <html>
@@ -308,30 +323,48 @@ export function InvoiceGeneration({
 <body>
     <div class="header">
         <div class="company-info">
-            ${companySettings?.company_logo_url ? 
-              `<img src="${companySettings.company_logo_url}" alt="Company Logo" class="company-logo">` : 
-              ''}
-            <h1>${billingPeriod.company_name || 'Your Company Name'}</h1>
-            ${companySettings?.company_address ? 
-              `<p>${companySettings.company_address.replace(/\n/g, '<br>')}</p>` : 
-              '<p>123 Business Street<br>City, State 12345</p>'}
-            ${companySettings?.company_email ? 
-              `<p>Email: ${companySettings.company_email}</p>` : 
-              '<p>Email: billing@company.com</p>'}
-            ${companySettings?.company_phone ? 
-              `<p>Phone: ${companySettings.company_phone}</p>` : 
-              ''}
-            ${companySettings?.company_website ? 
-              `<p>Website: ${companySettings.company_website}</p>` : 
-              ''}
+            ${
+              companySettings?.company_logo_url
+                ? `<img src="${companySettings.company_logo_url}" alt="Company Logo" class="company-logo">`
+                : ""
+            }
+            <h1>${billingPeriod.company_name || "Your Company Name"}</h1>
+            ${
+              companySettings?.company_address
+                ? `<p>${companySettings.company_address.replace(/\n/g, "<br>")}</p>`
+                : "<p>123 Business Street<br>City, State 12345</p>"
+            }
+            ${
+              companySettings?.company_email
+                ? `<p>Email: ${companySettings.company_email}</p>`
+                : "<p>Email: billing@company.com</p>"
+            }
+            ${
+              companySettings?.company_phone
+                ? `<p>Phone: ${companySettings.company_phone}</p>`
+                : ""
+            }
+            ${
+              companySettings?.company_website
+                ? `<p>Website: ${companySettings.company_website}</p>`
+                : ""
+            }
         </div>
         <div class="invoice-details">
             <h2>INVOICE</h2>
             <p><strong>Invoice #:</strong> ${invoiceNumber}</p>
-            <p><strong>Date:</strong> ${format(new Date(), 'MMMM dd, yyyy')}</p>
-            <p><strong>Due Date:</strong> ${billingPeriod.payment_due_date ? 
-              format(new Date(billingPeriod.payment_due_date), 'MMMM dd, yyyy') : 
-              format(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), 'MMMM dd, yyyy')}</p>
+            <p><strong>Date:</strong> ${format(new Date(), "MMMM dd, yyyy")}</p>
+            <p><strong>Due Date:</strong> ${
+              billingPeriod.payment_due_date
+                ? format(
+                    new Date(billingPeriod.payment_due_date),
+                    "MMMM dd, yyyy",
+                  )
+                : format(
+                    new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+                    "MMMM dd, yyyy",
+                  )
+            }</p>
         </div>
     </div>
 
@@ -345,8 +378,8 @@ export function InvoiceGeneration({
         <div class="info-section">
             <h3>Billing Period:</h3>
             <p><strong>${billingPeriod.name}</strong><br>
-            ${format(new Date(billingPeriod.start_date), 'MMMM dd')} - ${format(new Date(billingPeriod.end_date), 'MMMM dd, yyyy')}<br>
-            Frequency: ${billingPeriod.frequency.replace('_', ' ').toUpperCase()}</p>
+            ${format(new Date(billingPeriod.start_date), "MMMM dd")} - ${format(new Date(billingPeriod.end_date), "MMMM dd, yyyy")}<br>
+            Frequency: ${billingPeriod.frequency.replace("_", " ").toUpperCase()}</p>
         </div>
     </div>
 
@@ -367,12 +400,14 @@ export function InvoiceGeneration({
             </div>
             <div class="summary-item">
                 <div class="label">Avg Rate</div>
-                <div class="value">$${summaryStats.totalHours > 0 ? (summaryStats.totalAmount / summaryStats.totalHours).toFixed(2) : '0.00'}</div>
+                <div class="value">$${summaryStats.totalHours > 0 ? (summaryStats.totalAmount / summaryStats.totalHours).toFixed(2) : "0.00"}</div>
             </div>
         </div>
     </div>
 
-    ${includeTimeDetails ? `
+    ${
+      includeTimeDetails
+        ? `
     <table class="breakdown-table">
         <thead>
             <tr>
@@ -386,19 +421,23 @@ export function InvoiceGeneration({
             <tr>
                 <td>Development Team</td>
                 <td>${summaryStats.totalHours.toFixed(2)}</td>
-                <td>$${summaryStats.totalHours > 0 ? (summaryStats.totalAmount / summaryStats.totalHours).toFixed(2) : '0.00'}/hr</td>
+                <td>$${summaryStats.totalHours > 0 ? (summaryStats.totalAmount / summaryStats.totalHours).toFixed(2) : "0.00"}/hr</td>
                 <td>$${summaryStats.totalAmount.toFixed(2)}</td>
             </tr>
         </tbody>
     </table>
-    ` : ''}
+    `
+        : ""
+    }
 
     <div class="total-section">
         <div class="total-label">Total Amount Due</div>
         <div class="total-amount">$${summaryStats.totalAmount.toFixed(2)} ${currency}</div>
     </div>
 
-    ${includePaymentLinks ? `
+    ${
+      includePaymentLinks
+        ? `
     <div class="payment-info">
         <h3>Payment Options</h3>
         <p>Choose your preferred payment method below:</p>
@@ -408,17 +447,21 @@ export function InvoiceGeneration({
             <a href="#" class="payment-link">📱 Digital Wallet</a>
         </div>
     </div>
-    ` : ''}
+    `
+        : ""
+    }
 
     <div class="footer">
-        ${companySettings?.invoice_footer ? 
-          `<p>${companySettings.invoice_footer.replace(/\n/g, '</p><p>')}</p>` : 
-          `<p>Thank you for your business!</p>
+        ${
+          companySettings?.invoice_footer
+            ? `<p>${companySettings.invoice_footer.replace(/\n/g, "</p><p>")}</p>`
+            : `<p>Thank you for your business!</p>
           <p>Payment terms: Net 30 days. Late payments may incur additional fees.</p>`
         }
-        ${companySettings?.company_email ? 
-          `<p>For questions about this invoice, please contact: ${companySettings.company_email}</p>` : 
-          '<p>For questions about this invoice, please contact: billing@company.com</p>'
+        ${
+          companySettings?.company_email
+            ? `<p>For questions about this invoice, please contact: ${companySettings.company_email}</p>`
+            : "<p>For questions about this invoice, please contact: billing@company.com</p>"
         }
     </div>
 </body>
@@ -436,7 +479,9 @@ export function InvoiceGeneration({
               <Palette className="h-5 w-5" />
               Invoice Template
             </CardTitle>
-            <CardDescription>Choose a template design for your invoice</CardDescription>
+            <CardDescription>
+              Choose a template design for your invoice
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -445,13 +490,16 @@ export function InvoiceGeneration({
                   key={template.id}
                   className={`relative border rounded-lg p-4 cursor-pointer transition-all ${
                     selectedTemplate === template.id
-                      ? 'border-blue-500 bg-blue-50'
-                      : 'border-gray-200 hover:border-gray-300'
+                      ? "border-blue-500 bg-blue-50"
+                      : "border-gray-200 hover:border-gray-300"
                   }`}
                   onClick={() => setSelectedTemplate(template.id)}
                 >
                   {template.isPremium && (
-                    <Badge className="absolute top-2 right-2" variant="secondary">
+                    <Badge
+                      className="absolute top-2 right-2"
+                      variant="secondary"
+                    >
                       Premium
                     </Badge>
                   )}
@@ -459,7 +507,9 @@ export function InvoiceGeneration({
                     <FileText className="h-8 w-8 text-gray-400" />
                   </div>
                   <h4 className="font-medium">{template.name}</h4>
-                  <p className="text-sm text-muted-foreground">{template.description}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {template.description}
+                  </p>
                 </div>
               ))}
             </div>
@@ -476,7 +526,9 @@ export function InvoiceGeneration({
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between">
-              <label className="text-sm font-medium">Include Time Details</label>
+              <label className="text-sm font-medium">
+                Include Time Details
+              </label>
               <input
                 type="checkbox"
                 checked={includeTimeDetails}
@@ -484,7 +536,7 @@ export function InvoiceGeneration({
                 className="rounded"
               />
             </div>
-            
+
             <div className="flex items-center justify-between">
               <label className="text-sm font-medium">Project Breakdown</label>
               <input
@@ -494,7 +546,7 @@ export function InvoiceGeneration({
                 className="rounded"
               />
             </div>
-            
+
             <div className="flex items-center justify-between">
               <label className="text-sm font-medium">Payment Links</label>
               <input
@@ -507,7 +559,7 @@ export function InvoiceGeneration({
 
             <div className="pt-4 border-t">
               <label className="text-sm font-medium mb-2 block">Currency</label>
-              <Select defaultValue={companySettings?.currency || 'USD'}>
+              <Select defaultValue={companySettings?.currency || "USD"}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -538,17 +590,21 @@ export function InvoiceGeneration({
                 <Clock className="h-5 w-5" />
                 <span className="text-sm font-medium">Total Hours</span>
               </div>
-              <div className="text-2xl font-bold">{summaryStats.totalHours.toFixed(1)}</div>
+              <div className="text-2xl font-bold">
+                {summaryStats.totalHours.toFixed(1)}
+              </div>
             </div>
-            
+
             <div className="text-center">
               <div className="flex items-center justify-center gap-2 text-green-600 mb-2">
                 <DollarSign className="h-5 w-5" />
                 <span className="text-sm font-medium">Total Amount</span>
               </div>
-              <div className="text-2xl font-bold">${summaryStats.totalAmount.toFixed(2)}</div>
+              <div className="text-2xl font-bold">
+                ${summaryStats.totalAmount.toFixed(2)}
+              </div>
             </div>
-            
+
             <div className="text-center">
               <div className="flex items-center justify-center gap-2 text-purple-600 mb-2">
                 <User className="h-5 w-5" />
@@ -556,13 +612,15 @@ export function InvoiceGeneration({
               </div>
               <div className="text-2xl font-bold">{summaryStats.userCount}</div>
             </div>
-            
+
             <div className="text-center">
               <div className="flex items-center justify-center gap-2 text-orange-600 mb-2">
                 <Building className="h-5 w-5" />
                 <span className="text-sm font-medium">Projects</span>
               </div>
-              <div className="text-2xl font-bold">{summaryStats.projectCount}</div>
+              <div className="text-2xl font-bold">
+                {summaryStats.projectCount}
+              </div>
             </div>
           </div>
         </CardContent>
@@ -575,39 +633,45 @@ export function InvoiceGeneration({
             <Send className="h-5 w-5" />
             Invoice Actions
           </CardTitle>
-          <CardDescription>Generate, preview, or send your invoice</CardDescription>
+          <CardDescription>
+            Generate, preview, or send your invoice
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Button
               variant="outline"
-              onClick={() => generateInvoice('preview')}
+              onClick={() => generateInvoice("preview")}
               disabled={isGenerating}
               className="flex items-center gap-2 h-auto py-4"
             >
               <Eye className="h-5 w-5" />
               <div className="text-left">
                 <div className="font-medium">Preview Invoice</div>
-                <div className="text-sm text-muted-foreground">Review before sending</div>
+                <div className="text-sm text-muted-foreground">
+                  Review before sending
+                </div>
               </div>
             </Button>
-            
+
             <Button
               variant="outline"
-              onClick={() => generateInvoice('download')}
+              onClick={() => generateInvoice("download")}
               disabled={isGenerating}
               className="flex items-center gap-2 h-auto py-4"
             >
               <Download className="h-5 w-5" />
               <div className="text-left">
                 <div className="font-medium">Download PDF</div>
-                <div className="text-sm text-muted-foreground">Save to computer</div>
+                <div className="text-sm text-muted-foreground">
+                  Save to computer
+                </div>
               </div>
             </Button>
-            
+
             <Button
-              onClick={() => generateInvoice('send')}
-              disabled={isGenerating || billingPeriod.payment_status === 'paid'}
+              onClick={() => generateInvoice("send")}
+              disabled={isGenerating || billingPeriod.payment_status === "paid"}
               className="flex items-center gap-2 h-auto py-4"
             >
               {isGenerating ? (
@@ -617,7 +681,7 @@ export function InvoiceGeneration({
               )}
               <div className="text-left">
                 <div className="font-medium">
-                  {isGenerating ? 'Generating...' : 'Generate & Send'}
+                  {isGenerating ? "Generating..." : "Generate & Send"}
                 </div>
                 <div className="text-sm opacity-90">Email to client</div>
               </div>
@@ -636,22 +700,38 @@ export function InvoiceGeneration({
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <Button variant="outline" size="sm" className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex items-center gap-2"
+            >
               <Printer className="h-4 w-4" />
               Print Invoice
             </Button>
-            
-            <Button variant="outline" size="sm" className="flex items-center gap-2">
+
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex items-center gap-2"
+            >
               <Mail className="h-4 w-4" />
               Email Invoice
             </Button>
-            
-            <Button variant="outline" size="sm" className="flex items-center gap-2">
+
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex items-center gap-2"
+            >
               <QrCode className="h-4 w-4" />
               QR Payment
             </Button>
-            
-            <Button variant="outline" size="sm" className="flex items-center gap-2">
+
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex items-center gap-2"
+            >
               <ExternalLink className="h-4 w-4" />
               Share Link
             </Button>
@@ -668,7 +748,11 @@ export function InvoiceGeneration({
               <div>
                 <div className="font-medium">Invoice Previously Sent</div>
                 <div className="text-sm text-muted-foreground">
-                  Sent on {format(new Date(billingPeriod.invoice_sent_date), 'MMMM dd, yyyy')}
+                  Sent on{" "}
+                  {format(
+                    new Date(billingPeriod.invoice_sent_date),
+                    "MMMM dd, yyyy",
+                  )}
                 </div>
               </div>
             </div>

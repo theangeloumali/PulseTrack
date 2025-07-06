@@ -1,51 +1,53 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { Button } from '@workspace/ui/components/button';
-import { Input } from '@workspace/ui/components/input';
-import { Label } from '@workspace/ui/components/label';
-import { RichTextEditor } from '@/components/ui/rich-text-editor';
-import { Modal } from '@/components/ui/modal';
-import { useCreateProjectMutation } from '@/lib/hooks/useProjects';
-import { useAuthStore } from '@/lib/stores/auth';
-import { Loader2, Save } from 'lucide-react';
+import { useState } from "react";
+import { Button } from "@workspace/ui/components/button";
+import { Input } from "@workspace/ui/components/input";
+import { Label } from "@workspace/ui/components/label";
+import { RichTextEditor } from "@/components/ui/rich-text-editor";
+import { Modal } from "@/components/ui/modal";
+import { useCreateProjectMutation } from "@/lib/hooks/useProjects";
+import { useAuthStore } from "@/lib/stores/auth";
+import { Loader2, Save } from "lucide-react";
 
 interface CreateProjectModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-export function CreateProjectModal({ 
-  isOpen, 
-  onClose 
+export function CreateProjectModal({
+  isOpen,
+  onClose,
 }: CreateProjectModalProps) {
   const [formData, setFormData] = useState({
-    name: '',
-    description: '',
-    status: 'active' as 'active' | 'archived' | 'completed',
+    name: "",
+    description: "",
+    status: "active" as "active" | "archived" | "completed",
   });
-  const [error, setError] = useState('');
-  
+  const [error, setError] = useState("");
+
   const { user } = useAuthStore();
   const createProjectMutation = useCreateProjectMutation();
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+  ) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       [name]: value,
     }));
   };
 
   const handleDescriptionChange = (value: string) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       description: value,
     }));
   };
 
   const handleSelectChange = (name: string, value: string) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       [name]: value,
     }));
@@ -53,14 +55,14 @@ export function CreateProjectModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!user) return;
 
-    setError('');
+    setError("");
 
     // Validation
     if (!formData.name.trim()) {
-      setError('Project name is required');
+      setError("Project name is required");
       return;
     }
 
@@ -74,27 +76,27 @@ export function CreateProjectModal({
       };
 
       await createProjectMutation.mutateAsync(projectData);
-      
+
       // Reset form and close modal
       setFormData({
-        name: '',
-        description: '',
-        status: 'active',
+        name: "",
+        description: "",
+        status: "active",
       });
       onClose();
     } catch (err: any) {
-      setError(err.message || 'Failed to create project');
+      setError(err.message || "Failed to create project");
     }
   };
 
   const handleClose = () => {
     if (!createProjectMutation.isPending) {
       setFormData({
-        name: '',
-        description: '',
-        status: 'active',
+        name: "",
+        description: "",
+        status: "active",
       });
-      setError('');
+      setError("");
       onClose();
     }
   };
@@ -144,7 +146,8 @@ export function CreateProjectModal({
             preview="edit"
           />
           <p className="text-xs text-muted-foreground">
-            Supports markdown formatting: **bold**, *italic*, `code`, [links](url), lists, and more.
+            Supports markdown formatting: **bold**, *italic*, `code`,
+            [links](url), lists, and more.
           </p>
         </div>
 
@@ -155,7 +158,7 @@ export function CreateProjectModal({
             id="status"
             name="status"
             value={formData.status}
-            onChange={(e) => handleSelectChange('status', e.target.value)}
+            onChange={(e) => handleSelectChange("status", e.target.value)}
             disabled={createProjectMutation.isPending}
             className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
           >
@@ -170,16 +173,16 @@ export function CreateProjectModal({
 
         {/* Form Actions */}
         <div className="flex items-center justify-end space-x-4 pt-6">
-          <Button 
-            type="button" 
-            variant="outline" 
+          <Button
+            type="button"
+            variant="outline"
             onClick={handleClose}
             disabled={createProjectMutation.isPending}
           >
             Cancel
           </Button>
-          <Button 
-            type="submit" 
+          <Button
+            type="submit"
             disabled={createProjectMutation.isPending || !formData.name.trim()}
           >
             {createProjectMutation.isPending ? (

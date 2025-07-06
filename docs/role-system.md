@@ -21,9 +21,11 @@ User (user)
 ## Role Definitions
 
 ### Super Admin (`super_admin`)
+
 **Description**: System-wide administrator with full access to all features and data across all companies.
 
 **Permissions**:
+
 - ✅ All system functionality
 - ✅ Cross-company data access
 - ✅ User management across all companies
@@ -32,58 +34,71 @@ User (user)
 - ✅ All lower-level role permissions
 
 **Page Access**:
+
 - Dashboard, Projects, Tickets, Time Tracking, Company, Billing, Settings, Diagnostics
 - **Super Admin Only**: All Companies (`/admin/companies`), User Management (`/admin/users`)
 
 ### System Admin (`system_admin`)
+
 **Description**: Technical administrator with broad system access but limited to company-level operations.
 
 **Permissions**:
+
 - ✅ Company-wide data access within their assigned company
 - ✅ User management within their company
 - ✅ System diagnostics for their company
 - ✅ All manager-level permissions
 
 **Page Access**:
+
 - Dashboard, Projects, Tickets, Time Tracking, Company, Billing, Settings, Diagnostics
 - ❌ Cannot access: All Companies, User Management (super admin only)
 
 ### Company Admin (`company_admin`)
+
 **Description**: Administrative role for managing a specific company's operations and users.
 
 **Permissions**:
+
 - ✅ Company user management
 - ✅ Billing and financial oversight
 - ✅ Company settings configuration
 - ✅ All manager-level permissions
 
 **Page Access**:
+
 - Dashboard, Projects, Tickets, Time Tracking, Company, Billing, Settings, Diagnostics
 - ❌ Cannot access: All Companies, User Management (super admin only)
 
 ### Manager (`manager`)
+
 **Description**: Project and team management role with operational permissions.
 
 **Permissions**:
+
 - ✅ Project creation and management
 - ✅ User management within projects
 - ✅ Team oversight and reporting
 - ✅ All user-level permissions
 
 **Page Access**:
+
 - Dashboard, Projects, Tickets, Time Tracking, Company, Billing, Settings, Diagnostics
 - ❌ Cannot access: All Companies, User Management (super admin only)
 
 ### User (`user`)
+
 **Description**: Standard user role with basic operational access.
 
 **Permissions**:
+
 - ✅ View assigned projects and tickets
 - ✅ Time tracking for own work
 - ✅ Basic dashboard access
 - ✅ Personal billing information
 
 **Page Access**:
+
 - Dashboard, Projects, Tickets, Time Tracking, Billing
 - ❌ Cannot access: Company, Settings, Diagnostics, All Companies, User Management
 
@@ -94,14 +109,19 @@ User (user)
 The role is stored in the `users` table as an enum:
 
 ```typescript
-export type UserRole = 'super_admin' | 'system_admin' | 'company_admin' | 'manager' | 'user'
+export type UserRole =
+  | "super_admin"
+  | "system_admin"
+  | "company_admin"
+  | "manager"
+  | "user";
 
 export interface User extends BaseRecord {
-  email: string
-  first_name?: string | null
-  last_name?: string | null
-  role: UserRole
-  company_id: string
+  email: string;
+  first_name?: string | null;
+  last_name?: string | null;
+  role: UserRole;
+  company_id: string;
   // ... other fields
 }
 ```
@@ -116,17 +136,30 @@ export function useRoleAccess() {
   const { user } = useAuthStore();
 
   // Hierarchical role checks
-  const isSuperAdmin = (): boolean => hasRole('super_admin');
-  const isSystemAdmin = (): boolean => hasRole(['super_admin', 'system_admin']);
-  const isCompanyAdmin = (): boolean => hasRole(['super_admin', 'system_admin', 'company_admin']);
-  const isManager = (): boolean => hasRole(['super_admin', 'system_admin', 'company_admin', 'manager']);
-  const isUser = (): boolean => hasRole(['super_admin', 'system_admin', 'company_admin', 'manager', 'user']);
-  
+  const isSuperAdmin = (): boolean => hasRole("super_admin");
+  const isSystemAdmin = (): boolean => hasRole(["super_admin", "system_admin"]);
+  const isCompanyAdmin = (): boolean =>
+    hasRole(["super_admin", "system_admin", "company_admin"]);
+  const isManager = (): boolean =>
+    hasRole(["super_admin", "system_admin", "company_admin", "manager"]);
+  const isUser = (): boolean =>
+    hasRole([
+      "super_admin",
+      "system_admin",
+      "company_admin",
+      "manager",
+      "user",
+    ]);
+
   // Feature-specific permissions
-  const canAccessCompany = (): boolean => hasRole(['super_admin', 'system_admin', 'company_admin', 'manager']);
-  const canAccessDiagnostics = (): boolean => hasRole(['super_admin', 'system_admin', 'company_admin', 'manager']);
-  const canManageUsers = (): boolean => hasRole(['super_admin', 'system_admin', 'company_admin', 'manager']);
-  const canCreateProjects = (): boolean => hasRole(['super_admin', 'system_admin', 'company_admin', 'manager']);
+  const canAccessCompany = (): boolean =>
+    hasRole(["super_admin", "system_admin", "company_admin", "manager"]);
+  const canAccessDiagnostics = (): boolean =>
+    hasRole(["super_admin", "system_admin", "company_admin", "manager"]);
+  const canManageUsers = (): boolean =>
+    hasRole(["super_admin", "system_admin", "company_admin", "manager"]);
+  const canCreateProjects = (): boolean =>
+    hasRole(["super_admin", "system_admin", "company_admin", "manager"]);
 }
 ```
 
@@ -137,16 +170,66 @@ The sidebar navigation is controlled by role-based visibility:
 ```typescript
 // File: apps/web/components/sidebar-layout.tsx
 const navigation = [
-  { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, roles: ['super_admin', 'system_admin', 'company_admin', 'manager', 'user'] },
-  { name: 'Projects', href: '/projects', icon: FolderOpen, roles: ['super_admin', 'system_admin', 'company_admin', 'manager', 'user'] },
-  { name: 'Tickets', href: '/tickets', icon: Ticket, roles: ['super_admin', 'system_admin', 'company_admin', 'manager', 'user'] },
-  { name: 'Time Tracking', href: '/time-tracking', icon: Clock, roles: ['super_admin', 'system_admin', 'company_admin', 'manager', 'user'] },
-  { name: 'Company', href: '/company/users', icon: Users, roles: ['super_admin', 'system_admin', 'company_admin', 'manager'] },
-  { name: 'Billing', href: '/billing', icon: CreditCard, roles: ['super_admin', 'system_admin', 'company_admin', 'manager', 'user'] },
-  { name: 'All Companies', href: '/admin/companies', icon: Building2, roles: ['super_admin'] },
-  { name: 'User Management', href: '/admin/users', icon: Shield, roles: ['super_admin'] },
-  { name: 'Diagnostics', href: '/diagnostics', icon: Bug, roles: ['super_admin', 'system_admin', 'company_admin', 'manager'] },
-  { name: 'Settings', href: '/settings', icon: Settings, roles: ['super_admin', 'system_admin', 'company_admin', 'manager'] },
+  {
+    name: "Dashboard",
+    href: "/dashboard",
+    icon: LayoutDashboard,
+    roles: ["super_admin", "system_admin", "company_admin", "manager", "user"],
+  },
+  {
+    name: "Projects",
+    href: "/projects",
+    icon: FolderOpen,
+    roles: ["super_admin", "system_admin", "company_admin", "manager", "user"],
+  },
+  {
+    name: "Tickets",
+    href: "/tickets",
+    icon: Ticket,
+    roles: ["super_admin", "system_admin", "company_admin", "manager", "user"],
+  },
+  {
+    name: "Time Tracking",
+    href: "/time-tracking",
+    icon: Clock,
+    roles: ["super_admin", "system_admin", "company_admin", "manager", "user"],
+  },
+  {
+    name: "Company",
+    href: "/company/users",
+    icon: Users,
+    roles: ["super_admin", "system_admin", "company_admin", "manager"],
+  },
+  {
+    name: "Billing",
+    href: "/billing",
+    icon: CreditCard,
+    roles: ["super_admin", "system_admin", "company_admin", "manager", "user"],
+  },
+  {
+    name: "All Companies",
+    href: "/admin/companies",
+    icon: Building2,
+    roles: ["super_admin"],
+  },
+  {
+    name: "User Management",
+    href: "/admin/users",
+    icon: Shield,
+    roles: ["super_admin"],
+  },
+  {
+    name: "Diagnostics",
+    href: "/diagnostics",
+    icon: Bug,
+    roles: ["super_admin", "system_admin", "company_admin", "manager"],
+  },
+  {
+    name: "Settings",
+    href: "/settings",
+    icon: Settings,
+    roles: ["super_admin", "system_admin", "company_admin", "manager"],
+  },
 ];
 ```
 
@@ -160,7 +243,7 @@ const { canAccessCompany } = useRoleAccess();
 
 useEffect(() => {
   if (!canAccessCompany()) {
-    router.push('/dashboard');
+    router.push("/dashboard");
   }
 }, [canAccessCompany, router]);
 ```
@@ -232,11 +315,11 @@ return (
 // Example API route protection
 export async function GET(request: Request) {
   const user = await getAuthenticatedUser(request);
-  
-  if (!user || !['super_admin', 'system_admin'].includes(user.role)) {
-    return new Response('Forbidden', { status: 403 });
+
+  if (!user || !["super_admin", "system_admin"].includes(user.role)) {
+    return new Response("Forbidden", { status: 403 });
   }
-  
+
   // Handle request
 }
 ```
@@ -246,7 +329,7 @@ export async function GET(request: Request) {
 ```typescript
 const { hasRole } = useRoleAccess();
 
-const adminRoles = ['super_admin', 'system_admin', 'company_admin'];
+const adminRoles = ["super_admin", "system_admin", "company_admin"];
 const isAdmin = hasRole(adminRoles);
 ```
 
@@ -264,8 +347,11 @@ const isAdmin = hasRole(adminRoles);
 ```typescript
 // Add debugging to role checks
 const { user, hasRole } = useRoleAccess();
-console.log('Current user role:', user?.role);
-console.log('Can access company:', hasRole(['super_admin', 'system_admin', 'company_admin', 'manager']));
+console.log("Current user role:", user?.role);
+console.log(
+  "Can access company:",
+  hasRole(["super_admin", "system_admin", "company_admin", "manager"]),
+);
 ```
 
 ## Future Enhancements
