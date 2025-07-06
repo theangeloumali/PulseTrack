@@ -159,7 +159,7 @@ export async function createBillingPeriod(supabase: SupabaseClient, data: NewBil
     return result;
 }
 
-export async function updateBillingPeriod(id: string, updates: Partial<NewBillingPeriod>) {
+export async function updateBillingPeriod(supabase: SupabaseClient, id: string, updates: Partial<NewBillingPeriod>) {
     const { data, error } = await supabase
         .from('billing_periods')
         .update(updates)
@@ -305,6 +305,7 @@ export async function createTimeEntryBilling(data: NewTimeEntryBilling) {
 // Payment Status Management Functions
 
 export async function updateBillingPeriodPaymentStatus(
+    supabase: SupabaseClient,
     billingPeriodId: string, 
     paymentStatus: PaymentStatus,
     additionalData?: {
@@ -583,7 +584,7 @@ export async function getBillingCycleStats(companyId: string, year?: number) {
     return { periods, stats };
 }
 
-export async function markInvoiceAsSent(billingPeriodId: string, dueDate?: string) {
+export async function markInvoiceAsSent(supabase: SupabaseClient, billingPeriodId: string, dueDate?: string) {
     const updateData: any = {
         payment_status: 'sent',
         invoice_sent_date: new Date().toISOString(),
@@ -593,10 +594,11 @@ export async function markInvoiceAsSent(billingPeriodId: string, dueDate?: strin
         updateData.payment_due_date = dueDate;
     }
     
-    return await updateBillingPeriod(billingPeriodId, updateData);
+    return await updateBillingPeriod(supabase, billingPeriodId, updateData);
 }
 
 export async function markPaymentAsReceived(
+    supabase: SupabaseClient,
     billingPeriodId: string, 
     amount?: number, 
     reference?: string
@@ -614,7 +616,7 @@ export async function markPaymentAsReceived(
         updateData.payment_reference = reference;
     }
     
-    return await updateBillingPeriod(billingPeriodId, updateData);
+    return await updateBillingPeriod(supabase, billingPeriodId, updateData);
 }
 
 export async function generateBillingReport(

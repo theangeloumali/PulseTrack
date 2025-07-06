@@ -13,9 +13,9 @@ import { getApiPath } from '@/lib/utils';
 export async function GET(request: NextRequest) {
     try {
         const supabase = await createClient();
-        const { data: { session } } = await supabase.auth.getSession();
+        const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
         
-        if (!session?.user) {
+        if (authError || !authUser) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
         const { data: user } = await supabase
             .from('users')
             .select('id, company_id, role')
-            .eq('id', session.user.id)
+            .eq('id', authUser.id)
             .single();
 
         if (!user) {
@@ -63,9 +63,9 @@ export async function GET(request: NextRequest) {
 export async function PATCH(request: NextRequest) {
     try {
         const supabase = await createClient();
-        const { data: { session } } = await supabase.auth.getSession();
+        const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
         
-        if (!session?.user) {
+        if (authError || !authUser) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
@@ -73,7 +73,7 @@ export async function PATCH(request: NextRequest) {
         const { data: user } = await supabase
             .from('users')
             .select('id, company_id, role')
-            .eq('id', session.user.id)
+            .eq('id', authUser.id)
             .single();
 
         if (!user) {
@@ -96,11 +96,12 @@ export async function PATCH(request: NextRequest) {
 
         switch (action) {
             case 'mark_sent':
-                result = await markInvoiceAsSent(billing_period_id, additionalData.due_date);
+                result = await markInvoiceAsSent(supabase, billing_period_id, additionalData.due_date);
                 break;
 
             case 'mark_paid':
                 result = await markPaymentAsReceived(
+                    supabase,
                     billing_period_id, 
                     additionalData.amount, 
                     additionalData.reference
@@ -112,6 +113,7 @@ export async function PATCH(request: NextRequest) {
                     return NextResponse.json({ error: 'Payment status is required' }, { status: 400 });
                 }
                 result = await updateBillingPeriodPaymentStatus(
+                    supabase,
                     billing_period_id, 
                     payment_status, 
                     additionalData

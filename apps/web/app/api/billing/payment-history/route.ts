@@ -5,9 +5,9 @@ import { createClient } from '@/lib/supabase/server';
 export async function GET(request: NextRequest) {
     try {
         const supabase = await createClient();
-        const { data: { session } } = await supabase.auth.getSession();
+        const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
         
-        if (!session?.user) {
+        if (authError || !authUser) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
         const { data: user } = await supabase
             .from('users')
             .select('company_id')
-            .eq('id', session.user.id)
+            .eq('id', authUser.id)
             .single();
 
         if (!user) {
@@ -55,9 +55,9 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
     try {
         const supabase = await createClient();
-        const { data: { session } } = await supabase.auth.getSession();
+        const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
         
-        if (!session?.user) {
+        if (authError || !authUser) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
         const { data: user } = await supabase
             .from('users')
             .select('id, company_id, role')
-            .eq('id', session.user.id)
+            .eq('id', authUser.id)
             .single();
 
         if (!user) {
