@@ -3,9 +3,13 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@workspace/ui/components/card';
 import { Button } from '@workspace/ui/components/button';
 import { Badge } from '@workspace/ui/components/badge';
+import { Input } from '@workspace/ui/components/input';
+import { Label } from '@workspace/ui/components/label';
 import type { BillingPeriod } from '@/lib/db/schema';
 import { format } from 'date-fns';
-import { AlertTriangle, Trash2, X, Loader2 } from 'lucide-react';
+import { AlertTriangle, Trash2, X, Loader2, Shield } from 'lucide-react';
+import { useRoleAccess } from '@/lib/hooks/useRoleAccess';
+import { useState } from 'react';
 
 interface DeleteConfirmationModalProps {
   billingPeriod: BillingPeriod | null;
@@ -22,10 +26,16 @@ export function DeleteConfirmationModal({
   onConfirm,
   isDeleting,
 }: DeleteConfirmationModalProps) {
+  const { isSuperAdmin } = useRoleAccess();
+  const [confirmationText, setConfirmationText] = useState('');
+  
   if (!isOpen || !billingPeriod) return null;
 
   const isPaid = billingPeriod.payment_status === 'paid';
-  const canDelete = !isPaid;
+  const canDelete = !isPaid || isSuperAdmin();
+  const requiresConfirmation = isPaid && isSuperAdmin();
+  const confirmationRequired = requiresConfirmation ? billingPeriod.name : '';
+  const confirmationMatches = !requiresConfirmation || confirmationText === confirmationRequired;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
@@ -78,8 +88,39 @@ export function DeleteConfirmationModal({
               </div>
               <p className="text-sm text-destructive/80 mt-1">
                 This billing period cannot be deleted because it has been marked as paid. 
-                Deleting paid periods would affect financial records.
+                Deleting paid periods would affect financial records. Only super administrators can override this protection.
               </p>
+            </div>
+          )}
+
+          {requiresConfirmation && (
+            <div className="p-4 border border-orange-300 rounded-lg bg-orange-50 dark:bg-orange-950 dark:border-orange-800">
+              <div className="flex items-center gap-2 text-orange-800 dark:text-orange-300 mb-3">
+                <Shield className="h-4 w-4" />
+                <strong>Super Admin Override Required</strong>
+              </div>
+              <p className="text-sm text-orange-700 dark:text-orange-400 mb-3">
+                You are attempting to delete a paid billing period. This action is highly sensitive and affects financial records.
+                To confirm, please type the billing period name exactly:
+              </p>
+              <div className="space-y-2">
+                <Label htmlFor="confirmation-input" className="text-sm font-medium">
+                  Type "{billingPeriod.name}" to confirm:
+                </Label>
+                <Input
+                  id="confirmation-input"
+                  type="text"
+                  value={confirmationText}
+                  onChange={(e) => setConfirmationText(e.target.value)}
+                  placeholder={billingPeriod.name}
+                  className="text-sm"
+                />
+                {confirmationText && !confirmationMatches && (
+                  <p className="text-xs text-destructive">
+                    Text must match exactly: "{billingPeriod.name}"
+                  </p>
+                )}
+              </div>
             </div>
           )}
 
@@ -107,7 +148,7 @@ export function DeleteConfirmationModal({
             <Button 
               variant="destructive" 
               onClick={onConfirm} 
-              disabled={!canDelete || isDeleting}
+              disabled={!canDelete || !confirmationMatches || isDeleting}
               className="flex-1"
             >
               {isDeleting ? (

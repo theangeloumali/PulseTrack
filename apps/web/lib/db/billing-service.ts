@@ -171,10 +171,27 @@ export async function updateBillingPeriod(supabase: SupabaseClient, id: string, 
 }
 
 export async function deleteBillingPeriod(supabase: SupabaseClient, billingPeriodId: string) {
+    // Get the current authenticated user
+    const { data: { user: authUser }, error: authError } = await supabase.auth.getUser()
+    if (authError || !authUser) {
+        throw new Error('Authentication required to delete billing periods')
+    }
+
+    // Get user profile with role information
+    const { data: currentUser, error: userError } = await supabase
+        .from('users')
+        .select('id, role, company_id')
+        .eq('id', authUser.id)
+        .single()
+    
+    if (userError || !currentUser) {
+        throw new Error('User profile not found')
+    }
+
     // First check if billing period exists and get its details
     const { data: billingPeriod, error: fetchError } = await supabase
         .from('billing_periods')
-        .select('id, name, payment_status')
+        .select('id, name, payment_status, company_id')
         .eq('id', billingPeriodId)
         .single();
     
@@ -182,9 +199,15 @@ export async function deleteBillingPeriod(supabase: SupabaseClient, billingPerio
         throw new Error('Billing period not found');
     }
     
-    // Check if it's safe to delete (not paid)
-    if (billingPeriod.payment_status === 'paid') {
-        throw new Error('Cannot delete a billing period that has been paid');
+    // Verify user has access to this billing period (company match unless super admin)
+    const isSuperAdmin = currentUser.role === 'super_admin';
+    if (!isSuperAdmin && billingPeriod.company_id !== currentUser.company_id) {
+        throw new Error('You can only delete billing periods from your company');
+    }
+    
+    // Check if it's safe to delete (not paid unless super admin)
+    if (billingPeriod.payment_status === 'paid' && !isSuperAdmin) {
+        throw new Error('Cannot delete a billing period that has been paid. Only super administrators can override this protection.');
     }
     
     // Delete the billing period (cascade will handle payment_history deletion)
@@ -197,7 +220,14 @@ export async function deleteBillingPeriod(supabase: SupabaseClient, billingPerio
         throw new Error(`Failed to delete billing period: ${deleteError.message}`);
     }
     
-    return { success: true, deletedPeriod: billingPeriod };
+    // Return deletion info for logging/audit purposes
+    return { 
+        success: true, 
+        deletedPeriod: billingPeriod,
+        deletedByUserId: currentUser.id,
+        deletedByRole: currentUser.role,
+        wasPaidPeriod: billingPeriod.payment_status === 'paid'
+    };
 }
 
 // Billing Rate operations

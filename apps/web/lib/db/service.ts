@@ -612,12 +612,110 @@ export async function updateTimeEntry(id: string, data: Partial<NewTimeEntry>) {
 }
 
 export async function deleteTimeEntry(id: string) {
+  // Get the current authenticated user
+  const { data: { user: authUser }, error: authError } = await supabase.auth.getUser()
+  if (authError || !authUser) {
+    throw new Error('Authentication required to delete time entries')
+  }
+
+  // Get user profile with role information
+  const { data: currentUser, error: userError } = await supabase
+    .from('users')
+    .select('id, role, company_id')
+    .eq('id', authUser.id)
+    .single()
+  
+  if (userError || !currentUser) {
+    throw new Error('User profile not found')
+  }
+
+  // Get the time entry with billing information
+  const { data: timeEntry, error: fetchError } = await supabase
+    .from('time_entries')
+    .select(`
+      id,
+      user_id,
+      ticket_id,
+      start_time,
+      duration,
+      description,
+      time_entry_billing (
+        id,
+        billing_period_id,
+        billing_periods (
+          id,
+          payment_status,
+          name
+        )
+      )
+    `)
+    .eq('id', id)
+    .single()
+  
+  if (fetchError || !timeEntry) {
+    throw new Error('Time entry not found')
+  }
+
+  // Check if time entry is associated with a paid billing period
+  const billingRecord = timeEntry.time_entry_billing as any
+  const isPaidPeriod = billingRecord?.billing_periods?.payment_status === 'paid'
+
+  // Role-based permission checks
+  const isSuperAdmin = currentUser.role === 'super_admin'
+  const isSystemAdmin = currentUser.role === 'system_admin'
+  const isCompanyAdmin = currentUser.role === 'company_admin'
+  const isManager = currentUser.role === 'manager'
+  const isOwner = timeEntry.user_id === currentUser.id
+
+  // Super admins can delete anything
+  if (isSuperAdmin) {
+    // Proceed with deletion - super admin override
+  }
+  // For paid periods, only super admins can delete
+  else if (isPaidPeriod) {
+    throw new Error('Only super administrators can delete time entries from paid billing periods. This protects financial audit trails.')
+  }
+  // System/Company admins and managers can delete within their company
+  else if (isSystemAdmin || isCompanyAdmin || isManager) {
+    // Need to verify the time entry belongs to their company
+    const { data: entryUser, error: entryUserError } = await supabase
+      .from('users')
+      .select('company_id')
+      .eq('id', timeEntry.user_id)
+      .single()
+    
+    if (entryUserError || !entryUser) {
+      throw new Error('Cannot verify time entry ownership')
+    }
+    
+    if (entryUser.company_id !== currentUser.company_id) {
+      throw new Error('You can only delete time entries from your company')
+    }
+  }
+  // Regular users can only delete their own time entries
+  else if (isOwner) {
+    // User can delete their own time entry (if not billed)
+  }
+  else {
+    throw new Error('You do not have permission to delete this time entry')
+  }
+
+  // Proceed with deletion
   const { error } = await supabase
     .from('time_entries')
     .delete()
     .eq('id', id)
   
   if (error) throw error
+
+  // Return deletion info for logging/audit purposes
+  return {
+    deletedTimeEntryId: id,
+    deletedByUserId: currentUser.id,
+    deletedByRole: currentUser.role,
+    wasPaidPeriod: isPaidPeriod,
+    billingPeriodName: billingRecord?.billing_periods?.name || null
+  }
 }
 
 export async function getActiveTimeEntry(userId: string) {
