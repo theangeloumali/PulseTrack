@@ -1,7 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { supabase } from '@/lib/db';
 import type { NewBillingPeriod, NewBillingRate, NewCompanyBillingSettings, NewTimeEntryBilling, PaymentStatus, BillingFrequency, NewPaymentHistory } from '@/lib/db/schema';
-import { getTimeEntriesForBilling } from './service';
+import { getTimeEntriesForBilling, getTimeEntriesForBillingByUser } from './service';
 import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, addDays, addWeeks, addMonths } from 'date-fns';
 
 // Helper function to calculate billing for a single time entry
@@ -617,12 +617,19 @@ export async function markPaymentAsReceived(
     return await updateBillingPeriod(billingPeriodId, updateData);
 }
 
-export async function generateBillingReport(companyId: string, startDate: string, endDate: string) {
-    console.log('📊 Starting billing report generation:', { companyId, startDate, endDate });
+export async function generateBillingReport(
+    companyId: string, 
+    startDate: string, 
+    endDate: string, 
+    targetUserId?: string
+) {
+    console.log('📊 Starting billing report generation:', { companyId, startDate, endDate, targetUserId });
     
     try {
-        // Fetch all required data
-        const timeEntries = await getTimeEntriesForBilling(companyId, startDate, endDate);
+        // Fetch all required data - use user-specific function if targetUserId provided
+        const timeEntries = targetUserId 
+            ? await getTimeEntriesForBillingByUser(companyId, targetUserId, startDate, endDate)
+            : await getTimeEntriesForBilling(companyId, startDate, endDate);
         const billingRates = await getBillingRatesByCompany(companyId);
         const companySettings = await getCompanyBillingSettings(companyId);
         
@@ -793,6 +800,16 @@ export async function generateBillingReport(companyId: string, startDate: string
     }
 }
 
+// Helper function to extract target user ID from billing period notes
+export function extractTargetUserIdFromBillingPeriod(billingPeriod: any): string | null {
+    if (!billingPeriod?.notes) return null;
+    
+    // Parse the notes field to extract user ID
+    // Format: "Generated for user: FirstName LastName (user-id)"
+    const match = billingPeriod.notes.match(/Generated for user:.*\(([^)]+)\)/);
+    return match ? match[1] : null;
+}
+
 // Payment deletion functions
 
 export async function deletePaymentHistory(
@@ -889,4 +906,88 @@ export async function deleteAllPaymentHistory(
     }
 
     return { message: 'All payment history deleted successfully' };
+}
+
+// Outstanding payments bulk deletion functions
+export async function deleteMultipleOutstandingPayments(
+    supabase: SupabaseClient,
+    billingPeriodIds: string[],
+    userId: string
+) {
+    if (!billingPeriodIds.length) {
+        throw new Error('No billing periods provided for deletion');
+    }
+
+    // Validate all billing periods and check they can be safely deleted
+    const { data: periods, error: fetchError } = await supabase
+        .from('billing_periods')
+        .select('id, name, payment_status, company_id')
+        .in('id', billingPeriodIds);
+
+    if (fetchError || !periods) {
+        throw new Error('Failed to fetch billing periods for validation');
+    }
+
+    // Check for any paid periods that shouldn't be deleted
+    const paidPeriods = periods.filter(p => p.payment_status === 'paid');
+    if (paidPeriods.length > 0) {
+        throw new Error(`Cannot delete ${paidPeriods.length} paid billing period(s): ${paidPeriods.map(p => p.name).join(', ')}`);
+    }
+
+    // Create payment history entries for tracking
+    for (const period of periods) {
+        await createPaymentHistoryEntry({
+            billing_period_id: period.id,
+            user_id: userId,
+            action: 'outstanding_payment_deletion',
+            old_value: period.payment_status,
+            new_value: 'deleted',
+            notes: `Outstanding payment deleted as part of bulk deletion by admin`
+        });
+    }
+
+    // Delete all selected billing periods
+    const { error: deleteError } = await supabase
+        .from('billing_periods')
+        .delete()
+        .in('id', billingPeriodIds);
+
+    if (deleteError) {
+        throw new Error(`Failed to delete billing periods: ${deleteError.message}`);
+    }
+
+    return { 
+        message: `Successfully deleted ${periods.length} outstanding payment(s)`,
+        deletedCount: periods.length,
+        deletedPeriods: periods.map(p => ({ id: p.id, name: p.name }))
+    };
+}
+
+export async function deleteOutstandingPaymentsByStatus(
+    supabase: SupabaseClient,
+    companyId: string,
+    statuses: string[],
+    userId: string
+) {
+    // Find all billing periods with the specified statuses
+    const { data: periods, error: fetchError } = await supabase
+        .from('billing_periods')
+        .select('id, name, payment_status')
+        .eq('company_id', companyId)
+        .in('payment_status', statuses);
+
+    if (fetchError || !periods) {
+        throw new Error('Failed to fetch billing periods for deletion');
+    }
+
+    if (periods.length === 0) {
+        return { message: 'No billing periods found with the specified statuses', deletedCount: 0 };
+    }
+
+    // Use the bulk deletion function
+    return await deleteMultipleOutstandingPayments(
+        supabase, 
+        periods.map(p => p.id), 
+        userId
+    );
 }

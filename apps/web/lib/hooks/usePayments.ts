@@ -454,3 +454,60 @@ export function useDeleteAllPaymentHistory(companyId: string) {
     },
   });
 }
+
+// Outstanding payments bulk deletion hooks
+export function useDeleteMultipleOutstandingPayments(companyId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (billingPeriodIds: string[]) => {
+      const idsParam = billingPeriodIds.join(',');
+      const response = await fetch(
+        getApiPath(`billing/payments?action=delete_multiple_outstanding&billing_period_ids=${idsParam}`), 
+        { method: 'DELETE' }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to delete outstanding payments');
+      }
+
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: paymentKeys.all });
+      queryClient.invalidateQueries({ queryKey: paymentKeys.periods(companyId) });
+      queryClient.invalidateQueries({ queryKey: paymentKeys.outstanding(companyId) });
+      queryClient.invalidateQueries({ queryKey: paymentKeys.overdue(companyId) });
+      queryClient.invalidateQueries({ queryKey: paymentKeys.stats(companyId) });
+    },
+  });
+}
+
+export function useDeleteOutstandingPaymentsByStatus(companyId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (statuses: string[]) => {
+      const statusParam = statuses.join(',');
+      const response = await fetch(
+        getApiPath(`billing/payments?action=delete_by_status&statuses=${statusParam}`), 
+        { method: 'DELETE' }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to delete payments by status');
+      }
+
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: paymentKeys.all });
+      queryClient.invalidateQueries({ queryKey: paymentKeys.periods(companyId) });
+      queryClient.invalidateQueries({ queryKey: paymentKeys.outstanding(companyId) });
+      queryClient.invalidateQueries({ queryKey: paymentKeys.overdue(companyId) });
+      queryClient.invalidateQueries({ queryKey: paymentKeys.stats(companyId) });
+    },
+  });
+}

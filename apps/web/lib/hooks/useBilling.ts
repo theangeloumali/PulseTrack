@@ -37,11 +37,14 @@ export function useUpdateBillingSettings(companyId: string) {
     });
 }
 
-export function useBillingReport(companyId: string, startDate: string, endDate: string) {
+export function useBillingReport(companyId: string, startDate: string, endDate: string, targetUserId?: string) {
     return useSessionAwareQuery<any, Error>({
-        queryKey: ['billing-report', companyId, startDate, endDate],
+        queryKey: ['billing-report', companyId, startDate, endDate, targetUserId],
         queryFn: async () => {
-            const apiPath = getApiPath(`billing/report?companyId=${companyId}&startDate=${startDate}&endDate=${endDate}`);
+            let apiPath = getApiPath(`billing/report?companyId=${companyId}&startDate=${startDate}&endDate=${endDate}`);
+            if (targetUserId) {
+                apiPath += `&targetUserId=${targetUserId}`;
+            }
             console.log('🔍 Fetching billing report from:', apiPath);
             const response = await fetch(apiPath);
             if (!response.ok) {

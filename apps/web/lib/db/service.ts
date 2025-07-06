@@ -916,51 +916,86 @@ export async function getTimeEntriesForBilling(companyId: string, startDate: str
     throw new Error(`Failed to fetch time entries: ${error.message}`);
   }
 
-  console.log(`✅ Supabase query completed. Found ${data?.length || 0} time entries`);
+  console.log('📊 Found time entries for billing:', data?.length || 0);
+  return data || [];
+}
 
-  if (!data || data.length === 0) {
-    console.log('⚠️ No time entries found for the given criteria');
-    return [];
+export async function getTimeEntriesForBillingByUser(
+  companyId: string, 
+  targetUserId: string, 
+  startDate: string, 
+  endDate: string
+) {
+  console.log('🔍 Fetching time entries for billing by user:', { 
+    companyId, 
+    targetUserId, 
+    startDate, 
+    endDate 
+  });
+  
+  // First validate that the target user belongs to the company
+  const { data: userValidation, error: userError } = await supabase
+    .from('users')
+    .select('id, company_id')
+    .eq('id', targetUserId)
+    .eq('company_id', companyId)
+    .single();
+
+  if (userError || !userValidation) {
+    throw new Error('Target user not found or does not belong to the company');
+  }
+  
+  // Create proper end date timestamp
+  const endDateTime = new Date(endDate);
+  endDateTime.setHours(23, 59, 59, 999);
+  const endDateString = endDateTime.toISOString();
+  
+  const { data, error } = await supabase
+    .from('time_entries')
+    .select(
+      `
+      id,
+      start_time,
+      end_time,
+      duration,
+      description,
+      user_id,
+      ticket_id,
+      tickets!inner (
+        id,
+        title,
+        deleted_at,
+        project_id,
+        projects!inner (
+          id,
+          name,
+          company_id
+        )
+      ),
+      users!inner (
+        id,
+        first_name,
+        last_name,
+        email,
+        hourly_rate
+      )
+    `
+    )
+    .eq('tickets.projects.company_id', companyId)
+    .eq('user_id', targetUserId)  // KEY DIFFERENCE: Filter by specific user
+    .gte('start_time', startDate)
+    .lte('start_time', endDateString)
+    .not('duration', 'is', null)
+    .gt('duration', 0)
+    .order('start_time', { ascending: true });
+
+  if (error) {
+    console.error('❌ Error fetching time entries for billing by user:', error);
+    throw new Error(`Failed to fetch time entries for user: ${error.message}`);
   }
 
-  // Flatten the structure for easier processing with better error handling
-  const flattenedData = data
-    .map((entry, index) => {
-      try {
-        const ticket = Array.isArray(entry.tickets) ? entry.tickets[0] : entry.tickets;
-        const project = ticket && Array.isArray(ticket.projects) ? ticket.projects[0] : ticket?.projects;
-        const user = Array.isArray(entry.users) ? entry.users[0] : entry.users;
-
-        if (!ticket) {
-          console.warn(`⚠️ Entry ${index} missing ticket data:`, entry.id);
-          return null;
-        }
-        if (!project) {
-          console.warn(`⚠️ Entry ${index} missing project data:`, entry.id, ticket);
-          return null;
-        }
-        if (!user) {
-          console.warn(`⚠️ Entry ${index} missing user data:`, entry.id);
-          return null;
-        }
-
-        return {
-          ...entry,
-          ticket,
-          project,
-          user,
-        };
-      } catch (flattenError) {
-        console.error(`❌ Error flattening entry ${index}:`, flattenError, entry);
-        return null;
-      }
-    })
-    .filter(entry => entry !== null);
-
-  console.log(`✅ Successfully flattened ${flattenedData.length} time entries`);
-  console.log('📋 Sample flattened entry:', flattenedData[0]);
-
-  return flattenedData;
+  console.log('📊 Found time entries for billing by user:', data?.length || 0);
+  return data || [];
 }
 
 // Company User Management Operations

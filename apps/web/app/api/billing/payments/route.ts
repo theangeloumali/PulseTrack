@@ -2,7 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { 
     deletePaymentHistory, 
     resetBillingPeriodPaymentStatus, 
-    deleteAllPaymentHistory 
+    deleteAllPaymentHistory,
+    deleteMultipleOutstandingPayments,
+    deleteOutstandingPaymentsByStatus
 } from '@/lib/db/billing-service';
 import { createClient } from '@/lib/supabase/server';
 
@@ -109,6 +111,45 @@ export async function DELETE(request: NextRequest) {
                 }
 
                 result = await deleteAllPaymentHistory(supabase, billingPeriodId, user.id);
+                break;
+
+            case 'delete_multiple_outstanding':
+                const billingPeriodIds = searchParams.get('billing_period_ids');
+                if (!billingPeriodIds) {
+                    return NextResponse.json({ error: 'Billing period IDs are required' }, { status: 400 });
+                }
+
+                const idsArray = billingPeriodIds.split(',').filter(Boolean);
+                if (idsArray.length === 0) {
+                    return NextResponse.json({ error: 'At least one billing period ID is required' }, { status: 400 });
+                }
+
+                // Verify all billing periods belong to the user's company
+                const { data: periodsToDelete } = await supabase
+                    .from('billing_periods')
+                    .select('id, company_id')
+                    .in('id', idsArray)
+                    .eq('company_id', user.company_id);
+
+                if (!periodsToDelete || periodsToDelete.length !== idsArray.length) {
+                    return NextResponse.json({ error: 'Some billing periods not found or access denied' }, { status: 404 });
+                }
+
+                result = await deleteMultipleOutstandingPayments(supabase, idsArray, user.id);
+                break;
+
+            case 'delete_by_status':
+                const statuses = searchParams.get('statuses');
+                if (!statuses) {
+                    return NextResponse.json({ error: 'Payment statuses are required' }, { status: 400 });
+                }
+
+                const statusArray = statuses.split(',').filter(Boolean);
+                if (statusArray.length === 0) {
+                    return NextResponse.json({ error: 'At least one status is required' }, { status: 400 });
+                }
+
+                result = await deleteOutstandingPaymentsByStatus(supabase, user.company_id, statusArray, user.id);
                 break;
 
             default:

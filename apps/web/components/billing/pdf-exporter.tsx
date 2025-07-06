@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@work
 import { Button } from '@workspace/ui/components/button';
 import { useBillingReport } from '@/lib/hooks/useBilling';
 import { useBillingSettings } from '@/lib/hooks/useBilling';
+import { extractTargetUserIdFromBillingPeriod } from '@/lib/db/billing-service';
 import type { BillingPeriod } from '@/lib/db/schema';
 import { format } from 'date-fns';
 import { Download, FileText, Loader2, X } from 'lucide-react';
@@ -34,10 +35,15 @@ export function PDFExporter({
   const [isGenerating, setIsGenerating] = useState(false);
 
   const { data: companySettings } = useBillingSettings(companyId);
+  
+  // Extract target user ID if this is a user-specific billing period
+  const targetUserId = extractTargetUserIdFromBillingPeriod(billingPeriod);
+  
   const { data: billingReport } = useBillingReport(
     companyId, 
     billingPeriod.start_date, 
-    billingPeriod.end_date
+    billingPeriod.end_date,
+    targetUserId || undefined
   );
 
   const formatCurrency = (amount: number) => {

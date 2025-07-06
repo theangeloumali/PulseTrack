@@ -6,6 +6,7 @@ import { Button } from '@workspace/ui/components/button';
 import { Badge } from '@workspace/ui/components/badge';
 import { PaymentStatusBadge } from './payment-status-badge';
 import { PaymentManagementModal } from './payment-management-modal';
+import { OutstandingPaymentsDeletionModal } from './outstanding-payments-deletion-modal';
 import { 
   useOutstandingPayments, 
   useOverduePayments, 
@@ -23,7 +24,8 @@ import {
   Calendar,
   FileText,
   Eye,
-  Settings
+  Settings,
+  Trash2
 } from 'lucide-react';
 
 interface PaymentDashboardProps {
@@ -34,6 +36,7 @@ interface PaymentDashboardProps {
 export function PaymentDashboard({ companyId, isAdmin }: PaymentDashboardProps) {
   const [selectedPeriod, setSelectedPeriod] = useState<BillingPeriod | null>(null);
   const [showManagementModal, setShowManagementModal] = useState(false);
+  const [showOutstandingDeletionModal, setShowOutstandingDeletionModal] = useState(false);
 
   const { data: paymentStats, isLoading: statsLoading } = usePaymentStats(companyId);
   const { data: outstandingPayments, isLoading: outstandingLoading } = useOutstandingPayments(companyId);
@@ -165,13 +168,28 @@ export function PaymentDashboard({ companyId, isAdmin }: PaymentDashboardProps) 
       {/* Outstanding Payments */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <FileText className="h-5 w-5" />
-            Outstanding Payments
-          </CardTitle>
-          <CardDescription>
-            Billing periods awaiting payment
-          </CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <FileText className="h-5 w-5" />
+                Outstanding Payments
+              </CardTitle>
+              <CardDescription>
+                Billing periods awaiting payment
+              </CardDescription>
+            </div>
+            {isAdmin && outstandingPayments && outstandingPayments.length > 0 && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowOutstandingDeletionModal(true)}
+                className="flex items-center gap-2 text-destructive hover:text-destructive"
+              >
+                <Trash2 className="h-4 w-4" />
+                Delete Outstanding Payments
+              </Button>
+            )}
+          </div>
         </CardHeader>
         <CardContent>
           {outstandingLoading ? (
@@ -252,6 +270,14 @@ export function PaymentDashboard({ companyId, isAdmin }: PaymentDashboardProps) 
           companyId={companyId}
         />
       )}
+
+      {/* Outstanding Payments Deletion Modal */}
+      <OutstandingPaymentsDeletionModal
+        outstandingPayments={outstandingPayments || []}
+        isOpen={showOutstandingDeletionModal}
+        onClose={() => setShowOutstandingDeletionModal(false)}
+        companyId={companyId}
+      />
     </div>
   );
 }

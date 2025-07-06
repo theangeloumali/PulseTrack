@@ -16,6 +16,7 @@ import {
   useDeleteBillingPeriod
 } from '@/lib/hooks/usePayments';
 import { useBillingSettings, useBillingReport } from '@/lib/hooks/useBilling';
+import { extractTargetUserIdFromBillingPeriod } from '@/lib/db/billing-service';
 import type { BillingPeriod, BillingFrequency } from '@/lib/db/schema';
 import { format } from 'date-fns';
 import { 
@@ -55,10 +56,14 @@ export function BillingPeriodsList({ companyId, isAdmin }: BillingPeriodsListPro
   const deletePeriodMutation = useDeleteBillingPeriod(companyId);
 
   // Fetch billing report for selected period details
+  // Extract target user ID if this is a user-specific billing period
+  const selectedPeriodTargetUserId = selectedPeriod ? extractTargetUserIdFromBillingPeriod(selectedPeriod) : null;
+  
   const { data: periodReport } = useBillingReport(
     companyId,
     selectedPeriod?.start_date || '',
-    selectedPeriod?.end_date || ''
+    selectedPeriod?.end_date || '',
+    selectedPeriodTargetUserId || undefined
   );
 
   const handleGenerateNewPeriod = async () => {

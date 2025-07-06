@@ -11,8 +11,9 @@ async function handler(req: NextRequest) {
         const companyId = searchParams.get('companyId');
         const startDate = searchParams.get('startDate');
         const endDate = searchParams.get('endDate');
+        const targetUserId = searchParams.get('targetUserId'); // Optional user-specific filter
 
-        console.log(`📋 [${requestId}] Request params:`, { companyId, startDate, endDate });
+        console.log(`📋 [${requestId}] Request params:`, { companyId, startDate, endDate, targetUserId });
 
         if (!companyId || !startDate || !endDate) {
             console.error(`❌ [${requestId}] Missing required parameters`);
@@ -32,7 +33,7 @@ async function handler(req: NextRequest) {
         }
 
         console.log(`⏳ [${requestId}] Generating billing report...`);
-        const report = await generateBillingReport(companyId, startDate, endDate);
+        const report = await generateBillingReport(companyId, startDate, endDate, targetUserId || undefined);
         
         const reportStats = {
             totalDates: Object.keys(report).length,
