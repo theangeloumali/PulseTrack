@@ -82,8 +82,14 @@ export function TimeTrackingModal({ isOpen, onClose, ticket }: TimeTrackingModal
   if (!isOpen || !ticket) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <Card className="w-full max-w-lg mx-4">
+    <div 
+      className="fixed inset-0 flex items-center justify-center z-50 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <Card 
+        className="w-full max-w-lg mx-4"
+        onClick={(e) => e.stopPropagation()}
+      >
         <CardHeader>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">

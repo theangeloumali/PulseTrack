@@ -508,8 +508,8 @@ export async function generateBillingPeriodForCycle(
     
     switch (frequency) {
         case 'weekly':
-            start = startOfWeek(baseDate, { weekStartsOn: 1 }); // Monday start
-            end = endOfWeek(baseDate, { weekStartsOn: 1 }); // Sunday end
+            start = startOfWeek(baseDate, { weekStartsOn: 0 }); // Sunday start
+            end = endOfWeek(baseDate, { weekStartsOn: 0 }); // Saturday end
             name = `Week of ${format(start, 'MMM dd, yyyy')}`;
             break;
             
@@ -630,8 +630,8 @@ export async function generateBillingPeriodForUser(
     
     switch (frequency) {
         case 'weekly':
-            start = startOfWeek(baseDate, { weekStartsOn: 1 }); // Monday start
-            end = endOfWeek(baseDate, { weekStartsOn: 1 }); // Sunday end
+            start = startOfWeek(baseDate, { weekStartsOn: 0 }); // Sunday start
+            end = endOfWeek(baseDate, { weekStartsOn: 0 }); // Saturday end
             name = `${targetUser.first_name} ${targetUser.last_name} - Week of ${format(start, 'MMM dd, yyyy')}`;
             break;
             

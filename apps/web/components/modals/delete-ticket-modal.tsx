@@ -36,8 +36,14 @@ export function DeleteTicketModal({ isOpen, onClose, ticket, onSuccess }: Delete
   if (!isOpen || !ticket) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 dark:bg-black/75 flex items-center justify-center z-50">
-      <Card className="w-full max-w-md mx-4">
+    <div 
+      className="fixed inset-0 backdrop-blur-sm flex items-center justify-center z-50"
+      onClick={onClose}
+    >
+      <Card 
+        className="w-full max-w-md mx-4"
+        onClick={(e) => e.stopPropagation()}
+      >
         <CardHeader>
           <div className="flex items-center gap-3">
             <AlertTriangle className="h-6 w-6 text-red-600" />

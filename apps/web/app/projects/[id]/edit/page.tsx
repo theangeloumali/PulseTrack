@@ -290,7 +290,7 @@ export default function EditProjectPage({ params }: Props) {
 
 					{/* Delete Confirmation Modal */}
 					{showDeleteConfirm && (
-						<div className="fixed inset-0 bg-black/50 dark:bg-black/75 flex items-center justify-center z-50">
+						<div className="fixed inset-0 flex items-center justify-center z-50 backdrop-blur-sm">
 							<Card className="w-96">
 								<CardHeader>
 									<CardTitle className="text-red-600">Delete Project</CardTitle>

@@ -529,7 +529,7 @@ export function BillingPeriodsList({ companyId, isAdmin }: BillingPeriodsListPro
 
       {/* New Period Generation Modal */}
       {showNewPeriodModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+        <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm">
           <Card className="w-full max-w-md">
             <CardHeader className="flex flex-row items-center justify-between">
               <div>

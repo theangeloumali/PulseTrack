@@ -38,8 +38,14 @@ export function DeleteConfirmationModal({
   const confirmationMatches = !requiresConfirmation || confirmationText === confirmationRequired;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      <Card className="w-full max-w-lg">
+    <div 
+      className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <Card 
+        className="w-full max-w-lg"
+        onClick={(e) => e.stopPropagation()}
+      >
         <CardHeader className="flex flex-row items-center justify-between">
           <div>
             <CardTitle className="flex items-center gap-2 text-destructive">

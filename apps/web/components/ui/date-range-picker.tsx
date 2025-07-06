@@ -31,8 +31,8 @@ export function DateRangePicker({
 
   const monthStart = startOfMonth(currentMonth);
   const monthEnd = endOfMonth(currentMonth);
-  const calendarStart = startOfWeek(monthStart, { weekStartsOn: 1 }); // Monday
-  const calendarEnd = endOfWeek(monthEnd, { weekStartsOn: 1 });
+  const calendarStart = startOfWeek(monthStart, { weekStartsOn: 0 }); // Sunday
+  const calendarEnd = endOfWeek(monthEnd, { weekStartsOn: 0 });
 
   const days = [];
   let day = calendarStart;
@@ -43,6 +43,11 @@ export function DateRangePicker({
 
   const handleDateClick = (date: Date) => {
     const dateStr = format(date, 'yyyy-MM-dd');
+    
+    // If clicking on a date from a different month, navigate to that month first
+    if (!isSameMonth(date, currentMonth)) {
+      setCurrentMonth(date);
+    }
     
     if (!selecting) {
       // First click - start selecting
@@ -165,7 +170,7 @@ export function DateRangePicker({
 
           {/* Weekday Headers */}
           <div className="grid grid-cols-7 gap-1 mb-2">
-            {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day) => (
+            {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
               <div key={day} className="p-2 text-xs font-medium text-muted-foreground text-center">
                 {day}
               </div>
@@ -185,14 +190,12 @@ export function DateRangePicker({
                   key={index}
                   onClick={() => handleDateClick(day)}
                   className={`
-                    p-2 text-xs rounded-md transition-colors
+                    p-2 text-xs rounded-md transition-colors cursor-pointer
                     ${!isCurrentMonth ? 'text-muted-foreground/50' : 'text-foreground'}
                     ${isStart || isEnd ? 'bg-blue-500 text-white dark:bg-blue-600' : ''}
                     ${inRange && !isStart && !isEnd ? 'bg-blue-100 dark:bg-blue-900/20' : ''}
-                    ${!inRange && !isStart && !isEnd && isCurrentMonth ? 'hover:bg-muted/50' : ''}
-                    ${!isCurrentMonth ? 'cursor-default' : 'cursor-pointer'}
+                    ${!inRange && !isStart && !isEnd ? 'hover:bg-muted/50' : ''}
                   `}
-                  disabled={!isCurrentMonth}
                 >
                   {format(day, 'd')}
                 </button>

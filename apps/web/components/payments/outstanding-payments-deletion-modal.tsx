@@ -125,8 +125,14 @@ export function OutstandingPaymentsDeletionModal({
   const selectedPeriodsForStatus = deletablePayments.filter(p => selectedStatuses.has(p.payment_status));
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      <Card className="w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+    <div 
+      className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <Card 
+        className="w-full max-w-4xl max-h-[90vh] overflow-y-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
         <CardHeader className="flex flex-row items-center justify-between">
           <div>
             <CardTitle className="flex items-center gap-2 text-destructive">

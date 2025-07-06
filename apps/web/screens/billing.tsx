@@ -166,8 +166,8 @@ const BillingPage = () => {
 
 		switch (filters.reportFilter) {
 			case 'weekly':
-				start = startOfWeek(today, { weekStartsOn: 1 }); // Monday
-				end = endOfWeek(today, { weekStartsOn: 1 });
+				start = startOfWeek(today, { weekStartsOn: 0 }); // Sunday
+				end = endOfWeek(today, { weekStartsOn: 0 });
 				break;
 			case 'bi_monthly':
 				// This is a simplified bi-monthly, you might need more complex logic
@@ -202,13 +202,13 @@ const BillingPage = () => {
 						end = endDate;
 					} else {
 						// Fallback to this week if dates are invalid
-						start = startOfWeek(today, { weekStartsOn: 1 });
-						end = endOfWeek(today, { weekStartsOn: 1 });
+						start = startOfWeek(today, { weekStartsOn: 0 });
+						end = endOfWeek(today, { weekStartsOn: 0 });
 					}
 				} else {
 					// Fallback to this week if dates are empty
-					start = startOfWeek(today, { weekStartsOn: 1 });
-					end = endOfWeek(today, { weekStartsOn: 1 });
+					start = startOfWeek(today, { weekStartsOn: 0 });
+					end = endOfWeek(today, { weekStartsOn: 0 });
 				}
 				break;
 		}
@@ -223,8 +223,8 @@ const BillingPage = () => {
 		} catch (error) {
 			console.error('Error formatting dates:', error);
 			// Fallback to this week on error
-			const fallbackStart = startOfWeek(today, { weekStartsOn: 1 });
-			const fallbackEnd = endOfWeek(today, { weekStartsOn: 1 });
+			const fallbackStart = startOfWeek(today, { weekStartsOn: 0 });
+			const fallbackEnd = endOfWeek(today, { weekStartsOn: 0 });
 			setFilters(prev => ({
 				...prev,
 				reportStartDate: format(fallbackStart, 'yyyy-MM-dd'),

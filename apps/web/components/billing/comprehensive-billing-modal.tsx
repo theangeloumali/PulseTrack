@@ -74,8 +74,14 @@ export function ComprehensiveBillingModal({
   const canManagePayments = isSuperAdmin() || isCompanyAdmin();
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
-      <Card className="w-full max-w-6xl max-h-[95vh] overflow-hidden flex flex-col">
+    <div 
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <Card 
+        className="w-full max-w-6xl max-h-[95vh] overflow-hidden flex flex-col"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Header */}
         <CardHeader className="flex flex-row items-center justify-between border-b bg-muted/50 flex-shrink-0">
           <div className="flex-1">
