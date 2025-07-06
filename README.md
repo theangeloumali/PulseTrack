@@ -166,7 +166,7 @@ PulseTrack uses Supabase Auth with a comprehensive role-based access control sys
 - **System Admin**: Multi-company management
 - **Company Admin**: Company-wide management
 - **Manager**: Project and team management
-- **User**: Basic project access
+- **User**: Basic project access + personal billing period generation
 
 ### Data Isolation
 - Company-based data isolation using Row Level Security (RLS)
@@ -209,11 +209,15 @@ For complete schema documentation, see [docs/database-schema.md](./docs/database
 - Time entry validation and integrity checks
 
 ### Billing System
-- Automatic billing period generation
+- Automatic billing period generation (admin and user self-service)
 - Flexible billing rates (per-user, per-project, company default)
 - Invoice generation with PDF export
 - Payment status tracking and history
 - Outstanding payment management
+- **User Role Billing Access**: Regular users can access payments and billing periods tabs
+- **Personal Billing Periods**: Users can generate their own billing periods for company review
+- **Role-Based Data Filtering**: Users see only their own billing data, admins see company-wide data
+- **Multi-Query Filtering**: Robust filtering system for user-specific billing periods
 
 ## 🔧 Configuration
 
