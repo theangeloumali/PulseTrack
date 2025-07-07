@@ -142,6 +142,13 @@ export async function createProject(data: NewProject) {
     throw error;
   }
 
+  // Add project owner as a project member with "lead" role
+  try {
+    await addProjectMember(result.id, data.owner_id, "lead");
+  } catch (memberError) {
+    console.error("Failed to add project owner as member:", memberError);
+  }
+
   // Log project creation activity
   try {
     await logProjectCreated(result.id, data.owner_id, data.name);
