@@ -33,6 +33,8 @@ import {
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { useProjectsQuery } from "@/lib/hooks/useProjects";
+import { createTicket } from "@/lib/db/service";
+import type { NewTicket } from "@/lib/db/schema";
 
 interface QuickTicketCreatorProps {
   userId: string;
@@ -46,24 +48,22 @@ interface QuickTicketData {
   projectId: string;
 }
 
-// Mock function - replace with actual API call
+// Real API integration for creating tickets
 const createQuickTicket = async (
   data: QuickTicketData & { userId: string; companyId: string },
 ) => {
-  // Simulate API call
-  await new Promise((resolve) => setTimeout(resolve, 1500));
-
-  // Simulate occasional failures for demo
-  if (Math.random() > 0.8) {
-    throw new Error("Failed to create ticket");
-  }
-
-  return {
-    id: Date.now().toString(),
-    ...data,
+  const newTicket: NewTicket = {
+    title: data.title,
+    description: data.description || null,
+    priority: data.priority,
     status: "new",
-    created_at: new Date().toISOString(),
+    project_id: data.projectId,
+    company_id: data.companyId,
+    creator_id: data.userId,
+    assignee_id: data.userId, // Auto-assign to creator for quick tickets
   };
+
+  return await createTicket(newTicket);
 };
 
 export function QuickTicketCreator({

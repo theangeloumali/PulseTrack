@@ -27,7 +27,9 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
+import { getProjectHealthSimple } from "@/lib/db/project-health-service-simple";
 import type { UserRole } from "@/lib/db/schema";
+import type { ProjectHealth } from "@/lib/db/project-health-service-simple";
 
 interface ProjectHealthDashboardProps {
   userId: string;
@@ -35,119 +37,6 @@ interface ProjectHealthDashboardProps {
   userRole: UserRole;
 }
 
-interface ProjectHealth {
-  id: string;
-  name: string;
-  status: "active" | "completed" | "on-hold" | "at-risk";
-  progress: number;
-  health: "excellent" | "good" | "warning" | "critical";
-  metrics: {
-    tasksCompleted: number;
-    totalTasks: number;
-    teamMembers: number;
-    daysRemaining?: number;
-    velocity: number; // tasks per week
-    blockers: number;
-  };
-  trends: {
-    progress: number; // percentage change
-    velocity: number; // percentage change
-  };
-  lastActivity: string;
-}
-
-// Mock data fetcher - replace with actual API call
-const fetchProjectHealth = async (
-  userId: string,
-  companyId: string,
-  userRole: UserRole,
-): Promise<ProjectHealth[]> => {
-  // Simulate API call
-  await new Promise((resolve) => setTimeout(resolve, 1200));
-
-  return [
-    {
-      id: "1",
-      name: "Website Redesign",
-      status: "active",
-      progress: 75,
-      health: "good",
-      metrics: {
-        tasksCompleted: 15,
-        totalTasks: 20,
-        teamMembers: 4,
-        daysRemaining: 12,
-        velocity: 3.2,
-        blockers: 0,
-      },
-      trends: {
-        progress: 12,
-        velocity: 8,
-      },
-      lastActivity: "2 hours ago",
-    },
-    {
-      id: "2",
-      name: "Mobile App Development",
-      status: "active",
-      progress: 45,
-      health: "warning",
-      metrics: {
-        tasksCompleted: 12,
-        totalTasks: 28,
-        teamMembers: 6,
-        daysRemaining: 25,
-        velocity: 2.1,
-        blockers: 3,
-      },
-      trends: {
-        progress: -5,
-        velocity: -15,
-      },
-      lastActivity: "1 day ago",
-    },
-    {
-      id: "3",
-      name: "Security Audit",
-      status: "active",
-      progress: 90,
-      health: "excellent",
-      metrics: {
-        tasksCompleted: 18,
-        totalTasks: 20,
-        teamMembers: 2,
-        daysRemaining: 3,
-        velocity: 4.5,
-        blockers: 0,
-      },
-      trends: {
-        progress: 25,
-        velocity: 20,
-      },
-      lastActivity: "30 minutes ago",
-    },
-    {
-      id: "4",
-      name: "Data Migration",
-      status: "at-risk",
-      progress: 25,
-      health: "critical",
-      metrics: {
-        tasksCompleted: 5,
-        totalTasks: 22,
-        teamMembers: 3,
-        daysRemaining: 8,
-        velocity: 1.2,
-        blockers: 5,
-      },
-      trends: {
-        progress: -8,
-        velocity: -30,
-      },
-      lastActivity: "3 days ago",
-    },
-  ];
-};
 
 export function ProjectHealthDashboard({
   userId,
@@ -160,8 +49,9 @@ export function ProjectHealthDashboard({
     isError,
   } = useQuery({
     queryKey: ["project-health", userId, companyId, userRole],
-    queryFn: () => fetchProjectHealth(userId, companyId, userRole),
+    queryFn: () => getProjectHealthSimple(userId, companyId, userRole),
     staleTime: 5 * 60 * 1000, // 5 minutes
+    enabled: !!userId && !!companyId && !!userRole,
   });
 
   const getHealthColor = (health: ProjectHealth["health"]) => {

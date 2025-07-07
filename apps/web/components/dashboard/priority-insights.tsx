@@ -31,110 +31,14 @@ import {
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import type { UserRole } from "@/lib/db/schema";
+import { getPriorityInsights } from "@/lib/db/priority-insights-service";
+import type { PriorityItem, PriorityInsightsData } from "@/lib/db/priority-insights-service";
 
 interface PriorityInsightsProps {
   userId: string;
   companyId: string;
   userRole: UserRole;
 }
-
-interface PriorityItem {
-  id: string;
-  title: string;
-  description: string;
-  type: "overdue" | "urgent" | "blocked" | "deadline";
-  priority: "high" | "medium" | "low";
-  daysOverdue?: number;
-  assignee?: {
-    id: string;
-    name: string;
-  };
-  project?: {
-    id: string;
-    name: string;
-  };
-  href: string;
-}
-
-interface PriorityData {
-  overdue: PriorityItem[];
-  urgent: PriorityItem[];
-  blocked: PriorityItem[];
-  upcomingDeadlines: PriorityItem[];
-}
-
-// Mock data fetcher - replace with actual API call
-const fetchPriorityInsights = async (
-  userId: string,
-  companyId: string,
-  userRole: UserRole,
-): Promise<PriorityData> => {
-  // Simulate API call
-  await new Promise((resolve) => setTimeout(resolve, 1000));
-
-  return {
-    overdue: [
-      {
-        id: "1",
-        title: "Complete project proposal",
-        description: "Client presentation due last week",
-        type: "overdue",
-        priority: "high",
-        daysOverdue: 3,
-        assignee: { id: "user1", name: "John Doe" },
-        project: { id: "proj1", name: "Website Redesign" },
-        href: "/tickets/1",
-      },
-      {
-        id: "2",
-        title: "Review security audit",
-        description: "Security team waiting for feedback",
-        type: "overdue",
-        priority: "medium",
-        daysOverdue: 1,
-        assignee: { id: "user2", name: "Jane Smith" },
-        project: { id: "proj2", name: "Platform Security" },
-        href: "/tickets/2",
-      },
-    ],
-    urgent: [
-      {
-        id: "3",
-        title: "Fix production bug",
-        description: "Users reporting login issues",
-        type: "urgent",
-        priority: "high",
-        assignee: { id: "user3", name: "Dev Team" },
-        project: { id: "proj3", name: "Bug Fixes" },
-        href: "/tickets/3",
-      },
-    ],
-    blocked: [
-      {
-        id: "4",
-        title: "Database migration",
-        description: "Waiting for infrastructure approval",
-        type: "blocked",
-        priority: "high",
-        assignee: { id: "user4", name: "Backend Team" },
-        project: { id: "proj4", name: "System Upgrade" },
-        href: "/tickets/4",
-      },
-    ],
-    upcomingDeadlines: [
-      {
-        id: "5",
-        title: "Q4 report preparation",
-        description: "Due in 2 days",
-        type: "deadline",
-        priority: "medium",
-        assignee: { id: "user5", name: "Analytics Team" },
-        project: { id: "proj5", name: "Quarterly Reports" },
-        href: "/tickets/5",
-      },
-    ],
-  };
-};
 
 export function PriorityInsights({
   userId,
@@ -149,8 +53,9 @@ export function PriorityInsights({
     isError,
   } = useQuery({
     queryKey: ["priority-insights", userId, companyId, userRole],
-    queryFn: () => fetchPriorityInsights(userId, companyId, userRole),
+    queryFn: () => getPriorityInsights(userId, companyId, userRole),
     staleTime: 5 * 60 * 1000, // 5 minutes
+    enabled: !!userId && !!companyId && !!userRole,
   });
 
   const getTabConfig = () => {

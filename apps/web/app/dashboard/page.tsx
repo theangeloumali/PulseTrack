@@ -284,6 +284,8 @@ export default function DashboardPage() {
           {/* Performance Metrics */}
           <PerformanceMetrics
             userId={user?.id || ""}
+            companyId={user?.company_id || ""}
+            userRole={user?.role || "user"}
             stats={stats}
             isLoading={statsLoading}
           />

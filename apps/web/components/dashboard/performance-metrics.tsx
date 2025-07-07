@@ -21,10 +21,15 @@ import {
   Timer,
   CheckCircle2,
 } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { getPerformanceMetrics } from "@/lib/db/performance-metrics-service";
+import type { UserRole } from "@/lib/db/schema";
 import type { DashboardStatistics } from "@/lib/db/dashboard-service";
 
 interface PerformanceMetricsProps {
   userId: string;
+  companyId: string;
+  userRole: UserRole;
   stats?: DashboardStatistics;
   isLoading: boolean;
 }
@@ -41,72 +46,89 @@ interface MetricCard {
 
 export function PerformanceMetrics({
   userId,
+  companyId,
+  userRole,
   stats,
   isLoading,
 }: PerformanceMetricsProps) {
-  // Calculate metrics and trends
+  // Fetch enhanced performance metrics
+  const {
+    data: performanceMetrics,
+    isLoading: metricsLoading,
+    isError: metricsError,
+  } = useQuery({
+    queryKey: ["performance-metrics", userId, companyId, userRole],
+    queryFn: () => getPerformanceMetrics(userId, companyId, userRole),
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    enabled: !!userId && !!companyId && !!userRole,
+  });
+  // Calculate metrics and trends using enhanced data
   const calculateMetrics = (): MetricCard[] => {
-    if (!stats) return [];
+    if (!performanceMetrics && !stats) return [];
 
-    const todayHours = stats.timeTracking.today || 0;
-    const weekHours = stats.timeTracking.thisWeek || 0;
-    const monthHours = stats.timeTracking.thisMonth || 0;
+    // Use enhanced metrics when available, fallback to basic stats
+    const productivity = performanceMetrics?.productivity || {
+      todayHours: stats?.timeTracking.today || 0,
+      weekHours: stats?.timeTracking.thisWeek || 0,
+      monthHours: stats?.timeTracking.thisMonth || 0,
+      weeklyTrend: 0,
+      dailyAverage: (stats?.timeTracking.thisWeek || 0) / 7,
+    };
 
-    // Calculate daily average for the week
-    const dailyAverage = weekHours / 7;
+    const taskCompletion = performanceMetrics?.taskCompletion || {
+      completionRate: stats ? ((stats.tickets.done || 0) / Math.max(stats.tickets.total || 1, 1)) * 100 : 0,
+      completedThisWeek: stats?.tickets.done || 0,
+      totalThisWeek: stats?.tickets.total || 0,
+      completionTrend: 0,
+    };
 
-    // Calculate completion rate
-    const totalTickets = stats.tickets.total || 0;
-    const completedTickets = stats.tickets.done || 0;
-    const completionRate =
-      totalTickets > 0 ? (completedTickets / totalTickets) * 100 : 0;
-
-    // Calculate weekly productivity (mock trend data)
-    const weeklyTrend = 12; // +12% from last week (mock data)
-    const completionTrend = 8; // +8% completion rate improvement
-    const velocityTrend = -5; // -5% velocity change (mock data)
+    const velocity = performanceMetrics?.velocity || {
+      tasksPerWeek: stats?.tickets.done || 0,
+      velocityTrend: 0,
+      averageCompletionTime: 0,
+    };
 
     return [
       {
         title: "Today's Focus",
-        value: `${Math.floor(todayHours)}h ${Math.round((todayHours % 1) * 60)}m`,
-        change: todayHours > dailyAverage ? 15 : -10,
+        value: `${Math.floor(productivity.todayHours)}h ${Math.round((productivity.todayHours % 1) * 60)}m`,
+        change: productivity.todayHours > productivity.dailyAverage ? 15 : -10,
         changeLabel: "vs daily avg",
         icon: <Clock className="h-4 w-4" />,
-        color: todayHours > dailyAverage ? "green" : "red",
-        description: `Daily target: ${Math.round(dailyAverage * 10) / 10}h`,
+        color: productivity.todayHours > productivity.dailyAverage ? "green" : "red",
+        description: `Daily target: ${Math.round(productivity.dailyAverage * 10) / 10}h`,
       },
       {
         title: "Weekly Productivity",
-        value: `${Math.floor(weekHours)}h`,
-        change: weeklyTrend,
+        value: `${Math.floor(productivity.weekHours)}h`,
+        change: productivity.weeklyTrend,
         changeLabel: "vs last week",
         icon: <TrendingUp className="h-4 w-4" />,
-        color: weeklyTrend > 0 ? "green" : "red",
+        color: productivity.weeklyTrend > 0 ? "green" : "red",
         description: "Time tracked this week",
       },
       {
         title: "Task Completion",
-        value: `${Math.round(completionRate)}%`,
-        change: completionTrend,
+        value: `${Math.round(taskCompletion.completionRate)}%`,
+        change: taskCompletion.completionTrend,
         changeLabel: "completion rate",
         icon: <Target className="h-4 w-4" />,
         color:
-          completionRate > 70
+          taskCompletion.completionRate > 70
             ? "green"
-            : completionRate > 50
+            : taskCompletion.completionRate > 50
               ? "orange"
               : "red",
-        description: `${completedTickets}/${totalTickets} tasks done`,
+        description: `${taskCompletion.completedThisWeek}/${taskCompletion.totalThisWeek} tasks done`,
       },
       {
         title: "Team Velocity",
-        value: "23",
-        change: velocityTrend,
-        changeLabel: "story points",
+        value: `${velocity.tasksPerWeek}`,
+        change: velocity.velocityTrend,
+        changeLabel: "tasks/week",
         icon: <Zap className="h-4 w-4" />,
-        color: velocityTrend > 0 ? "green" : "red",
-        description: "Average sprint velocity",
+        color: velocity.velocityTrend > 0 ? "green" : "red",
+        description: "Weekly task completion",
       },
     ];
   };
@@ -183,7 +205,7 @@ export function PerformanceMetrics({
     },
   ];
 
-  if (isLoading) {
+  if (isLoading || metricsLoading) {
     return (
       <Card>
         <CardHeader>
