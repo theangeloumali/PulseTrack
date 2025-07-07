@@ -124,8 +124,8 @@ export function ProjectMembersModal({
 
   const getRoleColor = (role: string) => {
     return role === "lead"
-      ? "bg-yellow-100 text-yellow-800"
-      : "bg-blue-100 text-blue-800";
+      ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
+      : "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200";
   };
 
   return (
@@ -141,8 +141,8 @@ export function ProjectMembersModal({
         {!showAddMember ? (
           <div className="flex justify-between items-center">
             <div className="flex items-center space-x-2">
-              <Users className="h-5 w-5 text-gray-600" />
-              <span className="text-sm text-gray-600">
+              <Users className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+              <span className="text-sm text-gray-600 dark:text-gray-400">
                 {members.length} {members.length === 1 ? "member" : "members"}
               </span>
             </div>
@@ -159,7 +159,7 @@ export function ProjectMembersModal({
             )}
           </div>
         ) : canManageMembers ? (
-          <div className="border rounded-lg p-4 bg-gray-50">
+          <div className="border rounded-lg p-4 bg-gray-50 dark:bg-gray-800">
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-medium">Add New Member</h3>
               <Button
@@ -173,13 +173,13 @@ export function ProjectMembersModal({
 
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Select User
                 </label>
                 <select
                   value={selectedUserId}
                   onChange={(e) => setSelectedUserId(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
                 >
                   <option value="">Choose a user...</option>
                   {nonMembers.map((user) => (
@@ -191,7 +191,7 @@ export function ProjectMembersModal({
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Role
                 </label>
                 <select
@@ -199,7 +199,7 @@ export function ProjectMembersModal({
                   onChange={(e) =>
                     setSelectedRole(e.target.value as "lead" | "member")
                   }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
                 >
                   <option value="member">Member</option>
                   <option value="lead">Lead</option>
@@ -229,15 +229,15 @@ export function ProjectMembersModal({
           {membersLoading ? (
             <div className="text-center py-4">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-              <p className="text-sm text-gray-600 mt-2">Loading members...</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">Loading members...</p>
             </div>
           ) : members.length === 0 ? (
             <div className="text-center py-6">
-              <Users className="h-12 w-12 text-gray-400 mx-auto mb-2" />
-              <p className="text-gray-600">
+              <Users className="h-12 w-12 text-gray-400 dark:text-gray-500 mx-auto mb-2" />
+              <p className="text-gray-600 dark:text-gray-400">
                 No members assigned to this project
               </p>
-              <p className="text-sm text-gray-500">
+              <p className="text-sm text-gray-500 dark:text-gray-400">
                 Add team members to get started
               </p>
             </div>
@@ -245,21 +245,21 @@ export function ProjectMembersModal({
             members.map((member) => (
               <div
                 key={member.id}
-                className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50"
+                className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 dark:border-gray-600"
               >
                 <div className="flex items-center space-x-3">
-                  <div className="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center">
-                    <span className="text-sm font-medium text-gray-600">
+                  <div className="h-8 w-8 rounded-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center">
+                    <span className="text-sm font-medium text-gray-600 dark:text-gray-300">
                       {member.user?.first_name?.[0] ||
                         member.user?.email?.[0]?.toUpperCase() ||
                         "?"}
                     </span>
                   </div>
                   <div>
-                    <p className="font-medium text-gray-900">
+                    <p className="font-medium text-gray-900 dark:text-gray-100">
                       {member.user?.first_name} {member.user?.last_name}
                     </p>
-                    <p className="text-sm text-gray-600">
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
                       {member.user?.email}
                     </p>
                   </div>
@@ -276,7 +276,7 @@ export function ProjectMembersModal({
                             e.target.value as "lead" | "member",
                           )
                         }
-                        className="text-xs px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                        className="text-xs px-2 py-1 border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
                         disabled={updateRoleMutation.isPending}
                       >
                         <option value="member">Member</option>
