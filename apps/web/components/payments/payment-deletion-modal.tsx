@@ -1,28 +1,20 @@
-"use client";
+'use client';
 
-import { useState } from "react";
+import {useState} from 'react';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@workspace/ui/components/card";
-import { Button } from "@workspace/ui/components/button";
-import { Badge } from "@workspace/ui/components/badge";
-import { PaymentStatusBadge } from "./payment-status-badge";
-import { usePaymentHistory } from "@/lib/hooks/usePayments";
-import type { BillingPeriod } from "@/lib/db/schema";
-import { format } from "date-fns";
-import {
-  AlertTriangle,
-  Trash2,
-  X,
-  Loader2,
-  RefreshCw,
-  History,
-  DollarSign,
-} from "lucide-react";
+} from '@workspace/ui/components/card';
+import {Button} from '@workspace/ui/components/button';
+import {Badge} from '@workspace/ui/components/badge';
+import {PaymentStatusBadge} from './payment-status-badge';
+import {usePaymentHistory} from '@/lib/hooks/usePayments';
+import type {BillingPeriod} from '@/lib/db/schema';
+import {format} from 'date-fns';
+import {AlertTriangle, Trash2, X, Loader2, RefreshCw, History, DollarSign} from 'lucide-react';
 
 interface PaymentDeletionModalProps {
   billingPeriod: BillingPeriod | null;
@@ -43,18 +35,16 @@ export function PaymentDeletionModal({
   onDeleteAllPaymentHistory,
   isDeleting,
 }: PaymentDeletionModalProps) {
-  const [action, setAction] = useState<"single" | "reset" | "all">("single");
-  const [selectedHistoryId, setSelectedHistoryId] = useState<string | null>(
-    null,
-  );
+  const [action, setAction] = useState<'single' | 'reset' | 'all'>('single');
+  const [selectedHistoryId, setSelectedHistoryId] = useState<string | null>(null);
 
-  const { data: paymentHistory, isLoading: historyLoading } = usePaymentHistory(
-    billingPeriod?.id || "",
+  const {data: paymentHistory, isLoading: historyLoading} = usePaymentHistory(
+    billingPeriod?.id || '',
   );
 
   if (!isOpen || !billingPeriod) return null;
 
-  const isPaid = billingPeriod.payment_status === "paid";
+  const isPaid = billingPeriod.payment_status === 'paid';
   const hasPaymentData =
     billingPeriod.payment_amount ||
     billingPeriod.payment_reference ||
@@ -64,15 +54,15 @@ export function PaymentDeletionModal({
     if (!billingPeriod) return;
 
     switch (action) {
-      case "single":
+      case 'single':
         if (selectedHistoryId) {
           onDeletePaymentHistory(selectedHistoryId);
         }
         break;
-      case "reset":
+      case 'reset':
         onResetPaymentStatus(billingPeriod.id);
         break;
-      case "all":
+      case 'all':
         onDeleteAllPaymentHistory(billingPeriod.id);
         break;
     }
@@ -81,12 +71,10 @@ export function PaymentDeletionModal({
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm"
-      onClick={onClose}
-    >
+      onClick={onClose}>
       <Card
         className="w-full max-w-2xl max-h-[90vh] overflow-y-auto"
-        onClick={(e) => e.stopPropagation()}
-      >
+        onClick={(e) => e.stopPropagation()}>
         <CardHeader className="flex flex-row items-center justify-between">
           <div>
             <CardTitle className="flex items-center gap-2 text-destructive">
@@ -94,17 +82,11 @@ export function PaymentDeletionModal({
               Manage Payment Data
             </CardTitle>
             <CardDescription>
-              {billingPeriod.name} •{" "}
-              {format(new Date(billingPeriod.start_date), "MMM dd")} -{" "}
-              {format(new Date(billingPeriod.end_date), "MMM dd, yyyy")}
+              {billingPeriod.name} • {format(new Date(billingPeriod.start_date), 'MMM dd')} -{' '}
+              {format(new Date(billingPeriod.end_date), 'MMM dd, yyyy')}
             </CardDescription>
           </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onClose}
-            className="h-8 w-8 p-0"
-          >
+          <Button variant="ghost" size="sm" onClick={onClose} className="h-8 w-8 p-0">
             <X className="h-4 w-4" />
           </Button>
         </CardHeader>
@@ -121,27 +103,20 @@ export function PaymentDeletionModal({
               {billingPeriod.payment_amount && (
                 <div className="flex items-center justify-between">
                   <span>Amount:</span>
-                  <span className="font-medium">
-                    ${billingPeriod.payment_amount}
-                  </span>
+                  <span className="font-medium">${billingPeriod.payment_amount}</span>
                 </div>
               )}
               {billingPeriod.payment_reference && (
                 <div className="flex items-center justify-between">
                   <span>Reference:</span>
-                  <span className="font-medium">
-                    {billingPeriod.payment_reference}
-                  </span>
+                  <span className="font-medium">{billingPeriod.payment_reference}</span>
                 </div>
               )}
               {billingPeriod.payment_received_date && (
                 <div className="flex items-center justify-between">
                   <span>Received:</span>
                   <span>
-                    {format(
-                      new Date(billingPeriod.payment_received_date),
-                      "MMM dd, yyyy",
-                    )}
+                    {format(new Date(billingPeriod.payment_received_date), 'MMM dd, yyyy')}
                   </span>
                 </div>
               )}
@@ -160,15 +135,12 @@ export function PaymentDeletionModal({
                   id="single"
                   name="action"
                   value="single"
-                  checked={action === "single"}
-                  onChange={(e) => setAction(e.target.value as "single")}
+                  checked={action === 'single'}
+                  onChange={(e) => setAction(e.target.value as 'single')}
                   className="mt-1"
                 />
                 <div className="flex-1">
-                  <label
-                    htmlFor="single"
-                    className="font-medium cursor-pointer"
-                  >
+                  <label htmlFor="single" className="font-medium cursor-pointer">
                     Delete Individual Payment History Entry
                   </label>
                   <p className="text-sm text-muted-foreground">
@@ -184,8 +156,8 @@ export function PaymentDeletionModal({
                   id="reset"
                   name="action"
                   value="reset"
-                  checked={action === "reset"}
-                  onChange={(e) => setAction(e.target.value as "reset")}
+                  checked={action === 'reset'}
+                  onChange={(e) => setAction(e.target.value as 'reset')}
                   className="mt-1"
                 />
                 <div className="flex-1">
@@ -198,8 +170,7 @@ export function PaymentDeletionModal({
                   {isPaid && (
                     <div className="mt-1 p-2 bg-yellow-50 border border-yellow-200 rounded text-xs text-yellow-800 dark:bg-yellow-950 dark:border-yellow-800 dark:text-yellow-300">
                       <AlertTriangle className="inline h-3 w-3 mr-1" />
-                      This period is marked as PAID - resetting will require
-                      careful review
+                      This period is marked as PAID - resetting will require careful review
                     </div>
                   )}
                 </div>
@@ -212,8 +183,8 @@ export function PaymentDeletionModal({
                   id="all"
                   name="action"
                   value="all"
-                  checked={action === "all"}
-                  onChange={(e) => setAction(e.target.value as "all")}
+                  checked={action === 'all'}
+                  onChange={(e) => setAction(e.target.value as 'all')}
                   className="mt-1"
                 />
                 <div className="flex-1">
@@ -229,15 +200,13 @@ export function PaymentDeletionModal({
           </div>
 
           {/* Payment History Selection (for single deletion) */}
-          {action === "single" && (
+          {action === 'single' && (
             <div className="space-y-3">
               <h4 className="font-medium">Select Payment History Entry</h4>
               {historyLoading ? (
                 <div className="text-center py-4">
                   <Loader2 className="h-6 w-6 animate-spin mx-auto" />
-                  <p className="text-sm text-muted-foreground mt-2">
-                    Loading payment history...
-                  </p>
+                  <p className="text-sm text-muted-foreground mt-2">Loading payment history...</p>
                 </div>
               ) : paymentHistory && paymentHistory.length > 0 ? (
                 <div className="space-y-2 max-h-48 overflow-y-auto">
@@ -246,26 +215,18 @@ export function PaymentDeletionModal({
                       key={entry.id}
                       className={`p-3 border rounded-lg cursor-pointer transition-colors ${
                         selectedHistoryId === entry.id
-                          ? "border-blue-500 bg-blue-50 dark:bg-blue-950"
-                          : "hover:bg-muted/50"
+                          ? 'border-blue-500 bg-blue-50 dark:bg-blue-950'
+                          : 'hover:bg-muted/50'
                       }`}
-                      onClick={() => setSelectedHistoryId(entry.id)}
-                    >
+                      onClick={() => setSelectedHistoryId(entry.id)}>
                       <div className="flex items-center justify-between">
                         <div className="flex-1">
-                          <div className="font-medium text-sm">
-                            {entry.action}
-                          </div>
+                          <div className="font-medium text-sm">{entry.action}</div>
                           <div className="text-xs text-muted-foreground">
-                            {format(
-                              new Date(entry.created_at),
-                              "MMM dd, yyyy HH:mm",
-                            )}
+                            {format(new Date(entry.created_at), 'MMM dd, yyyy HH:mm')}
                           </div>
                           {entry.notes && (
-                            <div className="text-xs text-muted-foreground mt-1">
-                              {entry.notes}
-                            </div>
+                            <div className="text-xs text-muted-foreground mt-1">{entry.notes}</div>
                           )}
                         </div>
                         <input
@@ -289,30 +250,28 @@ export function PaymentDeletionModal({
           )}
 
           {/* Warning Messages */}
-          {action === "reset" && hasPaymentData && (
+          {action === 'reset' && hasPaymentData && (
             <div className="p-4 border border-destructive rounded-lg bg-destructive/10">
               <div className="flex items-center gap-2 text-destructive">
                 <AlertTriangle className="h-4 w-4" />
                 <strong>Warning: Data Loss</strong>
               </div>
               <p className="text-sm text-destructive/80 mt-1">
-                This will permanently clear all payment information including
-                amount, reference, dates, and notes. This action cannot be
-                undone.
+                This will permanently clear all payment information including amount, reference,
+                dates, and notes. This action cannot be undone.
               </p>
             </div>
           )}
 
-          {action === "all" && (
+          {action === 'all' && (
             <div className="p-4 border border-destructive rounded-lg bg-destructive/10">
               <div className="flex items-center gap-2 text-destructive">
                 <AlertTriangle className="h-4 w-4" />
                 <strong>Warning: Complete History Deletion</strong>
               </div>
               <p className="text-sm text-destructive/80 mt-1">
-                This will permanently delete all payment history entries for
-                this billing period. This action cannot be undone and will
-                remove audit trail data.
+                This will permanently delete all payment history entries for this billing period.
+                This action cannot be undone and will remove audit trail data.
               </p>
             </div>
           )}
@@ -325,11 +284,8 @@ export function PaymentDeletionModal({
             <Button
               variant="destructive"
               onClick={handleConfirmAction}
-              disabled={
-                isDeleting || (action === "single" && !selectedHistoryId)
-              }
-              className="flex-1"
-            >
+              disabled={isDeleting || (action === 'single' && !selectedHistoryId)}
+              className="flex-1">
               {isDeleting ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -337,16 +293,16 @@ export function PaymentDeletionModal({
                 </>
               ) : (
                 <>
-                  {action === "reset" ? (
+                  {action === 'reset' ? (
                     <RefreshCw className="h-4 w-4 mr-2" />
                   ) : (
                     <Trash2 className="h-4 w-4 mr-2" />
                   )}
-                  {action === "single"
-                    ? "Delete Entry"
-                    : action === "reset"
-                      ? "Reset Payment"
-                      : "Delete All History"}
+                  {action === 'single'
+                    ? 'Delete Entry'
+                    : action === 'reset'
+                      ? 'Reset Payment'
+                      : 'Delete All History'}
                 </>
               )}
             </Button>

@@ -1,5 +1,5 @@
-import { create } from "zustand";
-import { devtools } from "zustand/middleware";
+import {create} from 'zustand';
+import {devtools} from 'zustand/middleware';
 
 // Zustand store for CLIENT-SIDE ticket state only
 // Server state is managed by TanStack React Query
@@ -12,23 +12,23 @@ interface TicketState {
     assignedTo?: string;
     projectId?: string;
   };
-  sortBy: "created_at" | "updated_at" | "priority" | "status";
-  sortOrder: "asc" | "desc";
+  sortBy: 'created_at' | 'updated_at' | 'priority' | 'status';
+  sortOrder: 'asc' | 'desc';
 
   // Actions
   setSelectedTicketId: (ticketId: string | null) => void;
-  setFilters: (filters: Partial<TicketState["filters"]>) => void;
+  setFilters: (filters: Partial<TicketState['filters']>) => void;
   resetFilters: () => void;
-  setSortBy: (sortBy: TicketState["sortBy"]) => void;
-  setSortOrder: (sortOrder: TicketState["sortOrder"]) => void;
+  setSortBy: (sortBy: TicketState['sortBy']) => void;
+  setSortOrder: (sortOrder: TicketState['sortOrder']) => void;
   resetState: () => void;
 }
 
 const initialState = {
   selectedTicketId: null,
   filters: {},
-  sortBy: "created_at" as const,
-  sortOrder: "desc" as const,
+  sortBy: 'created_at' as const,
+  sortOrder: 'desc' as const,
 };
 
 export const useTicketStore = create<TicketState>()(
@@ -36,16 +36,15 @@ export const useTicketStore = create<TicketState>()(
     (set, get) => ({
       ...initialState,
 
-      setSelectedTicketId: (ticketId) => set({ selectedTicketId: ticketId }),
-      setFilters: (filters) =>
-        set({ filters: { ...get().filters, ...filters } }),
-      resetFilters: () => set({ filters: {} }),
-      setSortBy: (sortBy) => set({ sortBy }),
-      setSortOrder: (sortOrder) => set({ sortOrder }),
+      setSelectedTicketId: (ticketId) => set({selectedTicketId: ticketId}),
+      setFilters: (filters) => set({filters: {...get().filters, ...filters}}),
+      resetFilters: () => set({filters: {}}),
+      setSortBy: (sortBy) => set({sortBy}),
+      setSortOrder: (sortOrder) => set({sortOrder}),
       resetState: () => set(initialState),
     }),
     {
-      name: "ticket-store",
+      name: 'ticket-store',
     },
   ),
 );

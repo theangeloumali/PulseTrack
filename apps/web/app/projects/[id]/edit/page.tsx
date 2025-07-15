@@ -1,26 +1,26 @@
-"use client";
+'use client';
 
-import { useEffect, useState, use } from "react";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
-import { Button } from "@workspace/ui/components/button";
-import { Input } from "@workspace/ui/components/input";
-import { Label } from "@workspace/ui/components/label";
-import { Textarea } from "@workspace/ui/components/textarea";
+import {useEffect, useState, use} from 'react';
+import {useRouter} from 'next/navigation';
+import Link from 'next/link';
+import {Button} from '@workspace/ui/components/button';
+import {Input} from '@workspace/ui/components/input';
+import {Label} from '@workspace/ui/components/label';
+import {Textarea} from '@workspace/ui/components/textarea';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@workspace/ui/components/card";
-import { useAuthStore } from "@/lib/stores/auth";
-import { useProjectStore } from "@/lib/stores/project";
-import { getProjectById, updateProject, deleteProject } from "@/lib/db/service";
-import { Project } from "@/lib/db/schema";
-import { ArrowLeft, Loader2, Save, Trash2 } from "lucide-react";
+} from '@workspace/ui/components/card';
+import {useAuthStore} from '@/lib/stores/auth';
+import {useProjectStore} from '@/lib/stores/project';
+import {getProjectById, updateProject, deleteProject} from '@/lib/db/service';
+import {Project} from '@/lib/db/schema';
+import {ArrowLeft, Loader2, Save, Trash2} from 'lucide-react';
 
-export const dynamic = "force-dynamic";
+export const dynamic = 'force-dynamic';
 
 interface Props {
   params: Promise<{
@@ -28,22 +28,21 @@ interface Props {
   }>;
 }
 
-export default function EditProjectPage({ params }: Props) {
+export default function EditProjectPage({params}: Props) {
   const resolvedParams = use(params);
   const [project, setProject] = useState<Project | null>(null);
   const [formData, setFormData] = useState({
-    name: "",
-    description: "",
-    status: "active" as "active" | "archived" | "completed",
+    name: '',
+    description: '',
+    status: 'active' as 'active' | 'archived' | 'completed',
   });
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState('');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
-  const { user } = useAuthStore();
-  const { updateProject: updateProjectInStore, deleteProjectById } =
-    useProjectStore();
+  const {user} = useAuthStore();
+  const {updateProject: updateProjectInStore, deleteProjectById} = useProjectStore();
   const router = useRouter();
 
   useEffect(() => {
@@ -57,27 +56,25 @@ export default function EditProjectPage({ params }: Props) {
 
       // Security check: ensure project belongs to user's company (PRD requirement)
       if (projectData.company_id !== user?.company_id) {
-        setError("Project not found or access denied");
+        setError('Project not found or access denied');
         return;
       }
 
       setProject(projectData);
       setFormData({
         name: projectData.name,
-        description: projectData.description || "",
+        description: projectData.description || '',
         status: projectData.status,
       });
     } catch (err: any) {
-      setError(err.message || "Failed to load project");
+      setError(err.message || 'Failed to load project');
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
-  ) => {
-    const { name, value } = e.target;
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const {name, value} = e.target;
     setFormData((prev) => ({
       ...prev,
       [name]: value,
@@ -87,7 +84,7 @@ export default function EditProjectPage({ params }: Props) {
   const handleStatusChange = (value: string) => {
     setFormData((prev) => ({
       ...prev,
-      status: value as "active" | "archived" | "completed",
+      status: value as 'active' | 'archived' | 'completed',
     }));
   };
 
@@ -97,11 +94,11 @@ export default function EditProjectPage({ params }: Props) {
     if (!project || !user) return;
 
     setIsSubmitting(true);
-    setError("");
+    setError('');
 
     // Validation
     if (!formData.name.trim()) {
-      setError("Project name is required");
+      setError('Project name is required');
       setIsSubmitting(false);
       return;
     }
@@ -119,7 +116,7 @@ export default function EditProjectPage({ params }: Props) {
       // Redirect back to project details
       router.push(`/projects/${project.id}`);
     } catch (err: any) {
-      setError(err.message || "Failed to update project");
+      setError(err.message || 'Failed to update project');
     } finally {
       setIsSubmitting(false);
     }
@@ -133,9 +130,9 @@ export default function EditProjectPage({ params }: Props) {
       await deleteProjectById(project.id);
 
       // Redirect to projects list after successful deletion
-      router.push("/projects");
+      router.push('/projects');
     } catch (err: any) {
-      setError(err.message || "Failed to delete project");
+      setError(err.message || 'Failed to delete project');
     } finally {
       setShowDeleteConfirm(false);
     }
@@ -158,7 +155,7 @@ export default function EditProjectPage({ params }: Props) {
           <Card className="w-96">
             <CardHeader>
               <CardTitle>Error</CardTitle>
-              <CardDescription>{error || "Project not found"}</CardDescription>
+              <CardDescription>{error || 'Project not found'}</CardDescription>
             </CardHeader>
             <CardContent>
               <Link href="/projects">
@@ -184,12 +181,8 @@ export default function EditProjectPage({ params }: Props) {
               </Button>
             </Link>
             <div>
-              <h1 className="text-3xl font-bold text-foreground">
-                Edit Project
-              </h1>
-              <p className="text-muted-foreground">
-                Update project information and settings
-              </p>
+              <h1 className="text-3xl font-bold text-foreground">Edit Project</h1>
+              <p className="text-muted-foreground">Update project information and settings</p>
             </div>
           </div>
         </div>
@@ -200,9 +193,7 @@ export default function EditProjectPage({ params }: Props) {
           <Card>
             <CardHeader>
               <CardTitle>Project Settings</CardTitle>
-              <CardDescription>
-                Update your project details and status
-              </CardDescription>
+              <CardDescription>Update your project details and status</CardDescription>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-6">
@@ -252,8 +243,7 @@ export default function EditProjectPage({ params }: Props) {
                     value={formData.status}
                     onChange={(e) => handleStatusChange(e.target.value)}
                     disabled={isSubmitting}
-                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50">
                     <option value="active">Active</option>
                     <option value="archived">Archived</option>
                     <option value="completed">Completed</option>
@@ -270,8 +260,7 @@ export default function EditProjectPage({ params }: Props) {
                     variant="outline"
                     onClick={() => setShowDeleteConfirm(true)}
                     className="text-red-600 hover:text-red-700"
-                    disabled={isSubmitting}
-                  >
+                    disabled={isSubmitting}>
                     <Trash2 className="h-4 w-4 mr-2" />
                     Delete Project
                   </Button>
@@ -282,10 +271,7 @@ export default function EditProjectPage({ params }: Props) {
                         Cancel
                       </Button>
                     </Link>
-                    <Button
-                      type="submit"
-                      disabled={isSubmitting || !formData.name.trim()}
-                    >
+                    <Button type="submit" disabled={isSubmitting || !formData.name.trim()}>
                       {isSubmitting ? (
                         <>
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -311,16 +297,12 @@ export default function EditProjectPage({ params }: Props) {
                 <CardHeader>
                   <CardTitle className="text-red-600">Delete Project</CardTitle>
                   <CardDescription>
-                    Are you sure you want to delete this project? This action
-                    cannot be undone.
+                    Are you sure you want to delete this project? This action cannot be undone.
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="flex items-center justify-end space-x-3">
-                    <Button
-                      variant="outline"
-                      onClick={() => setShowDeleteConfirm(false)}
-                    >
+                    <Button variant="outline" onClick={() => setShowDeleteConfirm(false)}>
                       Cancel
                     </Button>
                     <Button variant="destructive" onClick={handleDelete}>

@@ -1,77 +1,74 @@
-"use client";
+'use client';
 
-import { useState, useEffect, Suspense } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import Link from "next/link";
-import { Button } from "@workspace/ui/components/button";
-import { Input } from "@workspace/ui/components/input";
-import { Label } from "@workspace/ui/components/label";
+import {useState, useEffect, Suspense} from 'react';
+import {useRouter, useSearchParams} from 'next/navigation';
+import Link from 'next/link';
+import {Button} from '@workspace/ui/components/button';
+import {Input} from '@workspace/ui/components/input';
+import {Label} from '@workspace/ui/components/label';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@workspace/ui/components/card";
-import { Eye, EyeOff, Loader2, CheckCircle, ArrowLeft } from "lucide-react";
-import { supabase } from "@/lib/db";
-import { useResetPasswordStore } from "@/lib/stores/reset-password";
+} from '@workspace/ui/components/card';
+import {Eye, EyeOff, Loader2, CheckCircle, ArrowLeft} from 'lucide-react';
+import {supabase} from '@/lib/db';
+import {useResetPasswordStore} from '@/lib/stores/reset-password';
 
 function ResetPasswordContent() {
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState('');
   const [isSuccess, setIsSuccess] = useState(false);
   const [isValidSession, setIsValidSession] = useState(false);
   const [isCheckingSession, setIsCheckingSession] = useState(true);
 
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { clearPasswordResetFlow } = useResetPasswordStore();
+  const {clearPasswordResetFlow} = useResetPasswordStore();
 
   useEffect(() => {
     // Check if user has a valid session for password reset
     const checkSession = async () => {
       try {
         const {
-          data: { user },
+          data: {user},
           error,
         } = await supabase.auth.getUser();
 
         if (error) {
-          console.error("Reset password - Session check error:", error);
-          setError("Invalid or expired reset link. Please request a new one.");
+          console.error('Reset password - Session check error:', error);
+          setError('Invalid or expired reset link. Please request a new one.');
           setIsCheckingSession(false);
           return;
         }
 
         if (user) {
-          console.log(
-            "Reset password - Valid session found for user:",
-            user.email,
-          );
+          console.log('Reset password - Valid session found for user:', user.email);
           setIsValidSession(true);
         } else {
-          console.log("Reset password - No valid session found");
-          setError("Invalid or expired reset link. Please request a new one.");
+          console.log('Reset password - No valid session found');
+          setError('Invalid or expired reset link. Please request a new one.');
         }
       } catch (err) {
-        console.error("Reset password - Session check failed:", err);
-        setError("An error occurred. Please try again.");
+        console.error('Reset password - Session check failed:', err);
+        setError('An error occurred. Please try again.');
       } finally {
         setIsCheckingSession(false);
       }
     };
 
     // Check for URL errors first
-    const urlError = searchParams.get("error");
-    const urlErrorDescription = searchParams.get("error_description");
+    const urlError = searchParams.get('error');
+    const urlErrorDescription = searchParams.get('error_description');
 
     if (urlError) {
-      setError(urlErrorDescription || "Invalid or expired reset link");
+      setError(urlErrorDescription || 'Invalid or expired reset link');
       setIsCheckingSession(false);
     } else {
       checkSession();
@@ -80,16 +77,16 @@ function ResetPasswordContent() {
 
   const validatePassword = (pwd: string) => {
     if (pwd.length < 8) {
-      return "Password must be at least 8 characters long";
+      return 'Password must be at least 8 characters long';
     }
     if (!/[A-Z]/.test(pwd)) {
-      return "Password must contain at least one uppercase letter";
+      return 'Password must contain at least one uppercase letter';
     }
     if (!/[a-z]/.test(pwd)) {
-      return "Password must contain at least one lowercase letter";
+      return 'Password must contain at least one lowercase letter';
     }
     if (!/[0-9]/.test(pwd)) {
-      return "Password must contain at least one number";
+      return 'Password must contain at least one number';
     }
     return null;
   };
@@ -99,12 +96,12 @@ function ResetPasswordContent() {
 
     // Don't allow submission if session is invalid
     if (!isValidSession) {
-      setError("Invalid or expired reset link. Please request a new one.");
+      setError('Invalid or expired reset link. Please request a new one.');
       return;
     }
 
     setIsLoading(true);
-    setError("");
+    setError('');
 
     // Validate password
     const passwordError = validatePassword(password);
@@ -116,7 +113,7 @@ function ResetPasswordContent() {
 
     // Check if passwords match
     if (password !== confirmPassword) {
-      setError("Passwords do not match");
+      setError('Passwords do not match');
       setIsLoading(false);
       return;
     }
@@ -127,8 +124,8 @@ function ResetPasswordContent() {
         password: password,
       });
 
-      const timeoutPromise = new Promise<{ error: null }>((resolve) =>
-        setTimeout(() => resolve({ error: null }), 5000),
+      const timeoutPromise = new Promise<{error: null}>((resolve) =>
+        setTimeout(() => resolve({error: null}), 5000),
       );
 
       const result = await Promise.race([updatePromise, timeoutPromise]);
@@ -143,15 +140,15 @@ function ResetPasswordContent() {
       clearPasswordResetFlow();
 
       setTimeout(() => {
-        router.push("/dashboard");
+        router.push('/dashboard');
       }, 2000);
     } catch (err) {
-      console.error("Reset password error:", err);
+      console.error('Reset password error:', err);
       // Even if there's an error, the password might have been updated
       setIsSuccess(true);
       clearPasswordResetFlow();
       setTimeout(() => {
-        router.push("/dashboard");
+        router.push('/dashboard');
       }, 2000);
     } finally {
       setIsLoading(false);
@@ -176,9 +173,7 @@ function ResetPasswordContent() {
       <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-md w-full space-y-8">
           <div className="text-center">
-            <h2 className="mt-6 text-3xl font-extrabold text-gray-900">
-              Invalid Reset Link
-            </h2>
+            <h2 className="mt-6 text-3xl font-extrabold text-gray-900">Invalid Reset Link</h2>
             <p className="mt-2 text-sm text-gray-600">
               This password reset link is invalid or has expired.
             </p>
@@ -211,9 +206,7 @@ function ResetPasswordContent() {
         <div className="max-w-md w-full space-y-8">
           <div className="text-center">
             <CheckCircle className="mx-auto h-12 w-12 text-green-600" />
-            <h2 className="mt-6 text-3xl font-extrabold text-gray-900">
-              Password Updated
-            </h2>
+            <h2 className="mt-6 text-3xl font-extrabold text-gray-900">Password Updated</h2>
             <p className="mt-2 text-sm text-gray-600">
               Your password has been successfully updated.
             </p>
@@ -242,9 +235,7 @@ function ResetPasswordContent() {
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
         <div className="text-center">
-          <h2 className="mt-6 text-3xl font-extrabold text-gray-900">
-            Reset your password
-          </h2>
+          <h2 className="mt-6 text-3xl font-extrabold text-gray-900">Reset your password</h2>
           <p className="mt-2 text-sm text-gray-600">
             Enter your new password below to complete the reset process.
           </p>
@@ -273,7 +264,7 @@ function ResetPasswordContent() {
                   <Input
                     id="password"
                     name="password"
-                    type={showPassword ? "text" : "password"}
+                    type={showPassword ? 'text' : 'password'}
                     autoComplete="new-password"
                     required
                     value={password}
@@ -284,8 +275,7 @@ function ResetPasswordContent() {
                   <button
                     type="button"
                     className="absolute inset-y-0 right-0 pr-3 flex items-center"
-                    onClick={() => setShowPassword(!showPassword)}
-                  >
+                    onClick={() => setShowPassword(!showPassword)}>
                     {showPassword ? (
                       <EyeOff className="h-4 w-4 text-gray-400" />
                     ) : (
@@ -294,8 +284,7 @@ function ResetPasswordContent() {
                   </button>
                 </div>
                 <p className="text-xs text-gray-500">
-                  Password must be at least 8 characters with uppercase,
-                  lowercase, and numbers
+                  Password must be at least 8 characters with uppercase, lowercase, and numbers
                 </p>
               </div>
 
@@ -307,7 +296,7 @@ function ResetPasswordContent() {
                   <Input
                     id="confirmPassword"
                     name="confirmPassword"
-                    type={showConfirmPassword ? "text" : "password"}
+                    type={showConfirmPassword ? 'text' : 'password'}
                     autoComplete="new-password"
                     required
                     value={confirmPassword}
@@ -318,8 +307,7 @@ function ResetPasswordContent() {
                   <button
                     type="button"
                     className="absolute inset-y-0 right-0 pr-3 flex items-center"
-                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  >
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}>
                     {showConfirmPassword ? (
                       <EyeOff className="h-4 w-4 text-gray-400" />
                     ) : (
@@ -332,15 +320,14 @@ function ResetPasswordContent() {
               <Button
                 type="submit"
                 className="w-full bg-blue-600 hover:bg-blue-700 text-white"
-                disabled={isLoading}
-              >
+                disabled={isLoading}>
                 {isLoading ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin mr-2" />
                     Updating password...
                   </>
                 ) : (
-                  "Update password"
+                  'Update password'
                 )}
               </Button>
             </form>
@@ -370,8 +357,7 @@ export default function ResetPasswordPage() {
             <p className="mt-4 text-gray-600">Loading...</p>
           </div>
         </div>
-      }
-    >
+      }>
       <ResetPasswordContent />
     </Suspense>
   );

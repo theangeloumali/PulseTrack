@@ -1,29 +1,29 @@
-"use client";
+'use client';
 
-import { useState } from "react";
+import {useState} from 'react';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@workspace/ui/components/card";
-import { Button } from "@workspace/ui/components/button";
+} from '@workspace/ui/components/card';
+import {Button} from '@workspace/ui/components/button';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@workspace/ui/components/select";
-import { Label } from "@workspace/ui/components/label";
-import { DateRangePicker } from "@/components/ui/date-range-picker";
-import { useCompanyUsers } from "@/lib/hooks/useUsers";
-import { useBillingSettings } from "@/lib/hooks/useBilling";
-import { useGenerateBillingPeriodForUser } from "@/lib/hooks/usePayments";
-import type { BillingFrequency } from "@/lib/db/schema";
-import { format, addDays, startOfMonth, endOfMonth } from "date-fns";
-import { User, Loader2, X, Calendar } from "lucide-react";
+} from '@workspace/ui/components/select';
+import {Label} from '@workspace/ui/components/label';
+import {DateRangePicker} from '@/components/ui/date-range-picker';
+import {useCompanyUsers} from '@/lib/hooks/useUsers';
+import {useBillingSettings} from '@/lib/hooks/useBilling';
+import {useGenerateBillingPeriodForUser} from '@/lib/hooks/usePayments';
+import type {BillingFrequency} from '@/lib/db/schema';
+import {format, addDays, startOfMonth, endOfMonth} from 'date-fns';
+import {User, Loader2, X, Calendar} from 'lucide-react';
 
 interface UserSelectorProps {
   companyId: string;
@@ -31,34 +31,27 @@ interface UserSelectorProps {
   onClose: () => void;
 }
 
-export function UserSelector({
-  companyId,
-  isOpen,
-  onClose,
-}: UserSelectorProps) {
-  const [selectedUserId, setSelectedUserId] = useState<string>("");
-  const [selectedFrequency, setSelectedFrequency] =
-    useState<BillingFrequency>("monthly");
+export function UserSelector({companyId, isOpen, onClose}: UserSelectorProps) {
+  const [selectedUserId, setSelectedUserId] = useState<string>('');
+  const [selectedFrequency, setSelectedFrequency] = useState<BillingFrequency>('monthly');
   const [useCustomDateRange, setUseCustomDateRange] = useState<boolean>(false);
   const [startDate, setStartDate] = useState<string>(
-    format(startOfMonth(new Date()), "yyyy-MM-dd"),
+    format(startOfMonth(new Date()), 'yyyy-MM-dd'),
   );
-  const [endDate, setEndDate] = useState<string>(
-    format(endOfMonth(new Date()), "yyyy-MM-dd"),
-  );
+  const [endDate, setEndDate] = useState<string>(format(endOfMonth(new Date()), 'yyyy-MM-dd'));
 
-  const { data: users, isLoading: usersLoading } = useCompanyUsers();
-  const { data: companySettings } = useBillingSettings(companyId);
+  const {data: users, isLoading: usersLoading} = useCompanyUsers();
+  const {data: companySettings} = useBillingSettings(companyId);
   const generateForUserMutation = useGenerateBillingPeriodForUser(companyId);
 
   const handleGenerate = async () => {
     if (!selectedUserId) {
-      alert("Please select a user");
+      alert('Please select a user');
       return;
     }
 
     if (useCustomDateRange && (!startDate || !endDate)) {
-      alert("Please select both start and end dates");
+      alert('Please select both start and end dates');
       return;
     }
 
@@ -75,11 +68,11 @@ export function UserSelector({
       }
 
       await generateForUserMutation.mutateAsync(payload);
-      alert("Billing period generated successfully for selected user!");
+      alert('Billing period generated successfully for selected user!');
       onClose();
     } catch (error) {
-      console.error("Error generating billing period for user:", error);
-      alert("Failed to generate billing period. Please try again.");
+      console.error('Error generating billing period for user:', error);
+      alert('Failed to generate billing period. Please try again.');
     }
   };
 
@@ -94,16 +87,9 @@ export function UserSelector({
               <User className="h-5 w-5" />
               Generate for Specific User
             </CardTitle>
-            <CardDescription>
-              Create a billing period for a specific user
-            </CardDescription>
+            <CardDescription>Create a billing period for a specific user</CardDescription>
           </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onClose}
-            className="h-8 w-8 p-0"
-          >
+          <Button variant="ghost" size="sm" onClick={onClose} className="h-8 w-8 p-0">
             <X className="h-4 w-4" />
           </Button>
         </CardHeader>
@@ -135,10 +121,7 @@ export function UserSelector({
             <Label htmlFor="frequency-select">Billing Frequency</Label>
             <Select
               value={selectedFrequency}
-              onValueChange={(value) =>
-                setSelectedFrequency(value as BillingFrequency)
-              }
-            >
+              onValueChange={(value) => setSelectedFrequency(value as BillingFrequency)}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
@@ -161,8 +144,7 @@ export function UserSelector({
               />
               <Label
                 htmlFor="custom-date-range"
-                className="text-sm font-medium flex items-center gap-2 cursor-pointer"
-              >
+                className="text-sm font-medium flex items-center gap-2 cursor-pointer">
                 <Calendar className="h-4 w-4" />
                 Use Custom Date Range
               </Label>
@@ -189,8 +171,8 @@ export function UserSelector({
 
           {companySettings?.billing_frequency && (
             <div className="text-sm text-muted-foreground p-3 bg-muted rounded-lg">
-              <strong>Default company frequency:</strong>{" "}
-              {companySettings.billing_frequency.replace("_", "-")}
+              <strong>Default company frequency:</strong>{' '}
+              {companySettings.billing_frequency.replace('_', '-')}
             </div>
           )}
 
@@ -201,15 +183,14 @@ export function UserSelector({
             <Button
               onClick={handleGenerate}
               disabled={generateForUserMutation.isPending || !selectedUserId}
-              className="flex-1"
-            >
+              className="flex-1">
               {generateForUserMutation.isPending ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                   Generating...
                 </>
               ) : (
-                "Generate Period"
+                'Generate Period'
               )}
             </Button>
           </div>

@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { useRecentActivities } from "@/lib/hooks/useActivities";
-import { useAuth } from "@/lib/hooks/useAuth";
-import { formatDistanceToNow } from "date-fns";
+import {useRecentActivities} from '@/lib/hooks/useActivities';
+import {useAuth} from '@/lib/hooks/useAuth';
+import {formatDistanceToNow} from 'date-fns';
 import {
   FolderOpen,
   Ticket,
@@ -11,7 +11,7 @@ import {
   Settings,
   MoreHorizontal,
   Activity,
-} from "lucide-react";
+} from 'lucide-react';
 
 const activityIcons = {
   project_created: FolderOpen,
@@ -24,8 +24,7 @@ const activityIcons = {
 } as const;
 
 function getActivityIcon(type: string) {
-  const Icon =
-    activityIcons[type as keyof typeof activityIcons] || MoreHorizontal;
+  const Icon = activityIcons[type as keyof typeof activityIcons] || MoreHorizontal;
   return <Icon className="h-3 w-3" />;
 }
 
@@ -33,9 +32,9 @@ interface ActivitySidebarProps {
   limit?: number;
 }
 
-export function ActivitySidebar({ limit = 5 }: ActivitySidebarProps) {
-  const { user } = useAuth();
-  const { data: activities, isLoading } = useRecentActivities(limit);
+export function ActivitySidebar({limit = 5}: ActivitySidebarProps) {
+  const {user} = useAuth();
+  const {data: activities, isLoading} = useRecentActivities(limit);
 
   if (!user) return null;
 
@@ -43,15 +42,13 @@ export function ActivitySidebar({ limit = 5 }: ActivitySidebarProps) {
     <div className="px-3 py-3 border-t border-sidebar-border">
       <div className="flex items-center gap-2 mb-3">
         <Activity className="h-4 w-4 text-sidebar-foreground" />
-        <span className="text-sm font-medium text-sidebar-foreground">
-          Recent Activity
-        </span>
+        <span className="text-sm font-medium text-sidebar-foreground">Recent Activity</span>
       </div>
 
       <div className="space-y-2 max-h-48 overflow-y-auto">
         {isLoading ? (
           <div className="space-y-2">
-            {Array.from({ length: 3 }).map((_, i) => (
+            {Array.from({length: 3}).map((_, i) => (
               <div key={i} className="flex items-start gap-2">
                 <div className="h-3 w-3 bg-gray-200 rounded-full animate-pulse mt-1" />
                 <div className="flex-1 space-y-1">
@@ -63,9 +60,7 @@ export function ActivitySidebar({ limit = 5 }: ActivitySidebarProps) {
           </div>
         ) : activities && activities.length > 0 ? (
           activities.map((activity: any) => {
-            const user = Array.isArray(activity.user)
-              ? activity.user[0]
-              : activity.user;
+            const user = Array.isArray(activity.user) ? activity.user[0] : activity.user;
             const project = Array.isArray(activity.project)
               ? activity.project[0]
               : activity.project;
@@ -81,13 +76,11 @@ export function ActivitySidebar({ limit = 5 }: ActivitySidebarProps) {
                       {user?.first_name} {user?.last_name}
                     </span>
                     <span className="text-muted-foreground ml-1">
-                      {activity.type.replace(/_/g, " ")}
+                      {activity.type.replace(/_/g, ' ')}
                     </span>
                   </div>
                   {project && (
-                    <div className="text-xs text-muted-foreground truncate">
-                      {project.name}
-                    </div>
+                    <div className="text-xs text-muted-foreground truncate">{project.name}</div>
                   )}
                   <div className="text-xs text-muted-foreground">
                     {formatDistanceToNow(new Date(activity.created_at), {

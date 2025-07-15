@@ -1,10 +1,10 @@
-"use client";
+'use client';
 
-import { useState, useEffect, Suspense } from "react";
-import { useRouter } from "next/navigation";
-import { createBrowserClient } from "@supabase/ssr";
-import { updateUserStatus } from "@/lib/db/service";
-import { useAccountSetupStore } from "@/lib/stores/account-setup";
+import {useState, useEffect, Suspense} from 'react';
+import {useRouter} from 'next/navigation';
+import {createBrowserClient} from '@supabase/ssr';
+import {updateUserStatus} from '@/lib/db/service';
+import {useAccountSetupStore} from '@/lib/stores/account-setup';
 
 interface UserInfo {
   email: string;
@@ -16,16 +16,16 @@ interface UserInfo {
 
 function AcceptInvitationContent() {
   const router = useRouter();
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState('');
   const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
   const [hasRefreshed, setHasRefreshed] = useState(false);
 
-  const { setAccountSetupFlow, clearAccountSetupFlow } = useAccountSetupStore();
+  const {setAccountSetupFlow, clearAccountSetupFlow} = useAccountSetupStore();
 
   const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -37,26 +37,25 @@ function AcceptInvitationContent() {
     let autoRefreshTimeout: NodeJS.Timeout;
 
     // Check if we've already refreshed (from sessionStorage)
-    const alreadyRefreshed =
-      sessionStorage.getItem("invitation-refreshed") === "true";
+    const alreadyRefreshed = sessionStorage.getItem('invitation-refreshed') === 'true';
     if (alreadyRefreshed) {
       setHasRefreshed(true);
     }
 
     // Listen for auth state changes
     const {
-      data: { subscription },
+      data: {subscription},
     } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log(
-        "AcceptInvitation - Auth state change:",
+        'AcceptInvitation - Auth state change:',
         event,
-        session?.user?.id || "No session",
+        session?.user?.id || 'No session',
       );
 
       if (!mounted) return;
 
-      if (event === "SIGNED_IN" && session?.user) {
-        console.log("AcceptInvitation - User signed in, setting up form...");
+      if (event === 'SIGNED_IN' && session?.user) {
+        console.log('AcceptInvitation - User signed in, setting up form...');
 
         // Clear any pending auto-refresh
         if (autoRefreshTimeout) {
@@ -65,13 +64,13 @@ function AcceptInvitationContent() {
 
         // Get user metadata from the session
         const metadata = session.user.user_metadata as UserInfo;
-        console.log("AcceptInvitation - User metadata:", metadata);
+        console.log('AcceptInvitation - User metadata:', metadata);
 
         setUserInfo({
-          email: session.user.email || "",
-          firstName: metadata?.firstName || "",
-          lastName: metadata?.lastName || "",
-          role: metadata?.role || "user",
+          email: session.user.email || '',
+          firstName: metadata?.firstName || '',
+          lastName: metadata?.lastName || '',
+          role: metadata?.role || 'user',
           companyId: metadata?.companyId,
         });
 
@@ -79,16 +78,16 @@ function AcceptInvitationContent() {
         if (metadata?.firstName) setFirstName(metadata.firstName);
         if (metadata?.lastName) setLastName(metadata.lastName);
 
-        console.log("AcceptInvitation - User info set successfully");
+        console.log('AcceptInvitation - User info set successfully');
 
         // Clear refresh flag since we found the session
-        sessionStorage.removeItem("invitation-refreshed");
+        sessionStorage.removeItem('invitation-refreshed');
 
         // Set account setup flow
-        setAccountSetupFlow(session.user.email || "");
-      } else if (event === "SIGNED_OUT") {
-        console.log("AcceptInvitation - User signed out, redirecting to login");
-        if (mounted) router.push("/login?error=signed_out");
+        setAccountSetupFlow(session.user.email || '');
+      } else if (event === 'SIGNED_OUT') {
+        console.log('AcceptInvitation - User signed out, redirecting to login');
+        if (mounted) router.push('/login?error=signed_out');
       }
     });
 
@@ -97,19 +96,19 @@ function AcceptInvitationContent() {
       if (!mounted) return;
 
       try {
-        console.log("AcceptInvitation - Checking current session...");
+        console.log('AcceptInvitation - Checking current session...');
         const {
-          data: { user: session },
+          data: {user: session},
           error,
         } = await supabase.auth.getUser();
 
         if (error) {
-          console.error("AcceptInvitation - Session error:", error);
+          console.error('AcceptInvitation - Session error:', error);
           return;
         }
 
         if (session) {
-          console.log("AcceptInvitation - Found existing session:", session.id);
+          console.log('AcceptInvitation - Found existing session:', session.id);
 
           // Clear any pending auto-refresh
           if (autoRefreshTimeout) {
@@ -118,13 +117,13 @@ function AcceptInvitationContent() {
 
           // Get user metadata from the session
           const metadata = session.user_metadata;
-          console.log("AcceptInvitation - User metadata:", metadata);
+          console.log('AcceptInvitation - User metadata:', metadata);
 
           setUserInfo({
-            email: session.email || "",
-            firstName: metadata?.first_name || "",
-            lastName: metadata?.last_name || "",
-            role: metadata?.role || "user",
+            email: session.email || '',
+            firstName: metadata?.first_name || '',
+            lastName: metadata?.last_name || '',
+            role: metadata?.role || 'user',
             companyId: metadata?.companyId,
           });
 
@@ -132,57 +131,49 @@ function AcceptInvitationContent() {
           if (metadata?.first_name) setFirstName(metadata.first_name);
           if (metadata?.last_name) setLastName(metadata.last_name);
 
-          console.log("AcceptInvitation - User info set from existing session");
+          console.log('AcceptInvitation - User info set from existing session');
 
           // Clear refresh flag since we found the session
-          sessionStorage.removeItem("invitation-refreshed");
+          sessionStorage.removeItem('invitation-refreshed');
 
           // Set account setup flow
-          setAccountSetupFlow(session.email || "");
+          setAccountSetupFlow(session.email || '');
         } else {
-          console.log("AcceptInvitation - No current session found");
+          console.log('AcceptInvitation - No current session found');
 
           // Check if we already have form data populated (means session was found before)
           const hasFormData = firstName && lastName;
 
           if (!hasRefreshed && !alreadyRefreshed && !hasFormData) {
-            console.log("AcceptInvitation - Setting up auto-refresh...");
+            console.log('AcceptInvitation - Setting up auto-refresh...');
 
             // Mark that we're about to refresh
-            sessionStorage.setItem("invitation-refreshed", "true");
+            sessionStorage.setItem('invitation-refreshed', 'true');
 
             // If no session found, auto-refresh the page after 1 second
             autoRefreshTimeout = setTimeout(() => {
               if (mounted) {
-                console.log(
-                  "AcceptInvitation - Auto-refreshing page to sync session...",
-                );
+                console.log('AcceptInvitation - Auto-refreshing page to sync session...');
                 window.location.reload();
               } else {
-                console.log(
-                  "AcceptInvitation - Component unmounted, skipping refresh",
-                );
+                console.log('AcceptInvitation - Component unmounted, skipping refresh');
               }
             }, 1000);
 
-            console.log(
-              "AcceptInvitation - Auto-refresh timer set for 1 second",
-            );
+            console.log('AcceptInvitation - Auto-refresh timer set for 1 second');
           } else if (hasFormData) {
-            console.log(
-              "AcceptInvitation - Form data already populated, not refreshing",
-            );
+            console.log('AcceptInvitation - Form data already populated, not refreshing');
           } else {
             console.log(
-              "AcceptInvitation - Already refreshed once, not refreshing again. Redirecting to login.",
+              'AcceptInvitation - Already refreshed once, not refreshing again. Redirecting to login.',
             );
             // Clear the refresh flag for next time
-            sessionStorage.removeItem("invitation-refreshed");
-            router.push("/login?error=session_not_available");
+            sessionStorage.removeItem('invitation-refreshed');
+            router.push('/login?error=session_not_available');
           }
         }
       } catch (error) {
-        console.error("AcceptInvitation - Session check error:", error);
+        console.error('AcceptInvitation - Session check error:', error);
       }
     };
 
@@ -197,30 +188,23 @@ function AcceptInvitationContent() {
       }
       subscription.unsubscribe();
     };
-  }, [
-    router,
-    supabase,
-    firstName,
-    hasRefreshed,
-    lastName,
-    setAccountSetupFlow,
-  ]);
+  }, [router, supabase, firstName, hasRefreshed, lastName, setAccountSetupFlow]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (password !== confirmPassword) {
-      setError("Passwords do not match");
+      setError('Passwords do not match');
       return;
     }
 
     if (password.length < 6) {
-      setError("Password must be at least 6 characters long");
+      setError('Password must be at least 6 characters long');
       return;
     }
 
     setLoading(true);
-    setError("");
+    setError('');
 
     try {
       // Create a timeout that assumes success after 5 seconds (Supabase updateUser often hangs but succeeds)
@@ -233,8 +217,8 @@ function AcceptInvitationContent() {
         },
       });
 
-      const timeoutPromise = new Promise<{ error: null }>((resolve) =>
-        setTimeout(() => resolve({ error: null }), 5000),
+      const timeoutPromise = new Promise<{error: null}>((resolve) =>
+        setTimeout(() => resolve({error: null}), 5000),
       );
 
       const result = await Promise.race([updatePromise, timeoutPromise]);
@@ -245,26 +229,26 @@ function AcceptInvitationContent() {
 
       // Get the current session to get user ID
       const {
-        data: { user: session },
+        data: {user: session},
       } = await supabase.auth.getUser();
 
       if (session) {
         // Activate the user account and update their details
-        await updateUserStatus(session.id, "active");
+        await updateUserStatus(session.id, 'active');
 
         // Update user details in our database
-        const { error: updateError } = await supabase
-          .from("users")
+        const {error: updateError} = await supabase
+          .from('users')
           .update({
             first_name: firstName,
             last_name: lastName,
-            status: "active",
+            status: 'active',
             updated_at: new Date().toISOString(),
           })
-          .eq("id", session.id);
+          .eq('id', session.id);
 
         if (updateError) {
-          console.error("Failed to update user details:", updateError);
+          console.error('Failed to update user details:', updateError);
         }
       }
 
@@ -281,9 +265,9 @@ function AcceptInvitationContent() {
       await new Promise((resolve) => setTimeout(resolve, 500));
 
       // Redirect to dashboard with welcome message
-      router.push("/dashboard?welcome=true&setup=complete");
+      router.push('/dashboard?welcome=true&setup=complete');
     } catch (error: unknown) {
-      console.error("Setup error:", error);
+      console.error('Setup error:', error);
       // Even if there's an error, the account setup might have succeeded
       clearAccountSetupFlow();
 
@@ -293,10 +277,10 @@ function AcceptInvitationContent() {
         router.refresh();
         await new Promise((resolve) => setTimeout(resolve, 500));
       } catch (refreshError) {
-        console.error("Failed to refresh session in error case:", refreshError);
+        console.error('Failed to refresh session in error case:', refreshError);
       }
 
-      router.push("/dashboard?welcome=true&setup=complete");
+      router.push('/dashboard?welcome=true&setup=complete');
     } finally {
       setLoading(false);
     }
@@ -309,8 +293,7 @@ function AcceptInvitationContent() {
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
           <p className="mt-4 text-gray-600">Setting up your invitation...</p>
           <p className="mt-2 text-sm text-gray-500">
-            If this takes more than a few seconds, we&apos;ll automatically
-            refresh
+            If this takes more than a few seconds, we&apos;ll automatically refresh
           </p>
         </div>
       </div>
@@ -328,7 +311,7 @@ function AcceptInvitationContent() {
             Welcome to the team! Please set up your password to get started.
           </p>
           <p className="mt-1 text-center text-sm text-gray-500">
-            Email: {userInfo?.email || "Loading..."}
+            Email: {userInfo?.email || 'Loading...'}
           </p>
         </div>
 
@@ -341,10 +324,7 @@ function AcceptInvitationContent() {
 
           <div className="space-y-4">
             <div>
-              <label
-                htmlFor="firstName"
-                className="block text-sm font-medium text-gray-700"
-              >
+              <label htmlFor="firstName" className="block text-sm font-medium text-gray-700">
                 First Name
               </label>
               <input
@@ -359,10 +339,7 @@ function AcceptInvitationContent() {
             </div>
 
             <div>
-              <label
-                htmlFor="lastName"
-                className="block text-sm font-medium text-gray-700"
-              >
+              <label htmlFor="lastName" className="block text-sm font-medium text-gray-700">
                 Last Name
               </label>
               <input
@@ -377,10 +354,7 @@ function AcceptInvitationContent() {
             </div>
 
             <div>
-              <label
-                htmlFor="password"
-                className="block text-sm font-medium text-gray-700"
-              >
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
                 Password
               </label>
               <input
@@ -396,10 +370,7 @@ function AcceptInvitationContent() {
             </div>
 
             <div>
-              <label
-                htmlFor="confirmPassword"
-                className="block text-sm font-medium text-gray-700"
-              >
+              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
                 Confirm Password
               </label>
               <input
@@ -419,15 +390,14 @@ function AcceptInvitationContent() {
             <button
               type="submit"
               disabled={loading}
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
+              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed">
               {loading ? (
                 <div className="flex items-center">
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
                   Setting up account...
                 </div>
               ) : (
-                "Complete Setup"
+                'Complete Setup'
               )}
             </button>
           </div>
@@ -447,8 +417,7 @@ export default function AcceptInvitationPage() {
             <p className="mt-4 text-gray-600">Loading invitation...</p>
           </div>
         </div>
-      }
-    >
+      }>
       <AcceptInvitationContent />
     </Suspense>
   );

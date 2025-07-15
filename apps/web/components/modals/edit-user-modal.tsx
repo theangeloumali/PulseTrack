@@ -1,16 +1,16 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import { Modal } from "@/components/ui/modal";
-import { Button } from "@workspace/ui/components/button";
-import { Input } from "@workspace/ui/components/input";
-import { Label } from "@workspace/ui/components/label";
+import {useState, useEffect} from 'react';
+import {Modal} from '@/components/ui/modal';
+import {Button} from '@workspace/ui/components/button';
+import {Input} from '@workspace/ui/components/input';
+import {Label} from '@workspace/ui/components/label';
 import {
   useUpdateUserRole,
   useUpdateUserStatus,
   useUpdateUserHourlyRate,
-} from "@/lib/hooks/useUsers";
-import { CompanyUser } from "@/lib/stores/company";
+} from '@/lib/hooks/useUsers';
+import {CompanyUser} from '@/lib/stores/company';
 
 interface EditUserModalProps {
   isOpen: boolean;
@@ -18,16 +18,11 @@ interface EditUserModalProps {
   user: CompanyUser | null;
 }
 
-export function EditUserModal({ isOpen, onClose, user }: EditUserModalProps) {
+export function EditUserModal({isOpen, onClose, user}: EditUserModalProps) {
   const [formData, setFormData] = useState({
-    role: "user" as
-      | "super_admin"
-      | "system_admin"
-      | "company_admin"
-      | "manager"
-      | "user",
-    status: "active" as "active" | "inactive",
-    hourlyRate: "",
+    role: 'user' as 'super_admin' | 'system_admin' | 'company_admin' | 'manager' | 'user',
+    status: 'active' as 'active' | 'inactive',
+    hourlyRate: '',
   });
 
   const updateRoleMutation = useUpdateUserRole();
@@ -39,8 +34,8 @@ export function EditUserModal({ isOpen, onClose, user }: EditUserModalProps) {
     if (user) {
       setFormData({
         role: user.role,
-        status: user.status || "active",
-        hourlyRate: user.hourly_rate?.toString() || "",
+        status: user.status || 'active',
+        hourlyRate: user.hourly_rate?.toString() || '',
       });
     }
   }, [user]);
@@ -74,9 +69,7 @@ export function EditUserModal({ isOpen, onClose, user }: EditUserModalProps) {
       }
 
       // Update hourly rate if changed
-      const newHourlyRate = formData.hourlyRate
-        ? parseFloat(formData.hourlyRate)
-        : null;
+      const newHourlyRate = formData.hourlyRate ? parseFloat(formData.hourlyRate) : null;
       if (newHourlyRate !== user.hourly_rate) {
         updates.push(
           updateHourlyRateMutation.mutateAsync({
@@ -89,12 +82,12 @@ export function EditUserModal({ isOpen, onClose, user }: EditUserModalProps) {
       // Wait for all updates to complete
       if (updates.length > 0) {
         await Promise.all(updates);
-        alert("User updated successfully");
+        alert('User updated successfully');
       }
 
       onClose();
     } catch (error) {
-      alert(error instanceof Error ? error.message : "Failed to update user");
+      alert(error instanceof Error ? error.message : 'Failed to update user');
     }
   };
 
@@ -110,21 +103,12 @@ export function EditUserModal({ isOpen, onClose, user }: EditUserModalProps) {
       isOpen={isOpen}
       onClose={onClose}
       title="Edit User"
-      description={`Update settings for ${user.first_name || ""} ${user.last_name || ""} (${user.email})`}
-    >
+      description={`Update settings for ${user.first_name || ''} ${user.last_name || ''} (${user.email})`}>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="space-y-2">
           <Label htmlFor="email">Email</Label>
-          <Input
-            id="email"
-            type="email"
-            value={user.email}
-            disabled
-            className="bg-muted/50"
-          />
-          <p className="text-xs text-muted-foreground">
-            Email cannot be changed
-          </p>
+          <Input id="email" type="email" value={user.email} disabled className="bg-muted/50" />
+          <p className="text-xs text-muted-foreground">Email cannot be changed</p>
         </div>
 
         <div className="space-y-2">
@@ -136,15 +120,14 @@ export function EditUserModal({ isOpen, onClose, user }: EditUserModalProps) {
               setFormData((prev) => ({
                 ...prev,
                 role: e.target.value as
-                  | "super_admin"
-                  | "system_admin"
-                  | "company_admin"
-                  | "manager"
-                  | "user",
+                  | 'super_admin'
+                  | 'system_admin'
+                  | 'company_admin'
+                  | 'manager'
+                  | 'user',
               }))
             }
-            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-          >
+            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50">
             <option value="user">User</option>
             <option value="manager">Manager</option>
             <option value="company_admin">Company Admin</option>
@@ -161,11 +144,10 @@ export function EditUserModal({ isOpen, onClose, user }: EditUserModalProps) {
             onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
               setFormData((prev) => ({
                 ...prev,
-                status: e.target.value as "active" | "inactive",
+                status: e.target.value as 'active' | 'inactive',
               }))
             }
-            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-          >
+            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50">
             <option value="active">Active</option>
             <option value="inactive">Inactive</option>
           </select>
@@ -181,7 +163,7 @@ export function EditUserModal({ isOpen, onClose, user }: EditUserModalProps) {
             placeholder="0.00"
             value={formData.hourlyRate}
             onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-              setFormData((prev) => ({ ...prev, hourlyRate: e.target.value }))
+              setFormData((prev) => ({...prev, hourlyRate: e.target.value}))
             }
           />
         </div>
@@ -191,7 +173,7 @@ export function EditUserModal({ isOpen, onClose, user }: EditUserModalProps) {
             Cancel
           </Button>
           <Button type="submit" disabled={isLoading}>
-            {isLoading ? "Updating..." : "Update User"}
+            {isLoading ? 'Updating...' : 'Update User'}
           </Button>
         </div>
       </form>

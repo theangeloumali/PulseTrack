@@ -1,36 +1,36 @@
-"use client";
+'use client';
 
-import { useState } from "react";
+import {useState} from 'react';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@workspace/ui/components/card";
-import { Button } from "@workspace/ui/components/button";
-import { Badge } from "@workspace/ui/components/badge";
-import { Label } from "@workspace/ui/components/label";
-import { DateRangePicker } from "@/components/ui/date-range-picker";
-import { PaymentStatusBadge } from "@/components/payments/payment-status-badge";
-import { InvoiceGenerator } from "./invoice-generator";
-import { UserSelector } from "./user-selector";
-import { DeleteConfirmationModal } from "./delete-confirmation-modal";
-import { PDFExporter } from "./pdf-exporter";
-import { ComprehensiveBillingModal } from "./comprehensive-billing-modal";
+} from '@workspace/ui/components/card';
+import {Button} from '@workspace/ui/components/button';
+import {Badge} from '@workspace/ui/components/badge';
+import {Label} from '@workspace/ui/components/label';
+import {DateRangePicker} from '@/components/ui/date-range-picker';
+import {PaymentStatusBadge} from '@/components/payments/payment-status-badge';
+import {InvoiceGenerator} from './invoice-generator';
+import {UserSelector} from './user-selector';
+import {DeleteConfirmationModal} from './delete-confirmation-modal';
+import {PDFExporter} from './pdf-exporter';
+import {ComprehensiveBillingModal} from './comprehensive-billing-modal';
 import {
   useBillingPeriods,
   useGenerateBillingPeriod,
   useGenerateBillingPeriodForUser,
   useGenerateNextBillingPeriod,
   useDeleteBillingPeriod,
-} from "@/lib/hooks/usePayments";
-import { useAuthStore } from "@/lib/stores/auth";
-import { useBillingSettings, useBillingReport } from "@/lib/hooks/useBilling";
-import { extractTargetUserIdFromBillingPeriod } from "@/lib/db/billing-service";
-import type { BillingPeriod, BillingFrequency } from "@/lib/db/schema";
-import { getApiPath } from "@/lib/utils";
-import { format, startOfMonth, endOfMonth } from "date-fns";
+} from '@/lib/hooks/usePayments';
+import {useAuthStore} from '@/lib/stores/auth';
+import {useBillingSettings, useBillingReport} from '@/lib/hooks/useBilling';
+import {extractTargetUserIdFromBillingPeriod} from '@/lib/db/billing-service';
+import type {BillingPeriod, BillingFrequency} from '@/lib/db/schema';
+import {getApiPath} from '@/lib/utils';
+import {format, startOfMonth, endOfMonth} from 'date-fns';
 import {
   Plus,
   Calendar,
@@ -45,56 +45,36 @@ import {
   Download,
   RefreshCw,
   X,
-} from "lucide-react";
+} from 'lucide-react';
 
 interface BillingPeriodsListProps {
   companyId: string;
   isAdmin: boolean;
 }
 
-export function BillingPeriodsList({
-  companyId,
-  isAdmin,
-}: BillingPeriodsListProps) {
-  const { user } = useAuthStore();
-  const [selectedPeriod, setSelectedPeriod] = useState<BillingPeriod | null>(
-    null,
-  );
+export function BillingPeriodsList({companyId, isAdmin}: BillingPeriodsListProps) {
+  const {user} = useAuthStore();
+  const [selectedPeriod, setSelectedPeriod] = useState<BillingPeriod | null>(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [showNewPeriodModal, setShowNewPeriodModal] = useState(false);
-  const [invoicePeriod, setInvoicePeriod] = useState<BillingPeriod | null>(
-    null,
-  );
+  const [invoicePeriod, setInvoicePeriod] = useState<BillingPeriod | null>(null);
   const [showInvoiceGenerator, setShowInvoiceGenerator] = useState(false);
   const [showUserSelector, setShowUserSelector] = useState(false);
-  const [deleteCandidate, setDeleteCandidate] = useState<BillingPeriod | null>(
-    null,
-  );
+  const [deleteCandidate, setDeleteCandidate] = useState<BillingPeriod | null>(null);
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
-  const [pdfExportPeriod, setPdfExportPeriod] = useState<BillingPeriod | null>(
-    null,
-  );
+  const [pdfExportPeriod, setPdfExportPeriod] = useState<BillingPeriod | null>(null);
   const [showPdfExporter, setShowPdfExporter] = useState(false);
-  const [recalculatingPeriods, setRecalculatingPeriods] = useState<Set<string>>(
-    new Set(),
-  );
+  const [recalculatingPeriods, setRecalculatingPeriods] = useState<Set<string>>(new Set());
 
   // New period generation state
   const [useCustomDateRange, setUseCustomDateRange] = useState<boolean>(false);
   const [startDate, setStartDate] = useState<string>(
-    format(startOfMonth(new Date()), "yyyy-MM-dd"),
+    format(startOfMonth(new Date()), 'yyyy-MM-dd'),
   );
-  const [endDate, setEndDate] = useState<string>(
-    format(endOfMonth(new Date()), "yyyy-MM-dd"),
-  );
+  const [endDate, setEndDate] = useState<string>(format(endOfMonth(new Date()), 'yyyy-MM-dd'));
 
-  const {
-    data: billingPeriods,
-    isLoading,
-    isError,
-    refetch,
-  } = useBillingPeriods(companyId);
-  const { data: companySettings } = useBillingSettings(companyId);
+  const {data: billingPeriods, isLoading, isError, refetch} = useBillingPeriods(companyId);
+  const {data: companySettings} = useBillingSettings(companyId);
   const generatePeriodMutation = useGenerateBillingPeriod(companyId);
   const generateUserPeriodMutation = useGenerateBillingPeriodForUser(companyId);
   const generateNextMutation = useGenerateNextBillingPeriod(companyId);
@@ -106,30 +86,29 @@ export function BillingPeriodsList({
     ? extractTargetUserIdFromBillingPeriod(selectedPeriod)
     : null;
 
-  const { data: periodReport } = useBillingReport(
+  const {data: periodReport} = useBillingReport(
     companyId,
-    selectedPeriod?.start_date || "",
-    selectedPeriod?.end_date || "",
+    selectedPeriod?.start_date || '',
+    selectedPeriod?.end_date || '',
     selectedPeriodTargetUserId || undefined,
   );
 
   const handleGenerateNewPeriod = async () => {
     if (!companySettings?.billing_frequency && !useCustomDateRange) {
       alert(
-        "Please set a billing frequency in the company settings first or use custom date range.",
+        'Please set a billing frequency in the company settings first or use custom date range.',
       );
       return;
     }
 
     if (useCustomDateRange && (!startDate || !endDate)) {
-      alert("Please select both start and end dates for custom range.");
+      alert('Please select both start and end dates for custom range.');
       return;
     }
 
     try {
       const basePayload = {
-        frequency:
-          (companySettings?.billing_frequency as BillingFrequency) || "monthly",
+        frequency: (companySettings?.billing_frequency as BillingFrequency) || 'monthly',
         ...(useCustomDateRange && {
           custom_start_date: startDate,
           custom_end_date: endDate,
@@ -140,14 +119,14 @@ export function BillingPeriodsList({
       if (!isAdmin) {
         // For non-admin users, use the user-specific mutation
         if (!user?.id) {
-          throw new Error("User ID not found");
+          throw new Error('User ID not found');
         }
         await generateUserPeriodMutation.mutateAsync({
           ...basePayload,
           target_user_id: user.id, // Generate for the current user
         });
         alert(
-          "Personal billing period created successfully! It will be sent to your company admin for review.",
+          'Personal billing period created successfully! It will be sent to your company admin for review.',
         );
       } else {
         // For admins, use the company-wide mutation
@@ -157,8 +136,8 @@ export function BillingPeriodsList({
       setShowNewPeriodModal(false);
       refetch();
     } catch (error) {
-      console.error("Error generating billing period:", error);
-      alert("Failed to generate billing period. Please try again.");
+      console.error('Error generating billing period:', error);
+      alert('Failed to generate billing period. Please try again.');
     }
   };
 
@@ -169,8 +148,8 @@ export function BillingPeriodsList({
       });
       refetch();
     } catch (error) {
-      console.error("Error generating next billing period:", error);
-      alert("Failed to generate next billing period. Please try again.");
+      console.error('Error generating next billing period:', error);
+      alert('Failed to generate next billing period. Please try again.');
     }
   };
 
@@ -195,17 +174,13 @@ export function BillingPeriodsList({
 
     try {
       await deletePeriodMutation.mutateAsync(deleteCandidate.id);
-      alert("Billing period deleted successfully!");
+      alert('Billing period deleted successfully!');
       setShowDeleteConfirmation(false);
       setDeleteCandidate(null);
       refetch();
     } catch (error) {
-      console.error("Error deleting billing period:", error);
-      alert(
-        error instanceof Error
-          ? error.message
-          : "Failed to delete billing period",
-      );
+      console.error('Error deleting billing period:', error);
+      alert(error instanceof Error ? error.message : 'Failed to delete billing period');
     }
   };
 
@@ -228,31 +203,27 @@ export function BillingPeriodsList({
     setRecalculatingPeriods((prev) => new Set(prev).add(period.id));
 
     try {
-      const response = await fetch(getApiPath("billing/periods"), {
-        method: "POST",
+      const response = await fetch(getApiPath('billing/periods'), {
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          action: "recalculate_amount",
+          action: 'recalculate_amount',
           billing_period_id: period.id,
         }),
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to recalculate amount");
+        throw new Error(errorData.error || 'Failed to recalculate amount');
       }
 
       await refetch(); // Refresh the billing periods list
-      alert("Payment amount recalculated successfully!");
+      alert('Payment amount recalculated successfully!');
     } catch (error) {
-      console.error("Error recalculating payment amount:", error);
-      alert(
-        error instanceof Error
-          ? error.message
-          : "Failed to recalculate payment amount",
-      );
+      console.error('Error recalculating payment amount:', error);
+      alert(error instanceof Error ? error.message : 'Failed to recalculate payment amount');
     } finally {
       setRecalculatingPeriods((prev) => {
         const newSet = new Set(prev);
@@ -263,9 +234,9 @@ export function BillingPeriodsList({
   };
 
   const formatCurrency = (amount: number | null) => {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: companySettings?.currency || "USD",
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: companySettings?.currency || 'USD',
     }).format(amount || 0);
   };
 
@@ -273,22 +244,22 @@ export function BillingPeriodsList({
     const now = new Date();
     const endDate = new Date(period.end_date);
 
-    if (period.payment_status === "paid") return "completed";
-    if (period.payment_status === "cancelled") return "cancelled";
-    if (endDate < now) return "active"; // Period ended, ready for invoicing
-    return "draft"; // Period is still ongoing
+    if (period.payment_status === 'paid') return 'completed';
+    if (period.payment_status === 'cancelled') return 'cancelled';
+    if (endDate < now) return 'active'; // Period ended, ready for invoicing
+    return 'draft'; // Period is still ongoing
   };
 
   const getStatusBadgeVariant = (status: string) => {
     switch (status) {
-      case "completed":
-        return "default";
-      case "active":
-        return "secondary";
-      case "cancelled":
-        return "destructive";
+      case 'completed':
+        return 'default';
+      case 'active':
+        return 'secondary';
+      case 'cancelled':
+        return 'destructive';
       default:
-        return "outline";
+        return 'outline';
     }
   };
 
@@ -309,9 +280,7 @@ export function BillingPeriodsList({
         <Card className="border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950">
           <CardContent className="flex items-center gap-2 pt-6">
             <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400" />
-            <span className="text-red-700 dark:text-red-300">
-              Failed to load billing periods
-            </span>
+            <span className="text-red-700 dark:text-red-300">Failed to load billing periods</span>
           </CardContent>
         </Card>
       </div>
@@ -324,12 +293,12 @@ export function BillingPeriodsList({
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-xl font-semibold">
-            {isAdmin ? "Billing Periods" : "My Billing Periods"}
+            {isAdmin ? 'Billing Periods' : 'My Billing Periods'}
           </h2>
           <p className="text-muted-foreground">
             {isAdmin
-              ? "Manage billing periods and generate invoices for your company"
-              : "View and generate your personal billing periods for approval"}
+              ? 'Manage billing periods and generate invoices for your company'
+              : 'View and generate your personal billing periods for approval'}
           </p>
         </div>
         <div className="flex gap-2">
@@ -337,25 +306,20 @@ export function BillingPeriodsList({
             <>
               <Button
                 onClick={() => setShowNewPeriodModal(true)}
-                className="flex items-center gap-2"
-              >
+                className="flex items-center gap-2">
                 <Plus className="h-4 w-4" />
                 Generate New Period
               </Button>
               <Button
                 variant="outline"
                 onClick={() => setShowUserSelector(true)}
-                className="flex items-center gap-2"
-              >
+                className="flex items-center gap-2">
                 <Plus className="h-4 w-4" />
                 Generate for User
               </Button>
             </>
           ) : (
-            <Button
-              onClick={() => setShowNewPeriodModal(true)}
-              className="flex items-center gap-2"
-            >
+            <Button onClick={() => setShowNewPeriodModal(true)} className="flex items-center gap-2">
               <Plus className="h-4 w-4" />
               Generate Personal Period
             </Button>
@@ -372,16 +336,13 @@ export function BillingPeriodsList({
                 <Calendar className="h-4 w-4" />
                 <span className="font-medium">Billing Frequency:</span>
                 <Badge variant="outline">
-                  {companySettings.billing_frequency?.replace("_", "-") ||
-                    "Not Set"}
+                  {companySettings.billing_frequency?.replace('_', '-') || 'Not Set'}
                 </Badge>
               </div>
               <div className="flex items-center gap-1">
                 <DollarSign className="h-4 w-4" />
                 <span className="font-medium">Currency:</span>
-                <Badge variant="outline">
-                  {companySettings.currency || "USD"}
-                </Badge>
+                <Badge variant="outline">{companySettings.currency || 'USD'}</Badge>
               </div>
             </div>
           </CardContent>
@@ -397,7 +358,7 @@ export function BillingPeriodsList({
           </CardTitle>
           <CardDescription>
             {billingPeriods?.length || 0} period
-            {billingPeriods?.length !== 1 ? "s" : ""} found
+            {billingPeriods?.length !== 1 ? 's' : ''} found
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -408,8 +369,7 @@ export function BillingPeriodsList({
                 return (
                   <div
                     key={period.id}
-                    className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors"
-                  >
+                    className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors">
                     <div className="flex-1 space-y-2">
                       <div className="flex items-center gap-3">
                         <h3 className="font-medium">{period.name}</h3>
@@ -417,15 +377,15 @@ export function BillingPeriodsList({
                           {status.charAt(0).toUpperCase() + status.slice(1)}
                         </Badge>
                         <Badge variant="outline" className="text-xs">
-                          {period.frequency.replace("_", "-")}
+                          {period.frequency.replace('_', '-')}
                         </Badge>
                       </div>
 
                       <div className="flex items-center gap-4 text-sm text-muted-foreground">
                         <div className="flex items-center gap-1">
                           <Calendar className="h-3 w-3" />
-                          {format(new Date(period.start_date), "MMM dd")} -{" "}
-                          {format(new Date(period.end_date), "MMM dd, yyyy")}
+                          {format(new Date(period.start_date), 'MMM dd')} -{' '}
+                          {format(new Date(period.end_date), 'MMM dd, yyyy')}
                         </div>
                         {period.payment_amount && (
                           <div className="flex items-center gap-1">
@@ -436,17 +396,10 @@ export function BillingPeriodsList({
                       </div>
 
                       <div className="flex items-center gap-2">
-                        <PaymentStatusBadge
-                          status={period.payment_status}
-                          size="sm"
-                        />
+                        <PaymentStatusBadge status={period.payment_status} size="sm" />
                         {period.invoice_sent_date && (
                           <span className="text-xs text-muted-foreground">
-                            Invoice sent:{" "}
-                            {format(
-                              new Date(period.invoice_sent_date),
-                              "MMM dd",
-                            )}
+                            Invoice sent: {format(new Date(period.invoice_sent_date), 'MMM dd')}
                           </span>
                         )}
                       </div>
@@ -457,31 +410,26 @@ export function BillingPeriodsList({
                         size="sm"
                         variant="outline"
                         onClick={() => setSelectedPeriod(period)}
-                        className="flex items-center gap-1"
-                      >
+                        className="flex items-center gap-1">
                         <Eye className="h-3 w-3" />
                         View
                       </Button>
 
-                      {isAdmin &&
-                        status === "active" &&
-                        period.payment_status === "pending" && (
-                          <Button
-                            size="sm"
-                            onClick={() => handleGenerateInvoice(period)}
-                            className="flex items-center gap-1"
-                          >
-                            <Receipt className="h-3 w-3" />
-                            Generate Invoice
-                          </Button>
-                        )}
+                      {isAdmin && status === 'active' && period.payment_status === 'pending' && (
+                        <Button
+                          size="sm"
+                          onClick={() => handleGenerateInvoice(period)}
+                          className="flex items-center gap-1">
+                          <Receipt className="h-3 w-3" />
+                          Generate Invoice
+                        </Button>
+                      )}
 
                       <Button
                         size="sm"
                         variant="outline"
                         onClick={() => handlePdfExport(period)}
-                        className="flex items-center gap-1"
-                      >
+                        className="flex items-center gap-1">
                         <Download className="h-3 w-3" />
                         Export PDF
                       </Button>
@@ -493,8 +441,7 @@ export function BillingPeriodsList({
                           onClick={() => handleRecalculateAmount(period)}
                           disabled={recalculatingPeriods.has(period.id)}
                           className="flex items-center gap-1"
-                          title="Recalculate payment amount from time entries"
-                        >
+                          title="Recalculate payment amount from time entries">
                           {recalculatingPeriods.has(period.id) ? (
                             <Loader2 className="h-3 w-3 animate-spin" />
                           ) : (
@@ -509,8 +456,7 @@ export function BillingPeriodsList({
                           size="sm"
                           variant="outline"
                           onClick={() => handleDeleteClick(period)}
-                          className="flex items-center gap-1 text-destructive hover:text-destructive"
-                        >
+                          className="flex items-center gap-1 text-destructive hover:text-destructive">
                           <Trash2 className="h-3 w-3" />
                           Delete
                         </Button>
@@ -523,22 +469,15 @@ export function BillingPeriodsList({
           ) : (
             <div className="text-center py-12 text-muted-foreground">
               <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <h3 className="text-lg font-medium mb-2">
-                No billing periods found
-              </h3>
-              <p className="mb-4">
-                Get started by creating your first billing period
-              </p>
+              <h3 className="text-lg font-medium mb-2">No billing periods found</h3>
+              <p className="mb-4">Get started by creating your first billing period</p>
               {isAdmin && companySettings?.billing_frequency && (
                 <Button
                   onClick={handleGenerateNewPeriod}
                   disabled={
-                    generatePeriodMutation.isPending ||
-                    generateUserPeriodMutation.isPending
-                  }
-                >
-                  {generatePeriodMutation.isPending ||
-                  generateUserPeriodMutation.isPending ? (
+                    generatePeriodMutation.isPending || generateUserPeriodMutation.isPending
+                  }>
+                  {generatePeriodMutation.isPending || generateUserPeriodMutation.isPending ? (
                     <>
                       <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                       Generating...
@@ -610,30 +549,27 @@ export function BillingPeriodsList({
               <div>
                 <CardTitle className="flex items-center gap-2">
                   <Plus className="h-5 w-5" />
-                  {isAdmin
-                    ? "Generate New Billing Period"
-                    : "Generate Personal Billing Period"}
+                  {isAdmin ? 'Generate New Billing Period' : 'Generate Personal Billing Period'}
                 </CardTitle>
                 <CardDescription>
                   {isAdmin
-                    ? "Create a new billing period for your company"
-                    : "Create a personal billing period for your work to be reviewed by your company admin"}
+                    ? 'Create a new billing period for your company'
+                    : 'Create a personal billing period for your work to be reviewed by your company admin'}
                 </CardDescription>
               </div>
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => setShowNewPeriodModal(false)}
-                className="h-8 w-8 p-0"
-              >
+                className="h-8 w-8 p-0">
                 <X className="h-4 w-4" />
               </Button>
             </CardHeader>
             <CardContent className="space-y-4">
               {companySettings?.billing_frequency && (
                 <div className="text-sm text-muted-foreground p-3 bg-muted rounded-lg">
-                  <strong>Default frequency:</strong>{" "}
-                  {companySettings.billing_frequency.replace("_", "-")}
+                  <strong>Default frequency:</strong>{' '}
+                  {companySettings.billing_frequency.replace('_', '-')}
                 </div>
               )}
 
@@ -648,8 +584,7 @@ export function BillingPeriodsList({
                   />
                   <Label
                     htmlFor="custom-date-range-main"
-                    className="text-sm font-medium flex items-center gap-2 cursor-pointer"
-                  >
+                    className="text-sm font-medium flex items-center gap-2 cursor-pointer">
                     <Calendar className="h-4 w-4" />
                     Use Custom Date Range
                   </Label>
@@ -658,8 +593,7 @@ export function BillingPeriodsList({
                 {useCustomDateRange && (
                   <div className="space-y-2 bg-muted/50 p-3 rounded-lg">
                     <Label className="text-xs text-muted-foreground">
-                      Override the default frequency-based dates with custom
-                      range
+                      Override the default frequency-based dates with custom range
                     </Label>
                     <DateRangePicker
                       startDate={startDate}
@@ -679,26 +613,22 @@ export function BillingPeriodsList({
                 <Button
                   variant="outline"
                   onClick={() => setShowNewPeriodModal(false)}
-                  className="flex-1"
-                >
+                  className="flex-1">
                   Cancel
                 </Button>
                 <Button
                   onClick={handleGenerateNewPeriod}
                   disabled={
-                    generatePeriodMutation.isPending ||
-                    generateUserPeriodMutation.isPending
+                    generatePeriodMutation.isPending || generateUserPeriodMutation.isPending
                   }
-                  className="flex-1"
-                >
-                  {generatePeriodMutation.isPending ||
-                  generateUserPeriodMutation.isPending ? (
+                  className="flex-1">
+                  {generatePeriodMutation.isPending || generateUserPeriodMutation.isPending ? (
                     <>
                       <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                       Generating...
                     </>
                   ) : (
-                    "Generate Period"
+                    'Generate Period'
                   )}
                 </Button>
               </div>

@@ -1,20 +1,8 @@
-import {
-  useQuery,
-  UseQueryOptions,
-  QueryKey,
-  QueryFunction,
-} from "@tanstack/react-query";
-import {
-  ensureValidSessionForQuery,
-  handleQueryError,
-} from "@/lib/session-manager";
+import {useQuery, UseQueryOptions, QueryKey, QueryFunction} from '@tanstack/react-query';
+import {ensureValidSessionForQuery, handleQueryError} from '@/lib/session-manager';
 
-interface SessionAwareQueryOptions<
-  TQueryFnData,
-  TError,
-  TData,
-  TQueryKey extends QueryKey,
-> extends UseQueryOptions<TQueryFnData, TError, TData, TQueryKey> {
+interface SessionAwareQueryOptions<TQueryFnData, TError, TData, TQueryKey extends QueryKey>
+  extends UseQueryOptions<TQueryFnData, TError, TData, TQueryKey> {
   // Additional options can be added here if needed
 }
 
@@ -28,10 +16,7 @@ export function useSessionAwareQuery<
   TData = TQueryFnData,
   TQueryKey extends QueryKey = QueryKey,
 >(options: SessionAwareQueryOptions<TQueryFnData, TError, TData, TQueryKey>) {
-  const originalQueryFn = options.queryFn as QueryFunction<
-    TQueryFnData,
-    TQueryKey
-  >;
+  const originalQueryFn = options.queryFn as QueryFunction<TQueryFnData, TQueryKey>;
 
   return useQuery({
     ...options,
@@ -39,12 +24,12 @@ export function useSessionAwareQuery<
       // Ensure session is valid before making the request
       const sessionValid = await ensureValidSessionForQuery();
       if (!sessionValid) {
-        throw new Error("Session expired or invalid");
+        throw new Error('Session expired or invalid');
       }
 
       // Call the original query function
       if (!originalQueryFn) {
-        throw new Error("Query function is required");
+        throw new Error('Query function is required');
       }
 
       try {
@@ -63,14 +48,14 @@ export function useSessionAwareQuery<
     retry: (failureCount, error: any) => {
       // Only give up on confirmed auth errors, be more resilient for other errors
       const isConfirmedAuthError =
-        error?.message?.includes("Session expired") ||
-        error?.message?.includes("invalid JWT") ||
-        error?.message?.includes("JWT expired") ||
-        (error?.status === 401 && error?.message?.includes("JWT")) ||
-        (error?.status === 403 && error?.message?.includes("JWT"));
+        error?.message?.includes('Session expired') ||
+        error?.message?.includes('invalid JWT') ||
+        error?.message?.includes('JWT expired') ||
+        (error?.status === 401 && error?.message?.includes('JWT')) ||
+        (error?.status === 403 && error?.message?.includes('JWT'));
 
       if (isConfirmedAuthError) {
-        console.log("Confirmed auth error, not retrying:", error);
+        console.log('Confirmed auth error, not retrying:', error);
         return false;
       }
 
@@ -85,13 +70,13 @@ export function useSessionAwareQuery<
 
       // Use original retry logic or default
       if (options.retry !== undefined) {
-        if (typeof options.retry === "function") {
+        if (typeof options.retry === 'function') {
           return options.retry(failureCount, error);
         }
-        if (typeof options.retry === "boolean") {
+        if (typeof options.retry === 'boolean') {
           return options.retry;
         }
-        if (typeof options.retry === "number") {
+        if (typeof options.retry === 'number') {
           return failureCount < options.retry;
         }
       }
@@ -102,7 +87,7 @@ export function useSessionAwareQuery<
     retryDelay: (attemptIndex, error) => {
       // Use original retry delay logic or default
       if (options.retryDelay) {
-        if (typeof options.retryDelay === "function") {
+        if (typeof options.retryDelay === 'function') {
           return options.retryDelay(attemptIndex, error);
         }
         return options.retryDelay;

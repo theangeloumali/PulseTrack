@@ -1,4 +1,4 @@
-import { supabase } from "@/lib/db";
+import {supabase} from '@/lib/db';
 import type {
   NewCompany,
   NewUser,
@@ -9,9 +9,9 @@ import type {
   NewComment,
   NewActivity,
   ActivityWithUser,
-} from "@/lib/db/schema";
-import { createOrUpdateTimeEntryBilling } from "./billing-service";
-import { getApiPath } from "@/lib/utils";
+} from '@/lib/db/schema';
+import {createOrUpdateTimeEntryBilling} from './billing-service';
+import {getApiPath} from '@/lib/utils';
 import {
   userBasicFields,
   userWithCompanyFields,
@@ -25,37 +25,25 @@ import {
   timeEntryWithUserFields,
   timeEntryWithTicketFields,
   commentWithUserFields,
-} from "./queries";
+} from './queries';
 
 // Company operations
 export async function getCompanyById(id: string) {
-  const { data, error } = await supabase
-    .from("companies")
-    .select("*")
-    .eq("id", id)
-    .single();
+  const {data, error} = await supabase.from('companies').select('*').eq('id', id).single();
 
-  if (error && error.code !== "PGRST116") throw error; // PGRST116 = not found
+  if (error && error.code !== 'PGRST116') throw error; // PGRST116 = not found
   return data;
 }
 
 export async function getCompanyBySlug(slug: string) {
-  const { data, error } = await supabase
-    .from("companies")
-    .select("*")
-    .eq("slug", slug)
-    .single();
+  const {data, error} = await supabase.from('companies').select('*').eq('slug', slug).single();
 
-  if (error && error.code !== "PGRST116") throw error; // PGRST116 = not found
+  if (error && error.code !== 'PGRST116') throw error; // PGRST116 = not found
   return data;
 }
 
 export async function createCompany(data: NewCompany) {
-  const { data: result, error } = await supabase
-    .from("companies")
-    .insert(data)
-    .select()
-    .single();
+  const {data: result, error} = await supabase.from('companies').insert(data).select().single();
 
   if (error) throw error;
   return result;
@@ -63,44 +51,36 @@ export async function createCompany(data: NewCompany) {
 
 // User operations
 export async function getUserById(id: string) {
-  const { data, error } = await supabase
-    .from("users")
-    .select("*")
-    .eq("id", id)
-    .single();
+  const {data, error} = await supabase.from('users').select('*').eq('id', id).single();
 
-  if (error && error.code !== "PGRST116") throw error;
+  if (error && error.code !== 'PGRST116') throw error;
   return data;
 }
 
 export async function getUserWithCompany(id: string) {
-  const { data, error } = await supabase
-    .from("users")
+  const {data, error} = await supabase
+    .from('users')
     .select(userWithCompanyFields)
-    .eq("id", id)
+    .eq('id', id)
     .single();
 
-  if (error && error.code !== "PGRST116") throw error;
+  if (error && error.code !== 'PGRST116') throw error;
   return data;
 }
 
 export async function getUsersByCompany(companyId: string) {
-  const { data, error } = await supabase
-    .from("users")
-    .select("*")
-    .eq("company_id", companyId)
-    .order("first_name", { ascending: true });
+  const {data, error} = await supabase
+    .from('users')
+    .select('*')
+    .eq('company_id', companyId)
+    .order('first_name', {ascending: true});
 
   if (error) throw error;
   return data || [];
 }
 
 export async function createUser(data: NewUser) {
-  const { data: result, error } = await supabase
-    .from("users")
-    .insert(data)
-    .select()
-    .single();
+  const {data: result, error} = await supabase.from('users').insert(data).select().single();
 
   if (error) throw error;
   return result;
@@ -108,22 +88,18 @@ export async function createUser(data: NewUser) {
 
 // Project operations
 export async function getProjectById(id: string) {
-  const { data, error } = await supabase
-    .from("projects")
-    .select("*")
-    .eq("id", id)
-    .single();
+  const {data, error} = await supabase.from('projects').select('*').eq('id', id).single();
 
-  if (error && error.code !== "PGRST116") throw error;
+  if (error && error.code !== 'PGRST116') throw error;
   return data;
 }
 
 export async function getProjectsByCompany(companyId: string) {
-  const { data, error } = await supabase
-    .from("projects")
+  const {data, error} = await supabase
+    .from('projects')
     .select(projectWithRelationsFields)
-    .eq("company_id", companyId)
-    .order("created_at", { ascending: false });
+    .eq('company_id', companyId)
+    .order('created_at', {ascending: false});
 
   if (error) {
     throw error;
@@ -132,11 +108,7 @@ export async function getProjectsByCompany(companyId: string) {
 }
 
 export async function createProject(data: NewProject) {
-  const { data: result, error } = await supabase
-    .from("projects")
-    .insert(data)
-    .select()
-    .single();
+  const {data: result, error} = await supabase.from('projects').insert(data).select().single();
 
   if (error) {
     throw error;
@@ -144,16 +116,16 @@ export async function createProject(data: NewProject) {
 
   // Add project owner as a project member with "lead" role
   try {
-    await addProjectMember(result.id, data.owner_id, "lead");
+    await addProjectMember(result.id, data.owner_id, 'lead');
   } catch (memberError) {
-    console.error("Failed to add project owner as member:", memberError);
+    console.error('Failed to add project owner as member:', memberError);
   }
 
   // Log project creation activity
   try {
     await logProjectCreated(result.id, data.owner_id, data.name);
   } catch (activityError) {
-    console.error("Failed to log project creation activity:", activityError);
+    console.error('Failed to log project creation activity:', activityError);
   }
 
   return result;
@@ -163,10 +135,10 @@ export async function updateProject(id: string, updates: Partial<NewProject>) {
   // Get current project data to compare changes
   const currentProject = await getProjectById(id);
 
-  const { data, error } = await supabase
-    .from("projects")
+  const {data, error} = await supabase
+    .from('projects')
     .update(updates)
-    .eq("id", id)
+    .eq('id', id)
     .select()
     .single();
 
@@ -177,7 +149,7 @@ export async function updateProject(id: string, updates: Partial<NewProject>) {
     try {
       await logProjectUpdated(id, data.owner_id, data.name, updates);
     } catch (activityError) {
-      console.error("Failed to log project update activity:", activityError);
+      console.error('Failed to log project update activity:', activityError);
     }
   }
 
@@ -185,7 +157,7 @@ export async function updateProject(id: string, updates: Partial<NewProject>) {
 }
 
 export async function deleteProject(id: string) {
-  const { error } = await supabase.from("projects").delete().eq("id", id);
+  const {error} = await supabase.from('projects').delete().eq('id', id);
 
   if (error) throw error;
 }
@@ -194,11 +166,11 @@ export async function deleteProject(id: string) {
 export async function addProjectMember(
   projectId: string,
   userId: string,
-  role: "lead" | "member" = "member",
+  role: 'lead' | 'member' = 'member',
   addedByUserId?: string,
 ) {
-  const { data, error } = await supabase
-    .from("project_members")
+  const {data, error} = await supabase
+    .from('project_members')
     .insert({
       project_id: projectId,
       user_id: userId,
@@ -214,19 +186,10 @@ export async function addProjectMember(
     try {
       const project = await getProjectById(projectId);
       if (project) {
-        await logUserAddedToProject(
-          projectId,
-          addedByUserId,
-          userId,
-          project.name,
-          role,
-        );
+        await logUserAddedToProject(projectId, addedByUserId, userId, project.name, role);
       }
     } catch (activityError) {
-      console.error(
-        "Failed to log user added to project activity:",
-        activityError,
-      );
+      console.error('Failed to log user added to project activity:', activityError);
     }
   }
 
@@ -238,11 +201,11 @@ export async function removeProjectMember(
   userId: string,
   removedByUserId?: string,
 ) {
-  const { error } = await supabase
-    .from("project_members")
+  const {error} = await supabase
+    .from('project_members')
     .delete()
-    .eq("project_id", projectId)
-    .eq("user_id", userId);
+    .eq('project_id', projectId)
+    .eq('user_id', userId);
 
   if (error) throw error;
 
@@ -251,25 +214,17 @@ export async function removeProjectMember(
     try {
       const project = await getProjectById(projectId);
       if (project) {
-        await logUserRemovedFromProject(
-          projectId,
-          removedByUserId,
-          userId,
-          project.name,
-        );
+        await logUserRemovedFromProject(projectId, removedByUserId, userId, project.name);
       }
     } catch (activityError) {
-      console.error(
-        "Failed to log user removed from project activity:",
-        activityError,
-      );
+      console.error('Failed to log user removed from project activity:', activityError);
     }
   }
 }
 
 export async function getProjectMembers(projectId: string) {
-  const { data, error } = await supabase
-    .from("project_members")
+  const {data, error} = await supabase
+    .from('project_members')
     .select(
       `
       id,
@@ -279,8 +234,8 @@ export async function getProjectMembers(projectId: string) {
       users!inner(${userBasicFields})
     `,
     )
-    .eq("project_id", projectId)
-    .order("created_at", { ascending: true });
+    .eq('project_id', projectId)
+    .order('created_at', {ascending: true});
 
   if (error) throw error;
 
@@ -295,16 +250,16 @@ export async function getProjectMembers(projectId: string) {
 }
 
 export async function getUserProjects(userId: string) {
-  const { data, error } = await supabase
-    .from("project_members")
+  const {data, error} = await supabase
+    .from('project_members')
     .select(
       `
       role,
       projects!project_members_project_id_projects_id_fk(${projectBasicFields})
     `,
     )
-    .eq("user_id", userId)
-    .order("created_at", { ascending: false });
+    .eq('user_id', userId)
+    .order('created_at', {ascending: false});
 
   if (error) throw error;
   return data || [];
@@ -313,13 +268,13 @@ export async function getUserProjects(userId: string) {
 export async function updateProjectMemberRole(
   projectId: string,
   userId: string,
-  role: "lead" | "member",
+  role: 'lead' | 'member',
 ) {
-  const { data, error } = await supabase
-    .from("project_members")
-    .update({ role })
-    .eq("project_id", projectId)
-    .eq("user_id", userId)
+  const {data, error} = await supabase
+    .from('project_members')
+    .update({role})
+    .eq('project_id', projectId)
+    .eq('user_id', userId)
     .select()
     .single();
 
@@ -329,38 +284,78 @@ export async function updateProjectMemberRole(
 
 // Ticket operations
 export async function getTicketById(id: string) {
-  const { data, error } = await supabase
-    .from("tickets")
+  const {data, error} = await supabase
+    .from('tickets')
     .select(ticketFullFields)
-    .eq("id", id)
-    .is("deleted_at", null)
+    .eq('id', id)
+    .is('deleted_at', null)
     .single();
 
-  if (error && error.code !== "PGRST116") throw error;
+  if (error && error.code !== 'PGRST116') throw error;
+  return data;
+}
+
+// Secure version that validates company access
+export async function getTicketByIdWithCompanyAccess(id: string, userCompanyId: string) {
+  const {data, error} = await supabase
+    .from('tickets')
+    .select(ticketFullFields)
+    .eq('id', id)
+    .eq('projects.company_id', userCompanyId)
+    .is('deleted_at', null)
+    .single();
+
+  if (error && error.code !== 'PGRST116') throw error;
   return data;
 }
 
 export async function getTicketsByProject(projectId: string) {
-  const { data, error } = await supabase
-    .from("tickets")
+  const {data, error} = await supabase
+    .from('tickets')
     .select(ticketWithUsersFields)
-    .eq("project_id", projectId)
-    .is("deleted_at", null)
-    .order("sort_order", { ascending: false, nullsFirst: false })
-    .order("created_at", { ascending: false });
+    .eq('project_id', projectId)
+    .is('deleted_at', null)
+    .order('sort_order', {ascending: false, nullsFirst: false})
+    .order('created_at', {ascending: false});
+
+  if (error) throw error;
+  return data || [];
+}
+
+// Secure version that validates company access through project
+export async function getTicketsByProjectWithCompanyAccess(
+  projectId: string,
+  userCompanyId: string,
+) {
+  const {data, error} = await supabase
+    .from('tickets')
+    .select(
+      `
+      ${ticketWithUsersFields},
+      projects!inner (
+        id,
+        company_id
+      )
+    `,
+    )
+    .eq('project_id', projectId)
+    .eq('projects.company_id', userCompanyId)
+    .is('deleted_at', null)
+    .order('sort_order', {ascending: false, nullsFirst: false})
+    .order('created_at', {ascending: false});
 
   if (error) throw error;
   return data || [];
 }
 
 export async function getTicketsByCompany(companyId: string) {
-  const { data, error } = await supabase
-    .from("tickets")
+  const {data, error} = await supabase
+    .from('tickets')
     .select(ticketWithProjectFields)
-    .eq("projects.company_id", companyId)
-    .is("deleted_at", null)
-    .order("sort_order", { ascending: false, nullsFirst: false })
-    .order("created_at", { ascending: false });
+    .eq('projects.company_id', companyId)
+    .is('deleted_at', null)
+    .order('sort_order', {ascending: false, nullsFirst: false})
+    .order('created_at', {ascending: false});
 
   if (error) throw error;
   return data || [];
@@ -377,15 +372,15 @@ export async function getAccessibleTicketsByCompany(
   userRole: string,
 ) {
   // Admins can see all tickets in their company
-  if (["super_admin", "system_admin", "company_admin"].includes(userRole)) {
+  if (['super_admin', 'system_admin', 'company_admin'].includes(userRole)) {
     return getTicketsByCompany(companyId);
   }
 
   // For regular users, get tickets from projects they are members of
-  const { data: membershipData, error: membershipError } = await supabase
-    .from("project_members")
-    .select("project_id")
-    .eq("user_id", userId);
+  const {data: membershipData, error: membershipError} = await supabase
+    .from('project_members')
+    .select('project_id')
+    .eq('user_id', userId);
 
   if (membershipError) {
     throw membershipError;
@@ -399,14 +394,14 @@ export async function getAccessibleTicketsByCompany(
   }
 
   // Get tickets only from projects where user is a member
-  const { data, error } = await supabase
-    .from("tickets")
+  const {data, error} = await supabase
+    .from('tickets')
     .select(ticketWithProjectFields)
-    .eq("projects.company_id", companyId)
-    .in("project_id", memberProjectIds)
-    .is("deleted_at", null)
-    .order("sort_order", { ascending: false, nullsFirst: false })
-    .order("created_at", { ascending: false });
+    .eq('projects.company_id', companyId)
+    .in('project_id', memberProjectIds)
+    .is('deleted_at', null)
+    .order('sort_order', {ascending: false, nullsFirst: false})
+    .order('created_at', {ascending: false});
 
   if (error) {
     throw error;
@@ -415,41 +410,28 @@ export async function getAccessibleTicketsByCompany(
 }
 
 export async function createTicket(data: NewTicket) {
-  const { data: result, error } = await supabase
-    .from("tickets")
-    .insert(data)
-    .select()
-    .single();
+  const {data: result, error} = await supabase.from('tickets').insert(data).select().single();
 
   if (error) throw error;
 
   // Log ticket creation activity
   try {
-    await logTicketCreated(
-      result.id,
-      result.project_id,
-      result.reporter_id,
-      result.title,
-    );
+    await logTicketCreated(result.id, result.project_id, result.reporter_id, result.title);
   } catch (activityError) {
-    console.error("Failed to log ticket creation activity:", activityError);
+    console.error('Failed to log ticket creation activity:', activityError);
   }
 
   return result;
 }
 
-export async function updateTicket(
-  id: string,
-  data: Partial<NewTicket>,
-  updatedBy?: string,
-) {
+export async function updateTicket(id: string, data: Partial<NewTicket>, updatedBy?: string) {
   // Get current ticket data to compare changes
   const currentTicket = await getTicketById(id);
 
-  const { data: result, error } = await supabase
-    .from("tickets")
+  const {data: result, error} = await supabase
+    .from('tickets')
     .update(data)
-    .eq("id", id)
+    .eq('id', id)
     .select()
     .single();
 
@@ -458,66 +440,51 @@ export async function updateTicket(
   // Log ticket update activity and history
   if (currentTicket && result && updatedBy) {
     try {
-      await logTicketUpdated(
-        id,
-        result.project_id,
-        updatedBy,
-        result.title,
-        data,
-      );
+      await logTicketUpdated(id, result.project_id, updatedBy, result.title, data);
 
       // Special handling for ticket assignment
       if (data.assignee_id && data.assignee_id !== currentTicket.assignee_id) {
-        await logTicketAssigned(
-          id,
-          result.project_id,
-          updatedBy,
-          data.assignee_id,
-          result.title,
-        );
+        await logTicketAssigned(id, result.project_id, updatedBy, data.assignee_id, result.title);
       }
 
       // Log detailed field changes in ticket history
       const fieldMappings = [
-        { field: "title", oldValue: currentTicket.title, newValue: data.title },
+        {field: 'title', oldValue: currentTicket.title, newValue: data.title},
         {
-          field: "description",
+          field: 'description',
           oldValue: currentTicket.description,
           newValue: data.description,
         },
         {
-          field: "status",
+          field: 'status',
           oldValue: currentTicket.status,
           newValue: data.status,
         },
         {
-          field: "priority",
+          field: 'priority',
           oldValue: currentTicket.priority,
           newValue: data.priority,
         },
         {
-          field: "assignee_id",
+          field: 'assignee_id',
           oldValue: currentTicket.assignee_id,
           newValue: data.assignee_id,
         },
         {
-          field: "due_date",
+          field: 'due_date',
           oldValue: currentTicket.due_date,
           newValue: data.due_date,
         },
       ];
 
       // Log changes for each field that was updated
-      for (const { field, oldValue, newValue } of fieldMappings) {
+      for (const {field, oldValue, newValue} of fieldMappings) {
         if (newValue !== undefined && oldValue !== newValue) {
           await logTicketFieldChange(id, updatedBy, field, oldValue, newValue);
         }
       }
     } catch (activityError) {
-      console.error(
-        "Failed to log ticket update activity or history:",
-        activityError,
-      );
+      console.error('Failed to log ticket update activity or history:', activityError);
     }
   }
 
@@ -527,79 +494,100 @@ export async function updateTicket(
 /**
  * Update ticket sort orders for drag-and-drop reordering
  */
-export async function updateTicketSortOrders(
-  updates: Array<{ id: string; sort_order: number }>,
-) {
-  console.log("🔧 Service: updateTicketSortOrders called with:", updates);
+export async function updateTicketSortOrders(updates: Array<{id: string; sort_order: number}>) {
+  console.log('🔧 Service: updateTicketSortOrders called with:', updates);
 
   // Update each ticket individually (more reliable than RPC)
-  const promises = updates.map(async ({ id, sort_order }) => {
-    console.log(
-      `🔧 Service: Updating ticket ${id} with sort_order ${sort_order}`,
-    );
+  const promises = updates.map(async ({id, sort_order}) => {
+    console.log(`🔧 Service: Updating ticket ${id} with sort_order ${sort_order}`);
 
-    const { data, error } = await supabase
-      .from("tickets")
-      .update({ sort_order, updated_at: new Date().toISOString() })
-      .eq("id", id)
+    const {data, error} = await supabase
+      .from('tickets')
+      .update({sort_order, updated_at: new Date().toISOString()})
+      .eq('id', id)
       .select();
 
     if (error) {
-      console.error("🔧 Service: Database error for ticket", id, ":", error);
+      console.error('🔧 Service: Database error for ticket', id, ':', error);
       throw error;
     }
 
-    console.log("🔧 Service: Successfully updated ticket", id, ":", data);
+    console.log('🔧 Service: Successfully updated ticket', id, ':', data);
     return data;
   });
 
   try {
     const results = await Promise.all(promises);
-    console.log("🔧 Service: All updates completed successfully");
+    console.log('🔧 Service: All updates completed successfully');
     return results.flat();
   } catch (error) {
-    console.error("🔧 Service: Failed to update sort orders:", error);
+    console.error('🔧 Service: Failed to update sort orders:', error);
     throw error;
   }
 }
 
 export async function deleteTicket(id: string) {
-  const { error } = await supabase
-    .from("tickets")
+  const {error} = await supabase
+    .from('tickets')
     .update({
       deleted_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     })
-    .eq("id", id)
-    .is("deleted_at", null);
+    .eq('id', id)
+    .is('deleted_at', null);
 
   if (error) throw error;
 }
 
 // Get ticket count by project
 export async function getTicketCountByProject(projectId: string) {
-  const { count, error } = await supabase
-    .from("tickets")
-    .select("*", { count: "exact", head: true })
-    .eq("project_id", projectId)
-    .is("deleted_at", null);
+  const {count, error} = await supabase
+    .from('tickets')
+    .select('*', {count: 'exact', head: true})
+    .eq('project_id', projectId)
+    .is('deleted_at', null);
 
   if (error) throw error;
   return count || 0;
 }
 
 // Get recent tickets by project (for project dashboard)
-export async function getRecentTicketsByProject(
+export async function getRecentTicketsByProject(projectId: string, limit: number = 5) {
+  const {data, error} = await supabase
+    .from('tickets')
+    .select(ticketWithUsersFields)
+    .eq('project_id', projectId)
+    .is('deleted_at', null)
+    .order('sort_order', {ascending: false, nullsFirst: false})
+    .order('created_at', {ascending: false})
+    .limit(limit);
+
+  if (error) throw error;
+  return data || [];
+}
+
+// Secure version with company access validation
+export async function getRecentTicketsByProjectWithCompanyAccess(
   projectId: string,
+  userCompanyId: string,
   limit: number = 5,
 ) {
-  const { data, error } = await supabase
-    .from("tickets")
-    .select(ticketWithUsersFields)
-    .eq("project_id", projectId)
-    .is("deleted_at", null)
-    .order("sort_order", { ascending: false, nullsFirst: false })
-    .order("created_at", { ascending: false })
+  const {data, error} = await supabase
+    .from('tickets')
+    .select(
+      `
+      ${ticketWithUsersFields},
+      projects!inner (
+        id,
+        company_id
+      )
+    `,
+    )
+    .eq('project_id', projectId)
+    .eq('projects.company_id', userCompanyId)
+    .is('deleted_at', null)
+    .order('sort_order', {ascending: false, nullsFirst: false})
+    .order('created_at', {ascending: false})
     .limit(limit);
 
   if (error) throw error;
@@ -608,42 +596,35 @@ export async function getRecentTicketsByProject(
 
 // Time entry operations
 export async function getTimeEntriesByTicket(ticketId: string) {
-  const { data, error } = await supabase
-    .from("time_entries")
+  const {data, error} = await supabase
+    .from('time_entries')
     .select(timeEntryWithUserFields)
-    .eq("ticket_id", ticketId)
-    .order("start_time", { ascending: false });
+    .eq('ticket_id', ticketId)
+    .order('start_time', {ascending: false});
 
   if (error) throw error;
   return data || [];
 }
 
-export async function getTimeEntriesByUser(
-  userId: string,
-  limit?: number,
-): Promise<any[]> {
+export async function getTimeEntriesByUser(userId: string, limit?: number): Promise<any[]> {
   let query = supabase
-    .from("time_entries")
+    .from('time_entries')
     .select(timeEntryWithTicketFields)
-    .eq("user_id", userId)
-    .order("start_time", { ascending: false });
+    .eq('user_id', userId)
+    .order('start_time', {ascending: false});
 
   if (limit) {
     query = query.limit(limit);
   }
 
-  const { data, error } = await query;
+  const {data, error} = await query;
 
   if (error) throw error;
   return data || [];
 }
 
 export async function createTimeEntry(data: NewTimeEntry) {
-  const { data: result, error } = await supabase
-    .from("time_entries")
-    .insert(data)
-    .select()
-    .single();
+  const {data: result, error} = await supabase.from('time_entries').insert(data).select().single();
 
   if (error) throw error;
 
@@ -651,10 +632,10 @@ export async function createTimeEntry(data: NewTimeEntry) {
   if (result && result.duration && result.duration > 0) {
     try {
       // Get ticket and project info for activity logging
-      const { data: ticketData } = await supabase
-        .from("tickets")
-        .select("title, project_id, projects(company_id)")
-        .eq("id", result.ticket_id)
+      const {data: ticketData} = await supabase
+        .from('tickets')
+        .select('title, project_id, projects(company_id)')
+        .eq('id', result.ticket_id)
         .single();
 
       const projects = Array.isArray(ticketData?.projects)
@@ -680,7 +661,7 @@ export async function createTimeEntry(data: NewTimeEntry) {
     } catch (billingError) {
       // Log error but don't fail the time entry creation
       console.error(
-        "Failed to create billing record or log activity for time entry:",
+        'Failed to create billing record or log activity for time entry:',
         billingError,
       );
     }
@@ -690,10 +671,10 @@ export async function createTimeEntry(data: NewTimeEntry) {
 }
 
 export async function updateTimeEntry(id: string, data: Partial<NewTimeEntry>) {
-  const { data: result, error } = await supabase
-    .from("time_entries")
+  const {data: result, error} = await supabase
+    .from('time_entries')
     .update(data)
-    .eq("id", id)
+    .eq('id', id)
     .select()
     .single();
 
@@ -703,10 +684,10 @@ export async function updateTimeEntry(id: string, data: Partial<NewTimeEntry>) {
   if (result && result.duration && result.duration > 0) {
     try {
       // Get company_id from the ticket's project
-      const { data: ticketData } = await supabase
-        .from("tickets")
-        .select("projects(company_id)")
-        .eq("id", result.ticket_id)
+      const {data: ticketData} = await supabase
+        .from('tickets')
+        .select('projects(company_id)')
+        .eq('id', result.ticket_id)
         .single();
 
       const projects = Array.isArray(ticketData?.projects)
@@ -718,10 +699,7 @@ export async function updateTimeEntry(id: string, data: Partial<NewTimeEntry>) {
       }
     } catch (billingError) {
       // Log error but don't fail the time entry update
-      console.error(
-        "Failed to update billing record for time entry:",
-        billingError,
-      );
+      console.error('Failed to update billing record for time entry:', billingError);
     }
   }
 
@@ -731,27 +709,27 @@ export async function updateTimeEntry(id: string, data: Partial<NewTimeEntry>) {
 export async function deleteTimeEntry(id: string) {
   // Get the current authenticated user
   const {
-    data: { user: authUser },
+    data: {user: authUser},
     error: authError,
   } = await supabase.auth.getUser();
   if (authError || !authUser) {
-    throw new Error("Authentication required to delete time entries");
+    throw new Error('Authentication required to delete time entries');
   }
 
   // Get user profile with role information
-  const { data: currentUser, error: userError } = await supabase
-    .from("users")
-    .select("id, role, company_id")
-    .eq("id", authUser.id)
+  const {data: currentUser, error: userError} = await supabase
+    .from('users')
+    .select('id, role, company_id')
+    .eq('id', authUser.id)
     .single();
 
   if (userError || !currentUser) {
-    throw new Error("User profile not found");
+    throw new Error('User profile not found');
   }
 
   // Get the time entry with billing information
-  const { data: timeEntry, error: fetchError } = await supabase
-    .from("time_entries")
+  const {data: timeEntry, error: fetchError} = await supabase
+    .from('time_entries')
     .select(
       `
       id,
@@ -771,23 +749,22 @@ export async function deleteTimeEntry(id: string) {
       )
     `,
     )
-    .eq("id", id)
+    .eq('id', id)
     .single();
 
   if (fetchError || !timeEntry) {
-    throw new Error("Time entry not found");
+    throw new Error('Time entry not found');
   }
 
   // Check if time entry is associated with a paid billing period
   const billingRecord = timeEntry.time_entry_billing as any;
-  const isPaidPeriod =
-    billingRecord?.billing_periods?.payment_status === "paid";
+  const isPaidPeriod = billingRecord?.billing_periods?.payment_status === 'paid';
 
   // Role-based permission checks
-  const isSuperAdmin = currentUser.role === "super_admin";
-  const isSystemAdmin = currentUser.role === "system_admin";
-  const isCompanyAdmin = currentUser.role === "company_admin";
-  const isManager = currentUser.role === "manager";
+  const isSuperAdmin = currentUser.role === 'super_admin';
+  const isSystemAdmin = currentUser.role === 'system_admin';
+  const isCompanyAdmin = currentUser.role === 'company_admin';
+  const isManager = currentUser.role === 'manager';
   const isOwner = timeEntry.user_id === currentUser.id;
 
   // Super admins can delete anything
@@ -797,35 +774,35 @@ export async function deleteTimeEntry(id: string) {
   // For paid periods, only super admins can delete
   else if (isPaidPeriod) {
     throw new Error(
-      "Only super administrators can delete time entries from paid billing periods. This protects financial audit trails.",
+      'Only super administrators can delete time entries from paid billing periods. This protects financial audit trails.',
     );
   }
   // System/Company admins and managers can delete within their company
   else if (isSystemAdmin || isCompanyAdmin || isManager) {
     // Need to verify the time entry belongs to their company
-    const { data: entryUser, error: entryUserError } = await supabase
-      .from("users")
-      .select("company_id")
-      .eq("id", timeEntry.user_id)
+    const {data: entryUser, error: entryUserError} = await supabase
+      .from('users')
+      .select('company_id')
+      .eq('id', timeEntry.user_id)
       .single();
 
     if (entryUserError || !entryUser) {
-      throw new Error("Cannot verify time entry ownership");
+      throw new Error('Cannot verify time entry ownership');
     }
 
     if (entryUser.company_id !== currentUser.company_id) {
-      throw new Error("You can only delete time entries from your company");
+      throw new Error('You can only delete time entries from your company');
     }
   }
   // Regular users can only delete their own time entries
   else if (isOwner) {
     // User can delete their own time entry (if not billed)
   } else {
-    throw new Error("You do not have permission to delete this time entry");
+    throw new Error('You do not have permission to delete this time entry');
   }
 
   // Proceed with deletion
-  const { error } = await supabase.from("time_entries").delete().eq("id", id);
+  const {error} = await supabase.from('time_entries').delete().eq('id', id);
 
   if (error) throw error;
 
@@ -840,11 +817,11 @@ export async function deleteTimeEntry(id: string) {
 }
 
 export async function getActiveTimeEntry(userId: string) {
-  const { data, error } = await supabase
-    .from("time_entries")
+  const {data, error} = await supabase
+    .from('time_entries')
     .select(timeEntryWithTicketFields)
-    .eq("user_id", userId)
-    .is("end_time", null)
+    .eq('user_id', userId)
+    .is('end_time', null)
     .maybeSingle();
 
   if (error) throw error;
@@ -852,18 +829,15 @@ export async function getActiveTimeEntry(userId: string) {
 }
 
 export async function getTotalTimeByTicket(ticketId: string): Promise<number> {
-  const { data, error } = await supabase
-    .from("time_entries")
-    .select("duration")
-    .eq("ticket_id", ticketId)
-    .not("duration", "is", null);
+  const {data, error} = await supabase
+    .from('time_entries')
+    .select('duration')
+    .eq('ticket_id', ticketId)
+    .not('duration', 'is', null);
 
   if (error) throw error;
 
-  const totalSeconds = (data || []).reduce(
-    (sum, entry) => sum + (entry.duration || 0),
-    0,
-  );
+  const totalSeconds = (data || []).reduce((sum, entry) => sum + (entry.duration || 0), 0);
   return totalSeconds;
 }
 
@@ -873,36 +847,33 @@ export async function getTotalTimeByUser(
   dateTo?: string,
 ): Promise<number> {
   let query = supabase
-    .from("time_entries")
-    .select("duration")
-    .eq("user_id", userId)
-    .not("duration", "is", null);
+    .from('time_entries')
+    .select('duration')
+    .eq('user_id', userId)
+    .not('duration', 'is', null);
 
   if (dateFrom) {
-    query = query.gte("start_time", dateFrom);
+    query = query.gte('start_time', dateFrom);
   }
 
   if (dateTo) {
-    query = query.lte("start_time", dateTo);
+    query = query.lte('start_time', dateTo);
   }
 
-  const { data, error } = await query;
+  const {data, error} = await query;
 
   if (error) throw error;
 
-  const totalSeconds = (data || []).reduce(
-    (sum, entry) => sum + (entry.duration || 0),
-    0,
-  );
+  const totalSeconds = (data || []).reduce((sum, entry) => sum + (entry.duration || 0), 0);
   return totalSeconds;
 }
 
 export async function getUsersInCompany(companyId: string) {
-  const { data, error } = await supabase
-    .from("users")
+  const {data, error} = await supabase
+    .from('users')
     .select(userBasicFields)
-    .eq("company_id", companyId)
-    .order("first_name", { ascending: true });
+    .eq('company_id', companyId)
+    .order('first_name', {ascending: true});
 
   if (error) throw error;
   return data || [];
@@ -910,8 +881,8 @@ export async function getUsersInCompany(companyId: string) {
 
 // Get projects with ticket counts for a company
 export async function getProjectsWithTicketCounts(companyId: string) {
-  const { data, error } = await supabase
-    .from("projects")
+  const {data, error} = await supabase
+    .from('projects')
     .select(
       `
       ${projectBasicFields},
@@ -924,8 +895,8 @@ export async function getProjectsWithTicketCounts(companyId: string) {
       ticket_count:tickets(count)
     `,
     )
-    .eq("company_id", companyId)
-    .order("created_at", { ascending: false });
+    .eq('company_id', companyId)
+    .order('created_at', {ascending: false});
 
   if (error) {
     throw error;
@@ -951,15 +922,15 @@ export async function getAccessibleProjectsByCompany(
   userRole: string,
 ) {
   // Admins can see all projects in their company
-  if (["super_admin", "system_admin", "company_admin"].includes(userRole)) {
+  if (['super_admin', 'system_admin', 'company_admin'].includes(userRole)) {
     return getProjectsByCompany(companyId);
   }
 
   // For regular users, get ONLY projects they are explicitly assigned to as members
-  const { data: membershipData, error: membershipError } = await supabase
-    .from("project_members")
-    .select("project_id")
-    .eq("user_id", userId);
+  const {data: membershipData, error: membershipError} = await supabase
+    .from('project_members')
+    .select('project_id')
+    .eq('user_id', userId);
 
   if (membershipError) {
     throw membershipError;
@@ -973,12 +944,12 @@ export async function getAccessibleProjectsByCompany(
   }
 
   // Get only projects where user is explicitly a member
-  const { data, error } = await supabase
-    .from("projects")
+  const {data, error} = await supabase
+    .from('projects')
     .select(projectWithRelationsFields)
-    .eq("company_id", companyId)
-    .in("id", memberProjectIds)
-    .order("created_at", { ascending: false });
+    .eq('company_id', companyId)
+    .in('id', memberProjectIds)
+    .order('created_at', {ascending: false});
 
   if (error) {
     throw error;
@@ -997,15 +968,15 @@ export async function getAccessibleProjectsWithTicketCounts(
   userRole: string,
 ) {
   // Admins can see all projects in their company
-  if (["super_admin", "system_admin", "company_admin"].includes(userRole)) {
+  if (['super_admin', 'system_admin', 'company_admin'].includes(userRole)) {
     return getProjectsWithTicketCounts(companyId);
   }
 
   // For regular users, get ONLY projects they are explicitly assigned to as members
-  const { data: membershipData, error: membershipError } = await supabase
-    .from("project_members")
-    .select("project_id")
-    .eq("user_id", userId);
+  const {data: membershipData, error: membershipError} = await supabase
+    .from('project_members')
+    .select('project_id')
+    .eq('user_id', userId);
 
   if (membershipError) {
     throw membershipError;
@@ -1019,8 +990,8 @@ export async function getAccessibleProjectsWithTicketCounts(
   }
 
   // Get full project data with ticket counts for accessible projects
-  const { data, error } = await supabase
-    .from("projects")
+  const {data, error} = await supabase
+    .from('projects')
     .select(
       `
       ${projectBasicFields},
@@ -1033,9 +1004,9 @@ export async function getAccessibleProjectsWithTicketCounts(
       ticket_count:tickets(count)
     `,
     )
-    .eq("company_id", companyId)
-    .in("id", memberProjectIds)
-    .order("created_at", { ascending: false });
+    .eq('company_id', companyId)
+    .in('id', memberProjectIds)
+    .order('created_at', {ascending: false});
 
   if (error) {
     throw error;
@@ -1058,10 +1029,10 @@ export async function canUserManageProjectMembers(
   projectId: string,
 ): Promise<boolean> {
   // Get user information
-  const { data: user, error: userError } = await supabase
-    .from("users")
-    .select("id, role, company_id")
-    .eq("id", userId)
+  const {data: user, error: userError} = await supabase
+    .from('users')
+    .select('id, role, company_id')
+    .eq('id', userId)
     .single();
 
   if (userError || !user) {
@@ -1069,12 +1040,12 @@ export async function canUserManageProjectMembers(
   }
 
   // Admins can manage all project members in their company
-  if (["super_admin", "system_admin", "company_admin"].includes(user.role)) {
+  if (['super_admin', 'system_admin', 'company_admin'].includes(user.role)) {
     // Verify project is in their company
-    const { data: project, error: projectError } = await supabase
-      .from("projects")
-      .select("id, company_id, owner_id")
-      .eq("id", projectId)
+    const {data: project, error: projectError} = await supabase
+      .from('projects')
+      .select('id, company_id, owner_id')
+      .eq('id', projectId)
       .single();
 
     if (projectError || !project) {
@@ -1082,7 +1053,7 @@ export async function canUserManageProjectMembers(
     }
 
     // Super/system admins can manage any project, company admins only their company
-    if (user.role === "super_admin" || user.role === "system_admin") {
+    if (user.role === 'super_admin' || user.role === 'system_admin') {
       return true;
     }
 
@@ -1090,11 +1061,11 @@ export async function canUserManageProjectMembers(
   }
 
   // Check if user is project owner
-  const { data: project, error: projectError } = await supabase
-    .from("projects")
-    .select("id, owner_id, company_id")
-    .eq("id", projectId)
-    .eq("company_id", user.company_id)
+  const {data: project, error: projectError} = await supabase
+    .from('projects')
+    .select('id, owner_id, company_id')
+    .eq('id', projectId)
+    .eq('company_id', user.company_id)
     .single();
 
   if (projectError || !project) {
@@ -1106,18 +1077,18 @@ export async function canUserManageProjectMembers(
   }
 
   // Check if user is a project lead
-  const { data: membership, error: membershipError } = await supabase
-    .from("project_members")
-    .select("role")
-    .eq("project_id", projectId)
-    .eq("user_id", userId)
+  const {data: membership, error: membershipError} = await supabase
+    .from('project_members')
+    .select('role')
+    .eq('project_id', projectId)
+    .eq('user_id', userId)
     .single();
 
   if (membershipError || !membership) {
     return false;
   }
 
-  return membership.role === "lead";
+  return membership.role === 'lead';
 }
 
 /**
@@ -1131,7 +1102,7 @@ export async function getTimeEntriesForBilling(
   startDate: string,
   endDate: string,
 ) {
-  console.log("🔍 Fetching time entries for billing:", {
+  console.log('🔍 Fetching time entries for billing:', {
     companyId,
     startDate,
     endDate,
@@ -1142,8 +1113,8 @@ export async function getTimeEntriesForBilling(
   endDateTime.setHours(23, 59, 59, 999);
   const endDateString = endDateTime.toISOString();
 
-  const { data, error } = await supabase
-    .from("time_entries")
+  const {data, error} = await supabase
+    .from('time_entries')
     .select(
       `
       id,
@@ -1173,19 +1144,19 @@ export async function getTimeEntriesForBilling(
       )
     `,
     )
-    .eq("tickets.projects.company_id", companyId)
-    .gte("start_time", startDate)
-    .lte("start_time", endDateString)
-    .not("duration", "is", null)
-    .gt("duration", 0)
-    .order("start_time", { ascending: true });
+    .eq('tickets.projects.company_id', companyId)
+    .gte('start_time', startDate)
+    .lte('start_time', endDateString)
+    .not('duration', 'is', null)
+    .gt('duration', 0)
+    .order('start_time', {ascending: true});
 
   if (error) {
-    console.error("❌ Error fetching time entries for billing:", error);
+    console.error('❌ Error fetching time entries for billing:', error);
     throw new Error(`Failed to fetch time entries: ${error.message}`);
   }
 
-  console.log("📊 Found time entries for billing:", data?.length || 0);
+  console.log('📊 Found time entries for billing:', data?.length || 0);
   return data || [];
 }
 
@@ -1196,15 +1167,15 @@ export async function getTimeEntriesForBillingByUser(
   endDate: string,
 ) {
   // First validate that the target user belongs to the company
-  const { data: userValidation, error: userError } = await supabase
-    .from("users")
-    .select("id, company_id, first_name, last_name")
-    .eq("id", targetUserId)
-    .eq("company_id", companyId)
+  const {data: userValidation, error: userError} = await supabase
+    .from('users')
+    .select('id, company_id, first_name, last_name')
+    .eq('id', targetUserId)
+    .eq('company_id', companyId)
     .single();
 
   if (userError || !userValidation) {
-    throw new Error("Target user not found or does not belong to the company");
+    throw new Error('Target user not found or does not belong to the company');
   }
 
   // Create proper end date timestamp
@@ -1212,8 +1183,8 @@ export async function getTimeEntriesForBillingByUser(
   endDateTime.setHours(23, 59, 59, 999);
   const endDateString = endDateTime.toISOString();
 
-  const { data, error } = await supabase
-    .from("time_entries")
+  const {data, error} = await supabase
+    .from('time_entries')
     .select(
       `
       id,
@@ -1243,16 +1214,16 @@ export async function getTimeEntriesForBillingByUser(
       )
     `,
     )
-    .eq("tickets.projects.company_id", companyId)
-    .eq("user_id", targetUserId) // KEY DIFFERENCE: Filter by specific user
-    .gte("start_time", startDate)
-    .lte("start_time", endDateString)
-    .not("duration", "is", null)
-    .gt("duration", 0)
-    .order("start_time", { ascending: true });
+    .eq('tickets.projects.company_id', companyId)
+    .eq('user_id', targetUserId) // KEY DIFFERENCE: Filter by specific user
+    .gte('start_time', startDate)
+    .lte('start_time', endDateString)
+    .not('duration', 'is', null)
+    .gt('duration', 0)
+    .order('start_time', {ascending: true});
 
   if (error) {
-    console.error("❌ Error fetching time entries for billing by user:", error);
+    console.error('❌ Error fetching time entries for billing by user:', error);
     throw new Error(`Failed to fetch time entries for user: ${error.message}`);
   }
   return data || [];
@@ -1264,8 +1235,8 @@ export async function getTimeEntriesForBillingByUser(
  * Get all users in a company with their details
  */
 export async function getCompanyUsers(companyId: string) {
-  const { data, error } = await supabase
-    .from("users")
+  const {data, error} = await supabase
+    .from('users')
     .select(
       `
       id,
@@ -1288,8 +1259,8 @@ export async function getCompanyUsers(companyId: string) {
       )
     `,
     )
-    .eq("company_id", companyId)
-    .order("created_at", { ascending: false });
+    .eq('company_id', companyId)
+    .order('created_at', {ascending: false});
 
   if (error) throw error;
   return data || [];
@@ -1300,12 +1271,12 @@ export async function getCompanyUsers(companyId: string) {
  */
 export async function updateUserRole(
   userId: string,
-  role: "super_admin" | "system_admin" | "company_admin" | "manager" | "user",
+  role: 'super_admin' | 'system_admin' | 'company_admin' | 'manager' | 'user',
 ) {
-  const { data, error } = await supabase
-    .from("users")
-    .update({ role, updated_at: new Date().toISOString() })
-    .eq("id", userId)
+  const {data, error} = await supabase
+    .from('users')
+    .update({role, updated_at: new Date().toISOString()})
+    .eq('id', userId)
     .select()
     .single();
 
@@ -1316,14 +1287,11 @@ export async function updateUserRole(
 /**
  * Update user status (active/inactive)
  */
-export async function updateUserStatus(
-  userId: string,
-  status: "active" | "inactive",
-) {
-  const { data, error } = await supabase
-    .from("users")
-    .update({ status, updated_at: new Date().toISOString() })
-    .eq("id", userId)
+export async function updateUserStatus(userId: string, status: 'active' | 'inactive') {
+  const {data, error} = await supabase
+    .from('users')
+    .update({status, updated_at: new Date().toISOString()})
+    .eq('id', userId)
     .select()
     .single();
 
@@ -1334,14 +1302,11 @@ export async function updateUserStatus(
 /**
  * Update user hourly rate
  */
-export async function updateUserHourlyRate(
-  userId: string,
-  hourlyRate: number | null,
-) {
-  const { data, error } = await supabase
-    .from("users")
-    .update({ hourly_rate: hourlyRate, updated_at: new Date().toISOString() })
-    .eq("id", userId)
+export async function updateUserHourlyRate(userId: string, hourlyRate: number | null) {
+  const {data, error} = await supabase
+    .from('users')
+    .update({hourly_rate: hourlyRate, updated_at: new Date().toISOString()})
+    .eq('id', userId)
     .select()
     .single();
 
@@ -1353,13 +1318,13 @@ export async function updateUserHourlyRate(
  * Remove user from company (set as inactive)
  */
 export async function removeUserFromCompany(userId: string) {
-  const { data, error } = await supabase
-    .from("users")
+  const {data, error} = await supabase
+    .from('users')
     .update({
-      status: "inactive",
+      status: 'inactive',
       updated_at: new Date().toISOString(),
     })
-    .eq("id", userId)
+    .eq('id', userId)
     .select()
     .single();
 
@@ -1371,8 +1336,8 @@ export async function removeUserFromCompany(userId: string) {
  * Get users available for assignment (active users in company)
  */
 export async function getAssignableUsers(companyId: string) {
-  const { data, error } = await supabase
-    .from("users")
+  const {data, error} = await supabase
+    .from('users')
     .select(
       `
       id,
@@ -1383,9 +1348,9 @@ export async function getAssignableUsers(companyId: string) {
       avatar_url
     `,
     )
-    .eq("company_id", companyId)
-    .eq("status", "active")
-    .order("first_name", { ascending: true });
+    .eq('company_id', companyId)
+    .eq('status', 'active')
+    .order('first_name', {ascending: true});
 
   if (error) throw error;
   return data || [];
@@ -1396,7 +1361,7 @@ export async function getAssignableUsers(companyId: string) {
  */
 export async function inviteUserToCompany(data: {
   email: string;
-  role: "super_admin" | "system_admin" | "company_admin" | "manager" | "user";
+  role: 'super_admin' | 'system_admin' | 'company_admin' | 'manager' | 'user';
   companyId: string;
   invitedBy: string;
   firstName?: string;
@@ -1404,10 +1369,10 @@ export async function inviteUserToCompany(data: {
   hourlyRate?: number;
 }) {
   try {
-    const response = await fetch(getApiPath("invite-user"), {
-      method: "POST",
+    const response = await fetch(getApiPath('invite-user'), {
+      method: 'POST',
       headers: {
-        "Content-Type": "application/json",
+        'Content-Type': 'application/json',
       },
       body: JSON.stringify(data),
     });
@@ -1415,7 +1380,7 @@ export async function inviteUserToCompany(data: {
     const result = await response.json();
 
     if (!response.ok) {
-      throw new Error(result.error || "Failed to invite user");
+      throw new Error(result.error || 'Failed to invite user');
     }
 
     return result.data;
@@ -1428,10 +1393,10 @@ export async function inviteUserToCompany(data: {
  * Update user details (first name, last name, etc.)
  */
 export async function updateUser(userId: string, updates: Partial<NewUser>) {
-  const { data, error } = await supabase
-    .from("users")
-    .update({ ...updates, updated_at: new Date().toISOString() })
-    .eq("id", userId)
+  const {data, error} = await supabase
+    .from('users')
+    .update({...updates, updated_at: new Date().toISOString()})
+    .eq('id', userId)
     .select()
     .single();
 
@@ -1447,11 +1412,7 @@ export async function updateUser(userId: string, updates: Partial<NewUser>) {
  * Create a new activity log entry
  */
 export async function createActivity(data: NewActivity) {
-  const { data: result, error } = await supabase
-    .from("activities")
-    .insert(data)
-    .select()
-    .single();
+  const {data: result, error} = await supabase.from('activities').insert(data).select().single();
 
   if (error) throw error;
   return result;
@@ -1460,12 +1421,9 @@ export async function createActivity(data: NewActivity) {
 /**
  * Get activities for a specific project with user details
  */
-export async function getProjectActivities(
-  projectId: string,
-  limit: number = 50,
-) {
-  const { data, error } = await supabase
-    .from("activities")
+export async function getProjectActivities(projectId: string, limit: number = 50) {
+  const {data, error} = await supabase
+    .from('activities')
     .select(
       `
       id,
@@ -1503,8 +1461,8 @@ export async function getProjectActivities(
       )
     `,
     )
-    .eq("project_id", projectId)
-    .order("created_at", { ascending: false })
+    .eq('project_id', projectId)
+    .order('created_at', {ascending: false})
     .limit(limit);
 
   if (error) throw error;
@@ -1515,8 +1473,8 @@ export async function getProjectActivities(
  * Get activities for a specific user
  */
 export async function getUserActivities(userId: string, limit: number = 50) {
-  const { data, error } = await supabase
-    .from("activities")
+  const {data, error} = await supabase
+    .from('activities')
     .select(
       `
       id,
@@ -1554,8 +1512,8 @@ export async function getUserActivities(userId: string, limit: number = 50) {
       )
     `,
     )
-    .eq("user_id", userId)
-    .order("created_at", { ascending: false })
+    .eq('user_id', userId)
+    .order('created_at', {ascending: false})
     .limit(limit);
 
   if (error) throw error;
@@ -1566,15 +1524,12 @@ export async function getUserActivities(userId: string, limit: number = 50) {
  * Get recent activities across accessible projects for a user
  * This respects project visibility and membership
  */
-export async function getRecentActivitiesForUser(
-  userId: string,
-  limit: number = 20,
-) {
+export async function getRecentActivitiesForUser(userId: string, limit: number = 20) {
   // First get user's accessible projects
-  const { data: userProjects, error: projectError } = await supabase
-    .from("project_members")
-    .select("project_id")
-    .eq("user_id", userId);
+  const {data: userProjects, error: projectError} = await supabase
+    .from('project_members')
+    .select('project_id')
+    .eq('user_id', userId);
 
   if (projectError) throw projectError;
 
@@ -1584,8 +1539,8 @@ export async function getRecentActivitiesForUser(
     return [];
   }
 
-  const { data, error } = await supabase
-    .from("activities")
+  const {data, error} = await supabase
+    .from('activities')
     .select(
       `
       id,
@@ -1623,8 +1578,8 @@ export async function getRecentActivitiesForUser(
       )
     `,
     )
-    .in("project_id", projectIds)
-    .order("created_at", { ascending: false })
+    .in('project_id', projectIds)
+    .order('created_at', {ascending: false})
     .limit(limit);
 
   if (error) throw error;
@@ -1634,12 +1589,9 @@ export async function getRecentActivitiesForUser(
 /**
  * Get company-wide activities (only for admins)
  */
-export async function getCompanyActivities(
-  companyId: string,
-  limit: number = 50,
-) {
-  const { data, error } = await supabase
-    .from("activities")
+export async function getCompanyActivities(companyId: string, limit: number = 50) {
+  const {data, error} = await supabase
+    .from('activities')
     .select(
       `
       id,
@@ -1678,8 +1630,8 @@ export async function getCompanyActivities(
       )
     `,
     )
-    .eq("project.company_id", companyId)
-    .order("created_at", { ascending: false })
+    .eq('project.company_id', companyId)
+    .order('created_at', {ascending: false})
     .limit(limit);
 
   if (error) throw error;
@@ -1693,18 +1645,14 @@ export async function getCompanyActivities(
 /**
  * Log project creation activity
  */
-export async function logProjectCreated(
-  projectId: string,
-  userId: string,
-  projectName: string,
-) {
+export async function logProjectCreated(projectId: string, userId: string, projectName: string) {
   return await createActivity({
-    type: "project_created",
+    type: 'project_created',
     project_id: projectId,
     user_id: userId,
     title: `Created project "${projectName}"`,
     description: `Project "${projectName}" was created`,
-    metadata: { projectName },
+    metadata: {projectName},
   });
 }
 
@@ -1718,12 +1666,12 @@ export async function logProjectUpdated(
   changes: Record<string, any>,
 ) {
   return await createActivity({
-    type: "project_updated",
+    type: 'project_updated',
     project_id: projectId,
     user_id: userId,
     title: `Updated project "${projectName}"`,
     description: `Project "${projectName}" was updated`,
-    metadata: { projectName, changes },
+    metadata: {projectName, changes},
   });
 }
 
@@ -1737,13 +1685,13 @@ export async function logTicketCreated(
   ticketTitle: string,
 ) {
   return await createActivity({
-    type: "ticket_created",
+    type: 'ticket_created',
     project_id: projectId,
     ticket_id: ticketId,
     user_id: userId,
     title: `Created ticket "${ticketTitle}"`,
     description: `New ticket "${ticketTitle}" was created`,
-    metadata: { ticketTitle },
+    metadata: {ticketTitle},
   });
 }
 
@@ -1758,13 +1706,13 @@ export async function logTicketUpdated(
   changes: Record<string, any>,
 ) {
   return await createActivity({
-    type: "ticket_updated",
+    type: 'ticket_updated',
     project_id: projectId,
     ticket_id: ticketId,
     user_id: userId,
     title: `Updated ticket "${ticketTitle}"`,
     description: `Ticket "${ticketTitle}" was updated`,
-    metadata: { ticketTitle, changes },
+    metadata: {ticketTitle, changes},
   });
 }
 
@@ -1779,14 +1727,14 @@ export async function logTicketAssigned(
   ticketTitle: string,
 ) {
   return await createActivity({
-    type: "ticket_assigned",
+    type: 'ticket_assigned',
     project_id: projectId,
     ticket_id: ticketId,
     user_id: userId,
     target_user_id: assigneeId,
     title: `Assigned ticket "${ticketTitle}"`,
     description: `Ticket "${ticketTitle}" was assigned`,
-    metadata: { ticketTitle },
+    metadata: {ticketTitle},
   });
 }
 
@@ -1801,13 +1749,13 @@ export async function logUserAddedToProject(
   role: string,
 ) {
   return await createActivity({
-    type: "user_added_to_project",
+    type: 'user_added_to_project',
     project_id: projectId,
     user_id: userId,
     target_user_id: targetUserId,
     title: `Added user to project "${projectName}"`,
     description: `User was added to project "${projectName}" as ${role}`,
-    metadata: { projectName, role },
+    metadata: {projectName, role},
   });
 }
 
@@ -1821,13 +1769,13 @@ export async function logUserRemovedFromProject(
   projectName: string,
 ) {
   return await createActivity({
-    type: "user_removed_from_project",
+    type: 'user_removed_from_project',
     project_id: projectId,
     user_id: userId,
     target_user_id: targetUserId,
     title: `Removed user from project "${projectName}"`,
     description: `User was removed from project "${projectName}"`,
-    metadata: { projectName },
+    metadata: {projectName},
   });
 }
 
@@ -1843,13 +1791,13 @@ export async function logTimeEntryCreated(
 ) {
   const hours = Math.round((duration / 3600) * 100) / 100; // Convert seconds to hours with 2 decimal places
   return await createActivity({
-    type: "time_entry_created",
+    type: 'time_entry_created',
     project_id: projectId,
     ticket_id: ticketId,
     user_id: userId,
     title: `Logged ${hours}h on "${ticketTitle}"`,
     description: `${hours} hours logged on ticket "${ticketTitle}"`,
-    metadata: { ticketTitle, duration, hours },
+    metadata: {ticketTitle, duration, hours},
   });
 }
 
@@ -1861,8 +1809,8 @@ export async function logTimeEntryCreated(
  * Create a ticket history entry
  */
 export async function createTicketHistory(data: NewTicketHistory) {
-  const { data: result, error } = await supabase
-    .from("ticket_history")
+  const {data: result, error} = await supabase
+    .from('ticket_history')
     .insert(data)
     .select()
     .single();
@@ -1875,16 +1823,16 @@ export async function createTicketHistory(data: NewTicketHistory) {
  * Get ticket history for a specific ticket
  */
 export async function getTicketHistory(ticketId: string) {
-  const { data, error } = await supabase
-    .from("ticket_history")
+  const {data, error} = await supabase
+    .from('ticket_history')
     .select(
       `
       *,
       users(first_name, last_name, email)
     `,
     )
-    .eq("ticket_id", ticketId)
-    .order("created_at", { ascending: false });
+    .eq('ticket_id', ticketId)
+    .order('created_at', {ascending: false});
 
   if (error) throw error;
   return data || [];
@@ -1920,7 +1868,7 @@ export async function logTicketFieldChange(
  * Check for orphaned time entries and provide repair suggestions
  */
 export async function checkTimeEntryIntegrity(companyId: string) {
-  console.log("🔍 Running time entry integrity check for company:", companyId);
+  console.log('🔍 Running time entry integrity check for company:', companyId);
 
   const issues = {
     orphanedEntries: [],
@@ -1936,8 +1884,8 @@ export async function checkTimeEntryIntegrity(companyId: string) {
 
   try {
     // Get all time entries for the company
-    const { data: timeEntries, error: entriesError } = await supabase
-      .from("time_entries")
+    const {data: timeEntries, error: entriesError} = await supabase
+      .from('time_entries')
       .select(
         `
         id,
@@ -1962,9 +1910,9 @@ export async function checkTimeEntryIntegrity(companyId: string) {
         )
       `,
       )
-      .eq("tickets.projects.company_id", companyId)
-      .not("duration", "is", null)
-      .gt("duration", 0);
+      .eq('tickets.projects.company_id', companyId)
+      .not('duration', 'is', null)
+      .gt('duration', 0);
 
     if (entriesError) {
       throw new Error(`Failed to fetch time entries: ${entriesError.message}`);
@@ -1973,7 +1921,7 @@ export async function checkTimeEntryIntegrity(companyId: string) {
     issues.summary.totalChecked = timeEntries?.length || 0;
 
     if (!timeEntries || timeEntries.length === 0) {
-      console.log("✅ No time entries found for this company");
+      console.log('✅ No time entries found for this company');
       return issues;
     }
 
@@ -2030,7 +1978,7 @@ export async function checkTimeEntryIntegrity(companyId: string) {
 
     issues.summary.orphanedCount = issues.orphanedEntries.length;
 
-    console.log("📊 Time entry integrity check results:", {
+    console.log('📊 Time entry integrity check results:', {
       totalChecked: issues.summary.totalChecked,
       totalIssues: issues.summary.totalIssues,
       orphanedEntries: issues.orphanedEntries.length,
@@ -2041,7 +1989,7 @@ export async function checkTimeEntryIntegrity(companyId: string) {
 
     return issues;
   } catch (error) {
-    console.error("❌ Error during time entry integrity check:", error);
+    console.error('❌ Error during time entry integrity check:', error);
     throw error;
   }
 }
@@ -2049,15 +1997,8 @@ export async function checkTimeEntryIntegrity(companyId: string) {
 /**
  * Clean up orphaned time entries (use with caution)
  */
-export async function cleanupOrphanedTimeEntries(
-  companyId: string,
-  dryRun: boolean = true,
-) {
-  console.log(
-    "🧹 Starting orphaned time entries cleanup (dry run:",
-    dryRun,
-    ")",
-  );
+export async function cleanupOrphanedTimeEntries(companyId: string, dryRun: boolean = true) {
+  console.log('🧹 Starting orphaned time entries cleanup (dry run:', dryRun, ')');
 
   const integrityCheck = await checkTimeEntryIntegrity(companyId);
   const cleanupResults = {
@@ -2070,13 +2011,13 @@ export async function cleanupOrphanedTimeEntries(
   };
 
   if (integrityCheck.orphanedEntries.length === 0) {
-    console.log("✅ No orphaned time entries found to clean up");
+    console.log('✅ No orphaned time entries found to clean up');
     return cleanupResults;
   }
 
   if (dryRun) {
     console.log(
-      "🔍 DRY RUN - Would delete the following orphaned entries:",
+      '🔍 DRY RUN - Would delete the following orphaned entries:',
       integrityCheck.orphanedEntries.map((e) => e.timeEntryId),
     );
     return {
@@ -2088,10 +2029,10 @@ export async function cleanupOrphanedTimeEntries(
   // Actual deletion (only if dryRun is false)
   for (const orphanedEntry of integrityCheck.orphanedEntries) {
     try {
-      const { error } = await supabase
-        .from("time_entries")
+      const {error} = await supabase
+        .from('time_entries')
         .delete()
-        .eq("id", orphanedEntry.timeEntryId);
+        .eq('id', orphanedEntry.timeEntryId);
 
       if (error) {
         cleanupResults.errors.push({
@@ -2106,12 +2047,12 @@ export async function cleanupOrphanedTimeEntries(
     } catch (error) {
       cleanupResults.errors.push({
         timeEntryId: orphanedEntry.timeEntryId,
-        error: error instanceof Error ? error.message : "Unknown error",
+        error: error instanceof Error ? error.message : 'Unknown error',
       });
       cleanupResults.summary.totalErrors++;
     }
   }
 
-  console.log("✅ Cleanup completed:", cleanupResults.summary);
+  console.log('✅ Cleanup completed:', cleanupResults.summary);
   return cleanupResults;
 }

@@ -1,19 +1,19 @@
-"use client";
+'use client';
 
-import Link from "next/link";
-import { Button } from "@workspace/ui/components/button";
+import Link from 'next/link';
+import {Button} from '@workspace/ui/components/button';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@workspace/ui/components/card";
-import { Home, Search, ArrowLeft, FileX } from "lucide-react";
-import { useAuthStore } from "@/lib/stores/auth";
+} from '@workspace/ui/components/card';
+import {Home, Search, ArrowLeft, FileX} from 'lucide-react';
+import {useAuthStore} from '@/lib/stores/auth';
 
 export default function NotFound() {
-  const { user } = useAuthStore();
+  const {user} = useAuthStore();
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
@@ -22,9 +22,7 @@ export default function NotFound() {
           <div className="mx-auto w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4">
             <FileX className="w-8 h-8 text-red-600" />
           </div>
-          <CardTitle className="text-2xl font-bold text-gray-900">
-            Page Not Found
-          </CardTitle>
+          <CardTitle className="text-2xl font-bold text-gray-900">Page Not Found</CardTitle>
           <CardDescription className="text-gray-600">
             The page you're looking for doesn't exist or has been moved.
           </CardDescription>
@@ -51,8 +49,7 @@ export default function NotFound() {
                 <Button
                   variant="ghost"
                   onClick={() => window.history.back()}
-                  className="w-full justify-start"
-                >
+                  className="w-full justify-start">
                   <ArrowLeft className="w-4 h-4 mr-2" />
                   Go Back
                 </Button>

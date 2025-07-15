@@ -1,21 +1,16 @@
-"use client";
+'use client';
 
-import { useState } from "react";
+import {useState} from 'react';
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
   CardDescription,
-} from "@workspace/ui/components/card";
-import { Button } from "@workspace/ui/components/button";
-import { Badge } from "@workspace/ui/components/badge";
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@workspace/ui/components/tabs";
+} from '@workspace/ui/components/card';
+import {Button} from '@workspace/ui/components/button';
+import {Badge} from '@workspace/ui/components/badge';
+import {Tabs, TabsContent, TabsList, TabsTrigger} from '@workspace/ui/components/tabs';
 import {
   AlertTriangle,
   Clock,
@@ -27,12 +22,12 @@ import {
   ArrowRight,
   Target,
   Timer,
-} from "lucide-react";
-import Link from "next/link";
-import { useQuery } from "@tanstack/react-query";
-import type { UserRole } from "@/lib/db/schema";
-import { getPriorityInsights } from "@/lib/db/priority-insights-service";
-import type { PriorityItem, PriorityInsightsData } from "@/lib/db/priority-insights-service";
+} from 'lucide-react';
+import Link from 'next/link';
+import {useQuery} from '@tanstack/react-query';
+import type {UserRole} from '@/lib/db/schema';
+import {getPriorityInsights} from '@/lib/db/priority-insights-service';
+import type {PriorityItem, PriorityInsightsData} from '@/lib/db/priority-insights-service';
 
 interface PriorityInsightsProps {
   userId: string;
@@ -40,19 +35,15 @@ interface PriorityInsightsProps {
   userRole: UserRole;
 }
 
-export function PriorityInsights({
-  userId,
-  companyId,
-  userRole,
-}: PriorityInsightsProps) {
-  const [selectedTab, setSelectedTab] = useState("overdue");
+export function PriorityInsights({userId, companyId, userRole}: PriorityInsightsProps) {
+  const [selectedTab, setSelectedTab] = useState('overdue');
 
   const {
     data: priorityData,
     isLoading,
     isError,
   } = useQuery({
-    queryKey: ["priority-insights", userId, companyId, userRole],
+    queryKey: ['priority-insights', userId, companyId, userRole],
     queryFn: () => getPriorityInsights(userId, companyId, userRole),
     staleTime: 5 * 60 * 1000, // 5 minutes
     enabled: !!userId && !!companyId && !!userRole,
@@ -63,31 +54,31 @@ export function PriorityInsights({
 
     return {
       overdue: {
-        label: "Overdue",
+        label: 'Overdue',
         count: priorityData.overdue.length,
         icon: <AlertTriangle className="h-4 w-4" />,
-        color: "destructive",
+        color: 'destructive',
         items: priorityData.overdue,
       },
       urgent: {
-        label: "Urgent",
+        label: 'Urgent',
         count: priorityData.urgent.length,
         icon: <Zap className="h-4 w-4" />,
-        color: "destructive",
+        color: 'destructive',
         items: priorityData.urgent,
       },
       blocked: {
-        label: "Blocked",
+        label: 'Blocked',
         count: priorityData.blocked.length,
         icon: <AlertCircle className="h-4 w-4" />,
-        color: "secondary",
+        color: 'secondary',
         items: priorityData.blocked,
       },
       deadlines: {
-        label: "Deadlines",
+        label: 'Deadlines',
         count: priorityData.upcomingDeadlines.length,
         icon: <Calendar className="h-4 w-4" />,
-        color: "outline",
+        color: 'outline',
         items: priorityData.upcomingDeadlines,
       },
     };
@@ -95,7 +86,7 @@ export function PriorityInsights({
 
   const tabConfig = getTabConfig();
 
-  const PriorityItemCard = ({ item }: { item: PriorityItem }) => (
+  const PriorityItemCard = ({item}: {item: PriorityItem}) => (
     <Link href={item.href}>
       <div className="group p-3 rounded-lg border hover:border-primary/20 hover:bg-muted/30 transition-all cursor-pointer">
         <div className="flex items-start justify-between gap-3">
@@ -106,21 +97,18 @@ export function PriorityInsights({
               </h4>
               <Badge
                 variant={
-                  item.priority === "high"
-                    ? "destructive"
-                    : item.priority === "medium"
-                      ? "secondary"
-                      : "outline"
+                  item.priority === 'high'
+                    ? 'destructive'
+                    : item.priority === 'medium'
+                      ? 'secondary'
+                      : 'outline'
                 }
-                className="text-xs flex-shrink-0"
-              >
+                className="text-xs flex-shrink-0">
                 {item.priority}
               </Badge>
             </div>
 
-            <p className="text-xs text-muted-foreground mb-2 line-clamp-2">
-              {item.description}
-            </p>
+            <p className="text-xs text-muted-foreground mb-2 line-clamp-2">{item.description}</p>
 
             <div className="flex items-center gap-4 text-xs text-muted-foreground">
               {item.assignee && (
@@ -152,13 +140,13 @@ export function PriorityInsights({
     </Link>
   );
 
-  const EmptyState = ({ type }: { type: string }) => (
+  const EmptyState = ({type}: {type: string}) => (
     <div className="text-center py-8 text-muted-foreground">
       <div className="w-12 h-12 rounded-full bg-muted/50 flex items-center justify-center mx-auto mb-3">
-        {type === "overdue" && <AlertTriangle className="h-6 w-6" />}
-        {type === "urgent" && <Zap className="h-6 w-6" />}
-        {type === "blocked" && <AlertCircle className="h-6 w-6" />}
-        {type === "deadlines" && <Calendar className="h-6 w-6" />}
+        {type === 'overdue' && <AlertTriangle className="h-6 w-6" />}
+        {type === 'urgent' && <Zap className="h-6 w-6" />}
+        {type === 'blocked' && <AlertCircle className="h-6 w-6" />}
+        {type === 'deadlines' && <Calendar className="h-6 w-6" />}
       </div>
       <p className="text-sm">No {type} items</p>
       <p className="text-xs text-muted-foreground/70">You're all caught up!</p>
@@ -170,9 +158,7 @@ export function PriorityInsights({
       <Card>
         <CardHeader>
           <CardTitle className="text-lg">Priority Insights</CardTitle>
-          <CardDescription>
-            Items that need your immediate attention
-          </CardDescription>
+          <CardDescription>Items that need your immediate attention</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="animate-pulse space-y-3">
@@ -190,9 +176,7 @@ export function PriorityInsights({
       <Card>
         <CardHeader>
           <CardTitle className="text-lg">Priority Insights</CardTitle>
-          <CardDescription>
-            Items that need your immediate attention
-          </CardDescription>
+          <CardDescription>Items that need your immediate attention</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="text-center py-8 text-muted-foreground">
@@ -218,7 +202,7 @@ export function PriorityInsights({
             <CardDescription>
               {totalPriorityItems > 0
                 ? `${totalPriorityItems} items need attention`
-                : "Everything looks good!"}
+                : 'Everything looks good!'}
             </CardDescription>
           </div>
           {totalPriorityItems > 0 && (
@@ -250,9 +234,7 @@ export function PriorityInsights({
             <TabsContent key={key} value={key} className="mt-4">
               {(config?.items?.length || 0) > 0 ? (
                 <div className="space-y-2">
-                  {config?.items?.map((item) => (
-                    <PriorityItemCard key={item.id} item={item} />
-                  ))}
+                  {config?.items?.map((item) => <PriorityItemCard key={item.id} item={item} />)}
                 </div>
               ) : (
                 <EmptyState type={key} />

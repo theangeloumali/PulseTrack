@@ -1,21 +1,19 @@
-"use client";
+'use client';
 
-import React, { useEffect, useState } from "react";
-import dynamic from "next/dynamic";
-import { useTheme } from "next-themes";
-import { cn } from "@/lib/utils";
+import React, {useEffect, useState} from 'react';
+import dynamic from 'next/dynamic';
+import {useTheme} from 'next-themes';
+import {cn} from '@/lib/utils';
 
 // Dynamically import the markdown preview component
-const MarkdownPreview = dynamic(() => import("@uiw/react-markdown-preview"), {
+const MarkdownPreview = dynamic(() => import('@uiw/react-markdown-preview'), {
   ssr: false,
-  loading: () => (
-    <div className="text-muted-foreground animate-pulse">Loading...</div>
-  ),
+  loading: () => <div className="text-muted-foreground animate-pulse">Loading...</div>,
 });
 
 interface MarkdownViewerProps {
   content: string;
-  mode?: "full" | "compact" | "inline";
+  mode?: 'full' | 'compact' | 'inline';
   maxHeight?: number;
   className?: string;
   showMore?: boolean;
@@ -23,12 +21,12 @@ interface MarkdownViewerProps {
 
 export function MarkdownViewer({
   content,
-  mode = "full",
+  mode = 'full',
   maxHeight,
   className,
   showMore = false,
 }: MarkdownViewerProps) {
-  const { theme, systemTheme } = useTheme();
+  const {theme, systemTheme} = useTheme();
   const [isMounted, setIsMounted] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
 
@@ -38,30 +36,23 @@ export function MarkdownViewer({
   }, []);
 
   // Determine if we should use dark mode
-  const currentTheme = theme === "system" ? systemTheme : theme;
-  const isDarkMode = currentTheme === "dark";
+  const currentTheme = theme === 'system' ? systemTheme : theme;
+  const isDarkMode = currentTheme === 'dark';
 
   // Handle empty content
-  if (!content || content.trim() === "") {
-    return (
-      <div className={cn("text-muted-foreground italic", className)}>
-        No description
-      </div>
-    );
+  if (!content || content.trim() === '') {
+    return <div className={cn('text-muted-foreground italic', className)}>No description</div>;
   }
 
   // For inline mode, strip markdown and show plain text
-  if (mode === "inline") {
+  if (mode === 'inline') {
     const plainText = content
-      .replace(/[#*`[\]()]/g, "") // Remove markdown characters
-      .replace(/\n/g, " ") // Replace newlines with spaces
+      .replace(/[#*`[\]()]/g, '') // Remove markdown characters
+      .replace(/\n/g, ' ') // Replace newlines with spaces
       .trim();
 
     return (
-      <span
-        className={cn("text-sm text-muted-foreground", className)}
-        title={plainText}
-      >
+      <span className={cn('text-sm text-muted-foreground', className)} title={plainText}>
         {plainText}
       </span>
     );
@@ -69,52 +60,40 @@ export function MarkdownViewer({
 
   // Don't render until mounted to avoid hydration mismatch
   if (!isMounted) {
-    return (
-      <div className={cn("text-muted-foreground animate-pulse", className)}>
-        Loading...
-      </div>
-    );
+    return <div className={cn('text-muted-foreground animate-pulse', className)}>Loading...</div>;
   }
 
   const heightClass =
-    mode === "compact"
-      ? `max-h-${maxHeight || 24}`
-      : maxHeight
-        ? `max-h-${maxHeight}`
-        : "";
+    mode === 'compact' ? `max-h-${maxHeight || 24}` : maxHeight ? `max-h-${maxHeight}` : '';
 
-  const shouldTruncate = mode === "compact" && !isExpanded;
+  const shouldTruncate = mode === 'compact' && !isExpanded;
   const displayContent =
-    shouldTruncate && content.length > 150
-      ? content.substring(0, 150) + "..."
-      : content;
+    shouldTruncate && content.length > 150 ? content.substring(0, 150) + '...' : content;
 
   return (
     <div
       className={cn(
-        "markdown-viewer prose prose-sm dark:prose-invert max-w-none",
+        'markdown-viewer prose prose-sm dark:prose-invert max-w-none',
         heightClass,
-        shouldTruncate && "overflow-hidden",
+        shouldTruncate && 'overflow-hidden',
         className,
       )}
-      data-color-mode={isDarkMode ? "dark" : "light"}
-    >
+      data-color-mode={isDarkMode ? 'dark' : 'light'}>
       <MarkdownPreview
         source={displayContent}
         style={{
-          backgroundColor: "transparent",
-          color: "inherit",
+          backgroundColor: 'transparent',
+          color: 'inherit',
         }}
-        data-color-mode={isDarkMode ? "dark" : "light"}
+        data-color-mode={isDarkMode ? 'dark' : 'light'}
       />
 
       {/* Show more/less toggle for compact mode */}
-      {mode === "compact" && showMore && content.length > 150 && (
+      {mode === 'compact' && showMore && content.length > 150 && (
         <button
           onClick={() => setIsExpanded(!isExpanded)}
-          className="text-xs text-primary hover:text-primary/80 mt-1 block"
-        >
-          {isExpanded ? "Show less" : "Show more"}
+          className="text-xs text-primary hover:text-primary/80 mt-1 block">
+          {isExpanded ? 'Show less' : 'Show more'}
         </button>
       )}
 
@@ -268,33 +247,33 @@ export function MarkdownViewer({
 
 // Utility function to strip markdown for plain text display
 export function stripMarkdown(content: string): string {
-  if (!content) return "";
+  if (!content) return '';
 
   return (
     content
       // Remove headers
-      .replace(/^#{1,6}\s+/gm, "")
+      .replace(/^#{1,6}\s+/gm, '')
       // Remove bold/italic
-      .replace(/\*\*(.*?)\*\*/g, "$1")
-      .replace(/\*(.*?)\*/g, "$1")
-      .replace(/__(.*?)__/g, "$1")
-      .replace(/_(.*?)_/g, "$1")
+      .replace(/\*\*(.*?)\*\*/g, '$1')
+      .replace(/\*(.*?)\*/g, '$1')
+      .replace(/__(.*?)__/g, '$1')
+      .replace(/_(.*?)_/g, '$1')
       // Remove code blocks
-      .replace(/```[\s\S]*?```/g, "[code block]")
-      .replace(/`(.*?)`/g, "$1")
+      .replace(/```[\s\S]*?```/g, '[code block]')
+      .replace(/`(.*?)`/g, '$1')
       // Remove links
-      .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
-      .replace(/\[([^\]]+)\]/g, "$1")
+      .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+      .replace(/\[([^\]]+)\]/g, '$1')
       // Remove images
-      .replace(/!\[([^\]]*)\]\([^)]+\)/g, "$1")
+      .replace(/!\[([^\]]*)\]\([^)]+\)/g, '$1')
       // Remove blockquotes
-      .replace(/^>\s+/gm, "")
+      .replace(/^>\s+/gm, '')
       // Remove list markers
-      .replace(/^[\s]*[-*+]\s+/gm, "")
-      .replace(/^[\s]*\d+\.\s+/gm, "")
+      .replace(/^[\s]*[-*+]\s+/gm, '')
+      .replace(/^[\s]*\d+\.\s+/gm, '')
       // Clean up extra whitespace
-      .replace(/\n\s*\n/g, "\n")
-      .replace(/\n/g, " ")
+      .replace(/\n\s*\n/g, '\n')
+      .replace(/\n/g, ' ')
       .trim()
   );
 }

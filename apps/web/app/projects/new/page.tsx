@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
+import {useEffect} from 'react';
+import {useRouter} from 'next/navigation';
 
-export const dynamic = "force-dynamic";
+export const dynamic = 'force-dynamic';
 
 // This page redirects to the projects page where the creation modal can be triggered
 // We're moving away from separate pages to modal-based forms for better UX
@@ -13,7 +13,7 @@ export default function NewProjectPage() {
   useEffect(() => {
     // Redirect to projects page where the creation modal can be triggered
     // The sidebar already has the "New Project" button that opens the modal
-    router.replace("/projects?openCreateProject=true");
+    router.replace('/projects?openCreateProject=true');
   }, [router]);
 
   return (

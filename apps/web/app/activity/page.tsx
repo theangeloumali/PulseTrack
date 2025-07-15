@@ -1,24 +1,19 @@
-"use client";
+'use client';
 
-import React, { useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { ActivityFeed } from "@/components/activity/activity-feed";
-import { useAuth } from "@/lib/hooks/useAuth";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@workspace/ui/components/card";
+import React, {useEffect} from 'react';
+import {useRouter} from 'next/navigation';
+import {ActivityFeed} from '@/components/activity/activity-feed';
+import {useAuth} from '@/lib/hooks/useAuth';
+import {Card, CardContent, CardHeader, CardTitle} from '@workspace/ui/components/card';
 
 export default function ActivityPage(): React.JSX.Element {
-  const { user, isLoading } = useAuth();
+  const {user, isLoading} = useAuth();
   const router = useRouter();
 
   useEffect(() => {
     // Redirect if user is not authenticated or still loading
     if (!isLoading && !user) {
-      router.push("/dashboard");
+      router.push('/dashboard');
     }
   }, [user, isLoading, router]);
 
@@ -46,9 +41,7 @@ export default function ActivityPage(): React.JSX.Element {
         <div className="px-4">
           <div className="flex justify-between items-center py-4">
             <div>
-              <h1 className="text-3xl font-bold text-foreground">
-                Activity Feed
-              </h1>
+              <h1 className="text-3xl font-bold text-foreground">Activity Feed</h1>
               <p className="text-muted-foreground">
                 Stay up to date with your team's work across all projects
               </p>
@@ -71,34 +64,26 @@ export default function ActivityPage(): React.JSX.Element {
                 <CardTitle className="text-lg">My Activity</CardTitle>
               </CardHeader>
               <CardContent className="p-0">
-                <ActivityFeed
-                  userId={user.id}
-                  limit={10}
-                  title=""
-                  showFilters={false}
-                />
+                <ActivityFeed userId={user.id} limit={10} title="" showFilters={false} />
               </CardContent>
             </Card>
 
             {/* Activity by Project - only show if user has company admin+ role */}
-            {user.role &&
-              ["super_admin", "system_admin", "company_admin"].includes(
-                user.role,
-              ) && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-lg">Company Activity</CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-0">
-                    <ActivityFeed
-                      companyId={user.company_id}
-                      limit={15}
-                      title=""
-                      showFilters={false}
-                    />
-                  </CardContent>
-                </Card>
-              )}
+            {user.role && ['super_admin', 'system_admin', 'company_admin'].includes(user.role) && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Company Activity</CardTitle>
+                </CardHeader>
+                <CardContent className="p-0">
+                  <ActivityFeed
+                    companyId={user.company_id}
+                    limit={15}
+                    title=""
+                    showFilters={false}
+                  />
+                </CardContent>
+              </Card>
+            )}
           </div>
         </div>
       </main>

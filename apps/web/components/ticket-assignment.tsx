@@ -1,24 +1,21 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { User, UserPlus } from "lucide-react";
-import { Button } from "@workspace/ui/components/button";
-import { Card } from "@workspace/ui/components/card";
-import { Label } from "@workspace/ui/components/label";
-import { useAssignableUsers } from "@/lib/hooks/useUsers";
-import { useUpdateTicket } from "@/lib/hooks/useTickets";
-import type { Ticket } from "@/lib/db/schema";
+import {useState} from 'react';
+import {User, UserPlus} from 'lucide-react';
+import {Button} from '@workspace/ui/components/button';
+import {Card} from '@workspace/ui/components/card';
+import {Label} from '@workspace/ui/components/label';
+import {useAssignableUsers} from '@/lib/hooks/useUsers';
+import {useUpdateTicket} from '@/lib/hooks/useTickets';
+import type {Ticket} from '@/lib/db/schema';
 
 interface TicketAssignmentProps {
   ticket: Ticket;
   compact?: boolean;
 }
 
-export function TicketAssignment({
-  ticket,
-  compact = false,
-}: TicketAssignmentProps) {
-  const { data: users = [], isLoading: usersLoading } = useAssignableUsers();
+export function TicketAssignment({ticket, compact = false}: TicketAssignmentProps) {
+  const {data: users = [], isLoading: usersLoading} = useAssignableUsers();
   const updateTicketMutation = useUpdateTicket();
 
   const [isAssigning, setIsAssigning] = useState(false);
@@ -29,13 +26,13 @@ export function TicketAssignment({
     try {
       await updateTicketMutation.mutateAsync({
         id: ticket.id,
-        data: { assignee_id: userId },
+        data: {assignee_id: userId},
       });
       setIsAssigning(false);
       // The mutation will automatically invalidate the ticket cache and update the UI
     } catch (error) {
-      console.error("Failed to assign ticket:", error);
-      alert("Failed to assign ticket. Please try again.");
+      console.error('Failed to assign ticket:', error);
+      alert('Failed to assign ticket. Please try again.');
     }
   };
 
@@ -54,8 +51,7 @@ export function TicketAssignment({
             size="sm"
             variant="outline"
             onClick={() => setIsAssigning(true)}
-            disabled={updateTicketMutation.isPending}
-          >
+            disabled={updateTicketMutation.isPending}>
             <UserPlus className="w-3 h-3" />
             Assign
           </Button>
@@ -70,11 +66,7 @@ export function TicketAssignment({
         <div className="flex items-center justify-between">
           <h3 className="text-lg font-semibold">Assignment</h3>
           {assignedUser && !isAssigning && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setIsAssigning(true)}
-            >
+            <Button variant="outline" size="sm" onClick={() => setIsAssigning(true)}>
               Change
             </Button>
           )}
@@ -98,8 +90,7 @@ export function TicketAssignment({
                 <p className="text-gray-500 mb-3">No one assigned</p>
                 <Button
                   onClick={() => setIsAssigning(true)}
-                  disabled={updateTicketMutation.isPending}
-                >
+                  disabled={updateTicketMutation.isPending}>
                   Assign Ticket
                 </Button>
               </div>
@@ -114,8 +105,7 @@ export function TicketAssignment({
                 <button
                   onClick={() => assignTicket(null)}
                   disabled={updateTicketMutation.isPending}
-                  className="w-full text-left p-3 border rounded-lg hover:bg-gray-50 flex items-center gap-3"
-                >
+                  className="w-full text-left p-3 border rounded-lg hover:bg-gray-50 flex items-center gap-3">
                   <div className="w-5 h-5 rounded-full bg-gray-200 flex items-center justify-center">
                     <User className="w-3 h-3 text-gray-500" />
                   </div>
@@ -127,13 +117,9 @@ export function TicketAssignment({
 
                 {/* User options */}
                 {usersLoading ? (
-                  <div className="p-3 text-center text-gray-500">
-                    Loading users...
-                  </div>
+                  <div className="p-3 text-center text-gray-500">Loading users...</div>
                 ) : users.length === 0 ? (
-                  <div className="p-3 text-center text-gray-500">
-                    No users found
-                  </div>
+                  <div className="p-3 text-center text-gray-500">No users found</div>
                 ) : (
                   users.map((user) => (
                     <button
@@ -141,11 +127,8 @@ export function TicketAssignment({
                       onClick={() => assignTicket(user.id)}
                       disabled={updateTicketMutation.isPending}
                       className={`w-full text-left p-3 border rounded-lg hover:bg-gray-50 flex items-center gap-3 ${
-                        user.id === ticket.assignee_id
-                          ? "bg-blue-50 border-blue-200"
-                          : ""
-                      }`}
-                    >
+                        user.id === ticket.assignee_id ? 'bg-blue-50 border-blue-200' : ''
+                      }`}>
                       <div className="w-5 h-5 rounded-full bg-blue-100 flex items-center justify-center">
                         <User className="w-3 h-3 text-blue-600" />
                       </div>
@@ -169,11 +152,7 @@ export function TicketAssignment({
             </div>
 
             <div className="flex gap-2">
-              <Button
-                variant="outline"
-                onClick={() => setIsAssigning(false)}
-                className="flex-1"
-              >
+              <Button variant="outline" onClick={() => setIsAssigning(false)} className="flex-1">
                 Cancel
               </Button>
             </div>

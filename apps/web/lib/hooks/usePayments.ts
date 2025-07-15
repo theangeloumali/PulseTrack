@@ -1,20 +1,16 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getApiPath } from "@/lib/utils";
-import type { PaymentStatus, BillingFrequency } from "@/lib/db/schema";
+import {useQuery, useMutation, useQueryClient} from '@tanstack/react-query';
+import {getApiPath} from '@/lib/utils';
+import type {PaymentStatus, BillingFrequency} from '@/lib/db/schema';
 
 // Query keys
 export const paymentKeys = {
-  all: ["payments"] as const,
-  outstanding: (companyId: string) =>
-    [...paymentKeys.all, "outstanding", companyId] as const,
-  overdue: (companyId: string) =>
-    [...paymentKeys.all, "overdue", companyId] as const,
+  all: ['payments'] as const,
+  outstanding: (companyId: string) => [...paymentKeys.all, 'outstanding', companyId] as const,
+  overdue: (companyId: string) => [...paymentKeys.all, 'overdue', companyId] as const,
   stats: (companyId: string, year?: number) =>
-    [...paymentKeys.all, "stats", companyId, year] as const,
-  history: (billingPeriodId: string) =>
-    [...paymentKeys.all, "history", billingPeriodId] as const,
-  periods: (companyId: string) =>
-    [...paymentKeys.all, "periods", companyId] as const,
+    [...paymentKeys.all, 'stats', companyId, year] as const,
+  history: (billingPeriodId: string) => [...paymentKeys.all, 'history', billingPeriodId] as const,
+  periods: (companyId: string) => [...paymentKeys.all, 'periods', companyId] as const,
 };
 
 // Payment status queries
@@ -22,11 +18,9 @@ export function useOutstandingPayments(companyId: string) {
   return useQuery({
     queryKey: paymentKeys.outstanding(companyId),
     queryFn: async () => {
-      const response = await fetch(
-        getApiPath("billing/payment-status?action=outstanding"),
-      );
+      const response = await fetch(getApiPath('billing/payment-status?action=outstanding'));
       if (!response.ok) {
-        throw new Error("Failed to fetch outstanding payments");
+        throw new Error('Failed to fetch outstanding payments');
       }
       return response.json();
     },
@@ -38,11 +32,9 @@ export function useOverduePayments(companyId: string) {
   return useQuery({
     queryKey: paymentKeys.overdue(companyId),
     queryFn: async () => {
-      const response = await fetch(
-        getApiPath("billing/payment-status?action=overdue"),
-      );
+      const response = await fetch(getApiPath('billing/payment-status?action=overdue'));
       if (!response.ok) {
-        throw new Error("Failed to fetch overdue payments");
+        throw new Error('Failed to fetch overdue payments');
       }
       return response.json();
     },
@@ -56,11 +48,11 @@ export function usePaymentStats(companyId: string, year?: number) {
     queryFn: async () => {
       const url = year
         ? getApiPath(`billing/payment-status?action=stats&year=${year}`)
-        : getApiPath("billing/payment-status?action=stats");
+        : getApiPath('billing/payment-status?action=stats');
 
       const response = await fetch(url);
       if (!response.ok) {
-        throw new Error("Failed to fetch payment stats");
+        throw new Error('Failed to fetch payment stats');
       }
       return response.json();
     },
@@ -73,12 +65,10 @@ export function usePaymentHistory(billingPeriodId: string) {
     queryKey: paymentKeys.history(billingPeriodId),
     queryFn: async () => {
       const response = await fetch(
-        getApiPath(
-          `billing/payment-history?billing_period_id=${billingPeriodId}`,
-        ),
+        getApiPath(`billing/payment-history?billing_period_id=${billingPeriodId}`),
       );
       if (!response.ok) {
-        throw new Error("Failed to fetch payment history");
+        throw new Error('Failed to fetch payment history');
       }
       return response.json();
     },
@@ -90,9 +80,9 @@ export function useBillingPeriods(companyId: string) {
   return useQuery({
     queryKey: paymentKeys.periods(companyId),
     queryFn: async () => {
-      const response = await fetch(getApiPath("billing/periods"));
+      const response = await fetch(getApiPath('billing/periods'));
       if (!response.ok) {
-        throw new Error("Failed to fetch billing periods");
+        throw new Error('Failed to fetch billing periods');
       }
       return response.json();
     },
@@ -118,21 +108,21 @@ export function useUpdatePaymentStatus(companyId: string) {
       invoice_sent_date?: string;
       notes?: string;
     }) => {
-      const response = await fetch(getApiPath("billing/payment-status"), {
-        method: "PATCH",
+      const response = await fetch(getApiPath('billing/payment-status'), {
+        method: 'PATCH',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           billing_period_id,
           payment_status,
-          action: "update_status",
+          action: 'update_status',
           ...additionalData,
         }),
       });
 
       if (!response.ok) {
-        throw new Error("Failed to update payment status");
+        throw new Error('Failed to update payment status');
       }
 
       return response.json();
@@ -145,7 +135,7 @@ export function useUpdatePaymentStatus(companyId: string) {
       queryClient.invalidateQueries({
         queryKey: paymentKeys.overdue(companyId),
       });
-      queryClient.invalidateQueries({ queryKey: paymentKeys.stats(companyId) });
+      queryClient.invalidateQueries({queryKey: paymentKeys.stats(companyId)});
       queryClient.invalidateQueries({
         queryKey: paymentKeys.periods(companyId),
       });
@@ -164,20 +154,20 @@ export function useMarkInvoiceSent(companyId: string) {
       billing_period_id: string;
       due_date?: string;
     }) => {
-      const response = await fetch(getApiPath("billing/payment-status"), {
-        method: "PATCH",
+      const response = await fetch(getApiPath('billing/payment-status'), {
+        method: 'PATCH',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           billing_period_id,
-          action: "mark_sent",
+          action: 'mark_sent',
           due_date,
         }),
       });
 
       if (!response.ok) {
-        throw new Error("Failed to mark invoice as sent");
+        throw new Error('Failed to mark invoice as sent');
       }
 
       return response.json();
@@ -189,7 +179,7 @@ export function useMarkInvoiceSent(companyId: string) {
       queryClient.invalidateQueries({
         queryKey: paymentKeys.overdue(companyId),
       });
-      queryClient.invalidateQueries({ queryKey: paymentKeys.stats(companyId) });
+      queryClient.invalidateQueries({queryKey: paymentKeys.stats(companyId)});
       queryClient.invalidateQueries({
         queryKey: paymentKeys.periods(companyId),
       });
@@ -210,21 +200,21 @@ export function useMarkPaymentReceived(companyId: string) {
       amount?: number;
       reference?: string;
     }) => {
-      const response = await fetch(getApiPath("billing/payment-status"), {
-        method: "PATCH",
+      const response = await fetch(getApiPath('billing/payment-status'), {
+        method: 'PATCH',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           billing_period_id,
-          action: "mark_paid",
+          action: 'mark_paid',
           amount,
           reference,
         }),
       });
 
       if (!response.ok) {
-        throw new Error("Failed to mark payment as received");
+        throw new Error('Failed to mark payment as received');
       }
 
       return response.json();
@@ -236,7 +226,7 @@ export function useMarkPaymentReceived(companyId: string) {
       queryClient.invalidateQueries({
         queryKey: paymentKeys.overdue(companyId),
       });
-      queryClient.invalidateQueries({ queryKey: paymentKeys.stats(companyId) });
+      queryClient.invalidateQueries({queryKey: paymentKeys.stats(companyId)});
       queryClient.invalidateQueries({
         queryKey: paymentKeys.periods(companyId),
       });
@@ -259,13 +249,13 @@ export function useGenerateBillingPeriod(companyId: string) {
       custom_start_date?: string;
       custom_end_date?: string;
     }) => {
-      const response = await fetch(getApiPath("billing/periods"), {
-        method: "POST",
+      const response = await fetch(getApiPath('billing/periods'), {
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          action: "generate",
+          action: 'generate',
           frequency,
           start_date,
           custom_start_date,
@@ -274,7 +264,7 @@ export function useGenerateBillingPeriod(companyId: string) {
       });
 
       if (!response.ok) {
-        throw new Error("Failed to generate billing period");
+        throw new Error('Failed to generate billing period');
       }
 
       return response.json();
@@ -291,24 +281,20 @@ export function useGenerateNextBillingPeriod(companyId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({
-      current_period_id,
-    }: {
-      current_period_id: string;
-    }) => {
-      const response = await fetch(getApiPath("billing/periods"), {
-        method: "POST",
+    mutationFn: async ({current_period_id}: {current_period_id: string}) => {
+      const response = await fetch(getApiPath('billing/periods'), {
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          action: "generate_next",
+          action: 'generate_next',
           current_period_id,
         }),
       });
 
       if (!response.ok) {
-        throw new Error("Failed to generate next billing period");
+        throw new Error('Failed to generate next billing period');
       }
 
       return response.json();
@@ -338,13 +324,13 @@ export function useGenerateBillingPeriodForUser(companyId: string) {
       custom_start_date?: string;
       custom_end_date?: string;
     }) => {
-      const response = await fetch(getApiPath("billing/periods"), {
-        method: "POST",
+      const response = await fetch(getApiPath('billing/periods'), {
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          action: "generate_for_user",
+          action: 'generate_for_user',
           target_user_id,
           frequency,
           start_date,
@@ -354,7 +340,7 @@ export function useGenerateBillingPeriodForUser(companyId: string) {
       });
 
       if (!response.ok) {
-        throw new Error("Failed to generate billing period for user");
+        throw new Error('Failed to generate billing period for user');
       }
 
       return response.json();
@@ -372,16 +358,13 @@ export function useDeleteBillingPeriod(companyId: string) {
 
   return useMutation({
     mutationFn: async (billingPeriodId: string) => {
-      const response = await fetch(
-        getApiPath(`billing/periods?id=${billingPeriodId}`),
-        {
-          method: "DELETE",
-        },
-      );
+      const response = await fetch(getApiPath(`billing/periods?id=${billingPeriodId}`), {
+        method: 'DELETE',
+      });
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to delete billing period");
+        throw new Error(errorData.error || 'Failed to delete billing period');
       }
 
       return response.json();
@@ -409,10 +392,10 @@ export function useCreatePaymentHistoryEntry(billingPeriodId: string) {
       new_value?: string;
       notes?: string;
     }) => {
-      const response = await fetch(getApiPath("billing/payment-history"), {
-        method: "POST",
+      const response = await fetch(getApiPath('billing/payment-history'), {
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           billing_period_id: billingPeriodId,
@@ -424,7 +407,7 @@ export function useCreatePaymentHistoryEntry(billingPeriodId: string) {
       });
 
       if (!response.ok) {
-        throw new Error("Failed to create payment history entry");
+        throw new Error('Failed to create payment history entry');
       }
 
       return response.json();
@@ -447,18 +430,18 @@ export function useDeletePaymentHistory(companyId: string) {
         getApiPath(
           `billing/payments?action=delete_payment_history&payment_history_id=${paymentHistoryId}`,
         ),
-        { method: "DELETE" },
+        {method: 'DELETE'},
       );
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to delete payment history");
+        throw new Error(errorData.error || 'Failed to delete payment history');
       }
 
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: paymentKeys.all });
+      queryClient.invalidateQueries({queryKey: paymentKeys.all});
       queryClient.invalidateQueries({
         queryKey: paymentKeys.periods(companyId),
       });
@@ -475,18 +458,18 @@ export function useResetPaymentStatus(companyId: string) {
         getApiPath(
           `billing/payments?action=reset_payment_status&billing_period_id=${billingPeriodId}`,
         ),
-        { method: "DELETE" },
+        {method: 'DELETE'},
       );
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to reset payment status");
+        throw new Error(errorData.error || 'Failed to reset payment status');
       }
 
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: paymentKeys.all });
+      queryClient.invalidateQueries({queryKey: paymentKeys.all});
       queryClient.invalidateQueries({
         queryKey: paymentKeys.periods(companyId),
       });
@@ -496,7 +479,7 @@ export function useResetPaymentStatus(companyId: string) {
       queryClient.invalidateQueries({
         queryKey: paymentKeys.overdue(companyId),
       });
-      queryClient.invalidateQueries({ queryKey: paymentKeys.stats(companyId) });
+      queryClient.invalidateQueries({queryKey: paymentKeys.stats(companyId)});
     },
   });
 }
@@ -510,20 +493,18 @@ export function useDeleteAllPaymentHistory(companyId: string) {
         getApiPath(
           `billing/payments?action=delete_all_payment_history&billing_period_id=${billingPeriodId}`,
         ),
-        { method: "DELETE" },
+        {method: 'DELETE'},
       );
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(
-          errorData.error || "Failed to delete all payment history",
-        );
+        throw new Error(errorData.error || 'Failed to delete all payment history');
       }
 
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: paymentKeys.all });
+      queryClient.invalidateQueries({queryKey: paymentKeys.all});
       queryClient.invalidateQueries({
         queryKey: paymentKeys.periods(companyId),
       });
@@ -537,25 +518,23 @@ export function useDeleteMultipleOutstandingPayments(companyId: string) {
 
   return useMutation({
     mutationFn: async (billingPeriodIds: string[]) => {
-      const idsParam = billingPeriodIds.join(",");
+      const idsParam = billingPeriodIds.join(',');
       const response = await fetch(
         getApiPath(
           `billing/payments?action=delete_multiple_outstanding&billing_period_ids=${idsParam}`,
         ),
-        { method: "DELETE" },
+        {method: 'DELETE'},
       );
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(
-          errorData.error || "Failed to delete outstanding payments",
-        );
+        throw new Error(errorData.error || 'Failed to delete outstanding payments');
       }
 
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: paymentKeys.all });
+      queryClient.invalidateQueries({queryKey: paymentKeys.all});
       queryClient.invalidateQueries({
         queryKey: paymentKeys.periods(companyId),
       });
@@ -565,7 +544,7 @@ export function useDeleteMultipleOutstandingPayments(companyId: string) {
       queryClient.invalidateQueries({
         queryKey: paymentKeys.overdue(companyId),
       });
-      queryClient.invalidateQueries({ queryKey: paymentKeys.stats(companyId) });
+      queryClient.invalidateQueries({queryKey: paymentKeys.stats(companyId)});
     },
   });
 }
@@ -575,25 +554,21 @@ export function useDeleteOutstandingPaymentsByStatus(companyId: string) {
 
   return useMutation({
     mutationFn: async (statuses: string[]) => {
-      const statusParam = statuses.join(",");
+      const statusParam = statuses.join(',');
       const response = await fetch(
-        getApiPath(
-          `billing/payments?action=delete_by_status&statuses=${statusParam}`,
-        ),
-        { method: "DELETE" },
+        getApiPath(`billing/payments?action=delete_by_status&statuses=${statusParam}`),
+        {method: 'DELETE'},
       );
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(
-          errorData.error || "Failed to delete payments by status",
-        );
+        throw new Error(errorData.error || 'Failed to delete payments by status');
       }
 
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: paymentKeys.all });
+      queryClient.invalidateQueries({queryKey: paymentKeys.all});
       queryClient.invalidateQueries({
         queryKey: paymentKeys.periods(companyId),
       });
@@ -603,7 +578,7 @@ export function useDeleteOutstandingPaymentsByStatus(companyId: string) {
       queryClient.invalidateQueries({
         queryKey: paymentKeys.overdue(companyId),
       });
-      queryClient.invalidateQueries({ queryKey: paymentKeys.stats(companyId) });
+      queryClient.invalidateQueries({queryKey: paymentKeys.stats(companyId)});
     },
   });
 }

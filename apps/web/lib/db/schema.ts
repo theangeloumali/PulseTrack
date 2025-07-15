@@ -2,38 +2,28 @@
 // This file provides type safety without runtime dependencies
 
 // Define enum types
-export type UserRole =
-  | "super_admin"
-  | "system_admin"
-  | "company_admin"
-  | "manager"
-  | "user";
-export type UserStatus = "active" | "inactive";
-export type ProjectStatus = "active" | "archived" | "completed";
-export type TicketStatus = "new" | "in_progress" | "review" | "done";
-export type TicketPriority = "low" | "medium" | "high" | "critical";
-export type BillingFrequency = "weekly" | "bi_monthly" | "monthly";
-export type BillingStatus = "draft" | "active" | "closed";
-export type PaymentStatus =
-  | "pending"
-  | "sent"
-  | "paid"
-  | "overdue"
-  | "cancelled";
+export type UserRole = 'super_admin' | 'system_admin' | 'company_admin' | 'manager' | 'user';
+export type UserStatus = 'active' | 'inactive';
+export type ProjectStatus = 'active' | 'archived' | 'completed';
+export type TicketStatus = 'new' | 'in_progress' | 'review' | 'done';
+export type TicketPriority = 'low' | 'medium' | 'high' | 'critical';
+export type BillingFrequency = 'weekly' | 'bi_monthly' | 'monthly';
+export type BillingStatus = 'draft' | 'active' | 'closed';
+export type PaymentStatus = 'pending' | 'sent' | 'paid' | 'overdue' | 'cancelled';
 export type ActivityType =
-  | "project_created"
-  | "project_updated"
-  | "project_archived"
-  | "ticket_created"
-  | "ticket_updated"
-  | "ticket_deleted"
-  | "ticket_assigned"
-  | "comment_created"
-  | "user_added_to_project"
-  | "user_removed_from_project"
-  | "time_entry_created"
-  | "time_entry_updated";
-export type ProjectVisibility = "public" | "company" | "private";
+  | 'project_created'
+  | 'project_updated'
+  | 'project_archived'
+  | 'ticket_created'
+  | 'ticket_updated'
+  | 'ticket_deleted'
+  | 'ticket_assigned'
+  | 'comment_created'
+  | 'user_added_to_project'
+  | 'user_removed_from_project'
+  | 'time_entry_created'
+  | 'time_entry_updated';
+export type ProjectVisibility = 'public' | 'company' | 'private';
 
 // Base database types
 export interface BaseRecord {
@@ -62,7 +52,7 @@ export interface User extends BaseRecord {
   role: UserRole;
   company_id: string;
   hourly_rate?: number | null; // Hourly rate in dollars
-  status?: "active" | "inactive"; // User status within company
+  status?: 'active' | 'inactive'; // User status within company
   invited_by?: string | null; // ID of user who invited this user
   invited_at?: string | null; // When the invitation was sent
 }
@@ -102,13 +92,13 @@ export interface NewProject {
 export interface ProjectMember extends BaseRecord {
   project_id: string;
   user_id: string;
-  role: "lead" | "member";
+  role: 'lead' | 'member';
 }
 
 export interface NewProjectMember {
   project_id: string;
   user_id: string;
-  role?: "lead" | "member";
+  role?: 'lead' | 'member';
 }
 
 // Project member with user relation
@@ -341,13 +331,10 @@ export interface NewActivity {
 
 // Activity with user relation
 export interface ActivityWithUser extends Activity {
-  user: Pick<User, "id" | "first_name" | "last_name" | "avatar_url" | "email">;
-  target_user?: Pick<
-    User,
-    "id" | "first_name" | "last_name" | "avatar_url" | "email"
-  > | null;
-  project?: Pick<Project, "id" | "name"> | null;
-  ticket?: Pick<Ticket, "id" | "title"> | null;
+  user: Pick<User, 'id' | 'first_name' | 'last_name' | 'avatar_url' | 'email'>;
+  target_user?: Pick<User, 'id' | 'first_name' | 'last_name' | 'avatar_url' | 'email'> | null;
+  project?: Pick<Project, 'id' | 'name'> | null;
+  ticket?: Pick<Ticket, 'id' | 'title'> | null;
 }
 
 // Payment History types
@@ -355,14 +342,14 @@ export interface PaymentHistory extends BaseRecord {
   billing_period_id: string;
   user_id: string;
   action:
-    | "status_changed"
-    | "invoice_sent"
-    | "payment_received"
-    | "due_date_set"
-    | "notes_updated"
-    | "outstanding_payment_deletion"
-    | "bulk_payment_history_deletion"
-    | "payment_status_reset";
+    | 'status_changed'
+    | 'invoice_sent'
+    | 'payment_received'
+    | 'due_date_set'
+    | 'notes_updated'
+    | 'outstanding_payment_deletion'
+    | 'bulk_payment_history_deletion'
+    | 'payment_status_reset';
   old_value?: string | null;
   new_value?: string | null;
   notes?: string | null;
@@ -372,14 +359,14 @@ export interface NewPaymentHistory {
   billing_period_id: string;
   user_id: string;
   action:
-    | "status_changed"
-    | "invoice_sent"
-    | "payment_received"
-    | "due_date_set"
-    | "notes_updated"
-    | "outstanding_payment_deletion"
-    | "bulk_payment_history_deletion"
-    | "payment_status_reset";
+    | 'status_changed'
+    | 'invoice_sent'
+    | 'payment_received'
+    | 'due_date_set'
+    | 'notes_updated'
+    | 'outstanding_payment_deletion'
+    | 'bulk_payment_history_deletion'
+    | 'payment_status_reset';
   old_value?: string | null;
   new_value?: string | null;
   notes?: string | null;
@@ -387,18 +374,18 @@ export interface NewPaymentHistory {
 
 // Database table names for Supabase queries
 export const TABLE_NAMES = {
-  companies: "companies",
-  users: "users",
-  projects: "projects",
-  project_members: "project_members",
-  tickets: "tickets",
-  time_entries: "time_entries",
-  comments: "comments",
-  billing_periods: "billing_periods",
-  billing_rates: "billing_rates",
-  company_billing_settings: "company_billing_settings",
-  time_entry_billing: "time_entry_billing",
-  ticket_history: "ticket_history",
-  activities: "activities",
-  payment_history: "payment_history",
+  companies: 'companies',
+  users: 'users',
+  projects: 'projects',
+  project_members: 'project_members',
+  tickets: 'tickets',
+  time_entries: 'time_entries',
+  comments: 'comments',
+  billing_periods: 'billing_periods',
+  billing_rates: 'billing_rates',
+  company_billing_settings: 'company_billing_settings',
+  time_entry_billing: 'time_entry_billing',
+  ticket_history: 'ticket_history',
+  activities: 'activities',
+  payment_history: 'payment_history',
 } as const;

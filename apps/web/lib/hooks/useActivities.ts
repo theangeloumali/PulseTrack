@@ -1,25 +1,22 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useSessionAwareQuery } from "./useSessionAwareQuery";
+import {useMutation, useQueryClient} from '@tanstack/react-query';
+import {useSessionAwareQuery} from './useSessionAwareQuery';
 import {
   createActivity,
   getProjectActivities,
   getUserActivities,
   getRecentActivitiesForUser,
   getCompanyActivities,
-} from "@/lib/db/service";
-import type { NewActivity, ActivityWithUser } from "@/lib/db/schema";
-import { useAuth } from "./useAuth";
+} from '@/lib/db/service';
+import type {NewActivity, ActivityWithUser} from '@/lib/db/schema';
+import {useAuth} from './useAuth';
 
 // Query keys for activities
 const ACTIVITY_KEYS = {
-  all: ["activities"] as const,
-  project: (projectId: string) =>
-    [...ACTIVITY_KEYS.all, "project", projectId] as const,
-  user: (userId: string) => [...ACTIVITY_KEYS.all, "user", userId] as const,
-  userRecent: (userId: string) =>
-    [...ACTIVITY_KEYS.all, "user", userId, "recent"] as const,
-  company: (companyId: string) =>
-    [...ACTIVITY_KEYS.all, "company", companyId] as const,
+  all: ['activities'] as const,
+  project: (projectId: string) => [...ACTIVITY_KEYS.all, 'project', projectId] as const,
+  user: (userId: string) => [...ACTIVITY_KEYS.all, 'user', userId] as const,
+  userRecent: (userId: string) => [...ACTIVITY_KEYS.all, 'user', userId, 'recent'] as const,
+  company: (companyId: string) => [...ACTIVITY_KEYS.all, 'company', companyId] as const,
 };
 
 /**
@@ -50,10 +47,10 @@ export function useUserActivities(userId: string, limit: number = 50) {
  * Hook to get recent activities for the current user across accessible projects
  */
 export function useRecentActivities(limit: number = 20) {
-  const { user } = useAuth();
+  const {user} = useAuth();
 
   return useSessionAwareQuery({
-    queryKey: ACTIVITY_KEYS.userRecent(user?.id || ""),
+    queryKey: ACTIVITY_KEYS.userRecent(user?.id || ''),
     queryFn: () => getRecentActivitiesForUser(user!.id, limit),
     enabled: !!user?.id,
     staleTime: 30 * 1000, // 30 seconds
@@ -64,12 +61,11 @@ export function useRecentActivities(limit: number = 20) {
  * Hook to get company-wide activities (for admins)
  */
 export function useCompanyActivities(companyId: string, limit: number = 50) {
-  const { user } = useAuth();
+  const {user} = useAuth();
 
   // Only allow company admins and above to access company activities
   const isAdmin =
-    user?.role &&
-    ["super_admin", "system_admin", "company_admin"].includes(user.role);
+    user?.role && ['super_admin', 'system_admin', 'company_admin'].includes(user.role);
 
   return useSessionAwareQuery({
     queryKey: ACTIVITY_KEYS.company(companyId),
@@ -117,7 +113,7 @@ export function useCreateActivity() {
  * This implements the core project-based access control
  */
 export function useCanAccessProjectActivities(projectId: string) {
-  const { user } = useAuth();
+  const {user} = useAuth();
 
   // This would need to be implemented based on your project membership logic
   // For now, return true if user exists (actual logic should check project membership)
@@ -135,8 +131,8 @@ export function useActivityFeed(
     limit?: number;
   } = {},
 ) {
-  const { user } = useAuth();
-  const { projectId, userId, companyId, limit = 20 } = options;
+  const {user} = useAuth();
+  const {projectId, userId, companyId, limit = 20} = options;
 
   // Determine which activities to fetch based on user permissions and options
   if (projectId) {
@@ -150,7 +146,7 @@ export function useActivityFeed(
   if (
     companyId &&
     user?.role &&
-    ["super_admin", "system_admin", "company_admin"].includes(user.role)
+    ['super_admin', 'system_admin', 'company_admin'].includes(user.role)
   ) {
     return useCompanyActivities(companyId, limit);
   }

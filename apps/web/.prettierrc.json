@@ -1,0 +1,25 @@
+{
+  "arrowParens": "always",
+  "bracketSameLine": true,
+  "bracketSpacing": false,
+  "singleQuote": true,
+  "trailingComma": "all",
+  "tabWidth": 2,
+  "printWidth": 100,
+  "endOfLine": "auto",
+  "importOrder": [
+    "^react",
+    "<THIRD_PARTY_MODULES>",
+    "^assets/(.*)$",
+    "^config/(.*)$",
+    "^theme",
+    "^styles",
+    "^components/(.*)$",
+    "^types/(.*)$",
+    "^utils/(.*)$",
+    "^services/(.*)$",
+    "^[./]"
+  ],
+  "importOrderSeparation": false,
+  "importOrderSortSpecifiers": true
+}

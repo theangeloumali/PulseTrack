@@ -1,6 +1,6 @@
-import { redirect } from "next/navigation";
-import { cookies } from "next/headers";
-import { createServerClient } from "@supabase/ssr";
+import {redirect} from 'next/navigation';
+import {cookies} from 'next/headers';
+import {createServerClient} from '@supabase/ssr';
 
 export default async function Page() {
   // This handles the root /pulse path
@@ -19,9 +19,7 @@ export default async function Page() {
         },
         setAll(cookiesToSet) {
           try {
-            cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options),
-            );
+            cookiesToSet.forEach(({name, value, options}) => cookieStore.set(name, value, options));
           } catch {
             // Handle cookie errors gracefully
           }
@@ -33,22 +31,22 @@ export default async function Page() {
   try {
     // Check if user is authenticated
     const {
-      data: { user },
+      data: {user},
       error,
     } = await supabase.auth.getUser();
 
     // If there's an auth error or no user, redirect to login
     if (error || !user) {
-      console.log("Root page: No authenticated user, redirecting to login");
-      redirect("/login");
+      console.log('Root page: No authenticated user, redirecting to login');
+      redirect('/login');
     }
 
     // User is authenticated, redirect to dashboard
-    console.log("Root page: User authenticated, redirecting to dashboard");
-    redirect("/dashboard");
+    console.log('Root page: User authenticated, redirecting to dashboard');
+    redirect('/dashboard');
   } catch (error) {
     // On any error, default to login
-    console.error("Root page: Error checking auth status:", error);
-    redirect("/login");
+    console.error('Root page: Error checking auth status:', error);
+    redirect('/login');
   }
 }

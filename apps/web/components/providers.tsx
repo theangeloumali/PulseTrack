@@ -1,14 +1,14 @@
-"use client";
+'use client';
 
-import * as React from "react";
-import { ThemeProvider as NextThemesProvider } from "next-themes";
-import { AuthGate } from "./auth-gate";
-import { QueryProvider } from "./query-provider";
-import { SidebarLayout } from "./sidebar-layout";
-import { ThemeProvider } from "./theme-provider";
-import { SessionInitializer } from "./session-initializer";
+import * as React from 'react';
+import {ThemeProvider as NextThemesProvider} from 'next-themes';
+import {AuthGate} from './auth-gate';
+import {QueryProvider} from './query-provider';
+import {SidebarLayout} from './sidebar-layout';
+import {ThemeProvider} from './theme-provider';
+import {SessionInitializer} from './session-initializer';
 
-export function Providers({ children }: { children: React.ReactNode }) {
+export function Providers({children}: {children: React.ReactNode}) {
   return (
     <QueryProvider>
       <NextThemesProvider
@@ -16,8 +16,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
         defaultTheme="light"
         enableSystem
         disableTransitionOnChange={false}
-        enableColorScheme
-      >
+        enableColorScheme>
         <ThemeProvider />
         <SessionInitializer />
         <AuthGate>

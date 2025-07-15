@@ -1,24 +1,24 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { Modal } from "@/components/ui/modal";
-import { Button } from "@workspace/ui/components/button";
-import { Badge } from "@workspace/ui/components/badge";
-import { Users, UserPlus, X, Crown, User } from "lucide-react";
+import {useState} from 'react';
+import {Modal} from '@/components/ui/modal';
+import {Button} from '@workspace/ui/components/button';
+import {Badge} from '@workspace/ui/components/badge';
+import {Users, UserPlus, X, Crown, User} from 'lucide-react';
 import {
   useProjectMembersQuery,
   useAddProjectMember,
   useRemoveProjectMember,
   useUpdateProjectMemberRole,
-} from "@/lib/hooks/useProjects";
-import { useAssignableUsers } from "@/lib/hooks/useUsers";
-import { useAuthStore } from "@/lib/stores/auth";
-import { useRoleAccess } from "@/lib/hooks/useRoleAccess";
+} from '@/lib/hooks/useProjects';
+import {useAssignableUsers} from '@/lib/hooks/useUsers';
+import {useAuthStore} from '@/lib/stores/auth';
+import {useRoleAccess} from '@/lib/hooks/useRoleAccess';
 
 // Define the type for member data returned from query
 interface ProjectMemberWithUser {
   id: string;
-  role: "lead" | "member";
+  role: 'lead' | 'member';
   created_at: string;
   user: {
     id: string;
@@ -43,14 +43,13 @@ export function ProjectMembersModal({
   projectName,
 }: ProjectMembersModalProps) {
   const [showAddMember, setShowAddMember] = useState(false);
-  const [selectedUserId, setSelectedUserId] = useState("");
-  const [selectedRole, setSelectedRole] = useState<"lead" | "member">("member");
+  const [selectedUserId, setSelectedUserId] = useState('');
+  const [selectedRole, setSelectedRole] = useState<'lead' | 'member'>('member');
 
-  const { user: currentUser } = useAuthStore();
-  const { canManageUsers } = useRoleAccess();
-  const { data: members = [], isLoading: membersLoading } =
-    useProjectMembersQuery(projectId);
-  const { data: availableUsers = [] } = useAssignableUsers();
+  const {user: currentUser} = useAuthStore();
+  const {canManageUsers} = useRoleAccess();
+  const {data: members = [], isLoading: membersLoading} = useProjectMembersQuery(projectId);
+  const {data: availableUsers = []} = useAssignableUsers();
 
   // Check if current user can manage project members
   const canManageMembers = canManageUsers(); // Only admins can manage users/project members
@@ -61,9 +60,7 @@ export function ProjectMembersModal({
 
   // Filter out users who are already members
   const memberUserIds = new Set(members.map((m) => m.user?.id));
-  const nonMembers = availableUsers.filter(
-    (user) => !memberUserIds.has(user.id),
-  );
+  const nonMembers = availableUsers.filter((user) => !memberUserIds.has(user.id));
 
   const handleAddMember = async () => {
     if (!selectedUserId) return;
@@ -75,57 +72,47 @@ export function ProjectMembersModal({
         role: selectedRole,
       });
 
-      setSelectedUserId("");
-      setSelectedRole("member");
+      setSelectedUserId('');
+      setSelectedRole('member');
       setShowAddMember(false);
-      alert("Member added successfully");
+      alert('Member added successfully');
     } catch (error) {
-      alert(error instanceof Error ? error.message : "Failed to add member");
+      alert(error instanceof Error ? error.message : 'Failed to add member');
     }
   };
 
   const handleRemoveMember = async (userId: string) => {
-    if (
-      !confirm("Are you sure you want to remove this member from the project?")
-    )
-      return;
+    if (!confirm('Are you sure you want to remove this member from the project?')) return;
 
     try {
-      await removeMemberMutation.mutateAsync({ projectId, userId });
-      alert("Member removed successfully");
+      await removeMemberMutation.mutateAsync({projectId, userId});
+      alert('Member removed successfully');
     } catch (error) {
-      alert(error instanceof Error ? error.message : "Failed to remove member");
+      alert(error instanceof Error ? error.message : 'Failed to remove member');
     }
   };
 
-  const handleRoleChange = async (
-    userId: string,
-    newRole: "lead" | "member",
-  ) => {
+  const handleRoleChange = async (userId: string, newRole: 'lead' | 'member') => {
     try {
       await updateRoleMutation.mutateAsync({
         projectId,
         userId,
         role: newRole,
       });
-      alert("Role updated successfully");
+      alert('Role updated successfully');
     } catch (error) {
-      alert(error instanceof Error ? error.message : "Failed to update role");
+      alert(error instanceof Error ? error.message : 'Failed to update role');
     }
   };
 
   const getRoleIcon = (role: string) => {
-    return role === "lead" ? (
-      <Crown className="h-4 w-4" />
-    ) : (
-      <User className="h-4 w-4" />
-    );
+    return role === 'lead' ? <Crown className="h-4 w-4" /> : <User className="h-4 w-4" />;
   };
 
   const getRoleColor = (role: string) => {
-    return role === "lead"
-      ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
-      : "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200";
+    return role === 'lead'
+      ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
+      : 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
   };
 
   return (
@@ -134,8 +121,7 @@ export function ProjectMembersModal({
       onClose={onClose}
       title="Project Members"
       description={`Manage team members for ${projectName}`}
-      size="lg"
-    >
+      size="lg">
       <div className="space-y-6">
         {/* Add Member Section */}
         {!showAddMember ? (
@@ -143,7 +129,7 @@ export function ProjectMembersModal({
             <div className="flex items-center space-x-2">
               <Users className="h-5 w-5 text-gray-600 dark:text-gray-400" />
               <span className="text-sm text-gray-600 dark:text-gray-400">
-                {members.length} {members.length === 1 ? "member" : "members"}
+                {members.length} {members.length === 1 ? 'member' : 'members'}
               </span>
             </div>
             {canManageMembers && nonMembers.length > 0 && (
@@ -151,8 +137,7 @@ export function ProjectMembersModal({
                 variant="outline"
                 size="sm"
                 onClick={() => setShowAddMember(true)}
-                className="flex items-center space-x-2"
-              >
+                className="flex items-center space-x-2">
                 <UserPlus className="h-4 w-4" />
                 <span>Add Member</span>
               </Button>
@@ -162,11 +147,7 @@ export function ProjectMembersModal({
           <div className="border rounded-lg p-4 bg-gray-50 dark:bg-gray-800">
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-medium">Add New Member</h3>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowAddMember(false)}
-              >
+              <Button variant="ghost" size="sm" onClick={() => setShowAddMember(false)}>
                 <X className="h-4 w-4" />
               </Button>
             </div>
@@ -179,8 +160,7 @@ export function ProjectMembersModal({
                 <select
                   value={selectedUserId}
                   onChange={(e) => setSelectedUserId(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
-                >
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white">
                   <option value="">Choose a user...</option>
                   {nonMembers.map((user) => (
                     <option key={user.id} value={user.id}>
@@ -196,28 +176,21 @@ export function ProjectMembersModal({
                 </label>
                 <select
                   value={selectedRole}
-                  onChange={(e) =>
-                    setSelectedRole(e.target.value as "lead" | "member")
-                  }
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
-                >
+                  onChange={(e) => setSelectedRole(e.target.value as 'lead' | 'member')}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white">
                   <option value="member">Member</option>
                   <option value="lead">Lead</option>
                 </select>
               </div>
 
               <div className="flex justify-end space-x-2">
-                <Button
-                  variant="outline"
-                  onClick={() => setShowAddMember(false)}
-                >
+                <Button variant="outline" onClick={() => setShowAddMember(false)}>
                   Cancel
                 </Button>
                 <Button
                   onClick={handleAddMember}
-                  disabled={!selectedUserId || addMemberMutation.isPending}
-                >
-                  {addMemberMutation.isPending ? "Adding..." : "Add Member"}
+                  disabled={!selectedUserId || addMemberMutation.isPending}>
+                  {addMemberMutation.isPending ? 'Adding...' : 'Add Member'}
                 </Button>
               </div>
             </div>
@@ -245,23 +218,20 @@ export function ProjectMembersModal({
             members.map((member) => (
               <div
                 key={member.id}
-                className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 dark:border-gray-600"
-              >
+                className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 dark:border-gray-600">
                 <div className="flex items-center space-x-3">
                   <div className="h-8 w-8 rounded-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center">
                     <span className="text-sm font-medium text-gray-600 dark:text-gray-300">
                       {member.user?.first_name?.[0] ||
                         member.user?.email?.[0]?.toUpperCase() ||
-                        "?"}
+                        '?'}
                     </span>
                   </div>
                   <div>
                     <p className="font-medium text-gray-900 dark:text-gray-100">
                       {member.user?.first_name} {member.user?.last_name}
                     </p>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
-                      {member.user?.email}
-                    </p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">{member.user?.email}</p>
                   </div>
                 </div>
 
@@ -271,14 +241,10 @@ export function ProjectMembersModal({
                       <select
                         value={member.role}
                         onChange={(e) =>
-                          handleRoleChange(
-                            member.user!.id,
-                            e.target.value as "lead" | "member",
-                          )
+                          handleRoleChange(member.user!.id, e.target.value as 'lead' | 'member')
                         }
                         className="text-xs px-2 py-1 border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
-                        disabled={updateRoleMutation.isPending}
-                      >
+                        disabled={updateRoleMutation.isPending}>
                         <option value="member">Member</option>
                         <option value="lead">Lead</option>
                       </select>
@@ -289,16 +255,13 @@ export function ProjectMembersModal({
                           size="sm"
                           onClick={() => handleRemoveMember(member.user!.id)}
                           disabled={removeMemberMutation.isPending}
-                          className="text-red-600 hover:text-red-800 hover:bg-red-50"
-                        >
+                          className="text-red-600 hover:text-red-800 hover:bg-red-50">
                           <X className="h-4 w-4" />
                         </Button>
                       )}
                     </>
                   ) : (
-                    <Badge
-                      className={`${getRoleColor(member.role)} flex items-center space-x-1`}
-                    >
+                    <Badge className={`${getRoleColor(member.role)} flex items-center space-x-1`}>
                       {getRoleIcon(member.role)}
                       <span className="capitalize">{member.role}</span>
                     </Badge>

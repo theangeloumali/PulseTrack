@@ -1,5 +1,5 @@
-import { supabase } from "@/lib/db";
-import type { UserRole } from "@/lib/db/schema";
+import {supabase} from '@/lib/db';
+import type {UserRole} from '@/lib/db/schema';
 
 export interface ProjectHealthMetrics {
   tasksCompleted: number;
@@ -21,9 +21,9 @@ export interface ProjectHealthTrends {
 export interface ProjectHealth {
   id: string;
   name: string;
-  status: "active" | "completed" | "on-hold" | "at-risk";
+  status: 'active' | 'completed' | 'on-hold' | 'at-risk';
   progress: number;
-  health: "excellent" | "good" | "warning" | "critical";
+  health: 'excellent' | 'good' | 'warning' | 'critical';
   metrics: ProjectHealthMetrics;
   trends: ProjectHealthTrends;
   lastActivity: string;
@@ -35,16 +35,17 @@ export async function getProjectHealth(
   companyId: string,
   userRole: UserRole,
 ): Promise<ProjectHealth[]> {
-  console.log('🏥 Project Health Service - Getting data for:', { userId, companyId, userRole });
-  
+  console.log('🏥 Project Health Service - Getting data for:', {userId, companyId, userRole});
+
   // Get accessible projects based on user role
   let accessibleProjects;
 
-  if (["super_admin", "system_admin", "company_admin"].includes(userRole)) {
+  if (['super_admin', 'system_admin', 'company_admin'].includes(userRole)) {
     // Admins can see all company projects
-    const { data } = await supabase
-      .from("projects")
-      .select(`
+    const {data} = await supabase
+      .from('projects')
+      .select(
+        `
         id,
         name,
         description,
@@ -53,27 +54,29 @@ export async function getProjectHealth(
         end_date,
         created_at,
         updated_at
-      `)
-      .eq("company_id", companyId)
-      .order("updated_at", { ascending: false });
+      `,
+      )
+      .eq('company_id', companyId)
+      .order('updated_at', {ascending: false});
     accessibleProjects = data || [];
   } else {
     // Regular users can only see projects they're members of
     // First get user's project IDs
-    const { data: userProjectIds } = await supabase
-      .from("project_members")
-      .select("project_id")
-      .eq("user_id", userId);
+    const {data: userProjectIds} = await supabase
+      .from('project_members')
+      .select('project_id')
+      .eq('user_id', userId);
 
     if (!userProjectIds || userProjectIds.length === 0) {
       return [];
     }
 
-    const projectIds = userProjectIds.map(p => p.project_id);
+    const projectIds = userProjectIds.map((p) => p.project_id);
 
-    const { data } = await supabase
-      .from("projects")
-      .select(`
+    const {data} = await supabase
+      .from('projects')
+      .select(
+        `
         id,
         name,
         description,
@@ -82,10 +85,11 @@ export async function getProjectHealth(
         end_date,
         created_at,
         updated_at
-      `)
-      .eq("company_id", companyId)
-      .in("id", projectIds)
-      .order("updated_at", { ascending: false });
+      `,
+      )
+      .eq('company_id', companyId)
+      .in('id', projectIds)
+      .order('updated_at', {ascending: false});
     accessibleProjects = data || [];
   }
 
@@ -106,86 +110,90 @@ export async function getProjectHealth(
   twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14);
 
   // Get project metrics in parallel
-  const [
-    taskMetricsResults,
-    memberCountsResults,
-    timeMetricsResults,
-    lastActivitiesResults,
-  ] = await Promise.all([
-    // Current task metrics for all projects
-    Promise.all(
-      projectIds.map(async (projectId) => {
-        const { data } = await supabase
-          .from("tickets")
-          .select("id, status")
-          .eq("project_id", projectId)
-          .eq("company_id", companyId);
+  const [taskMetricsResults, memberCountsResults, timeMetricsResults, lastActivitiesResults] =
+    await Promise.all([
+      // Current task metrics for all projects
+      Promise.all(
+        projectIds.map(async (projectId) => {
+          const {data} = await supabase
+            .from('tickets')
+            .select('id, status')
+            .eq('project_id', projectId)
+            .eq('company_id', companyId);
 
-        const tickets = data || [];
-        return {
-          projectId,
-          totalTasks: tickets.length,
-          completedTasks: tickets.filter(t => t.status === "done").length,
-          blockedTasks: tickets.filter(t => t.status === "blocked").length,
-        };
-      })
-    ),
+          const tickets = data || [];
+          return {
+            projectId,
+            totalTasks: tickets.length,
+            completedTasks: tickets.filter((t) => t.status === 'done').length,
+            blockedTasks: tickets.filter((t) => t.status === 'blocked').length,
+          };
+        }),
+      ),
 
-    // Member counts for all projects
-    Promise.all(
-      projectIds.map(async (projectId) => {
-        const { count } = await supabase
-          .from("project_members")
-          .select("*", { count: "exact", head: true })
-          .eq("project_id", projectId);
-        
-        return { projectId, memberCount: count || 0 };
-      })
-    ),
+      // Member counts for all projects
+      Promise.all(
+        projectIds.map(async (projectId) => {
+          const {count} = await supabase
+            .from('project_members')
+            .select('*', {count: 'exact', head: true})
+            .eq('project_id', projectId);
 
-    // Time tracking metrics for all projects
-    Promise.all(
-      projectIds.map(async (projectId) => {
-        const [totalHoursResult, recentHoursResult] = await Promise.all([
-          supabase
-            .from("time_entries")
-            .select("hours")
-            .eq("project_id", projectId)
-            .eq("company_id", companyId),
-          
-          supabase
-            .from("time_entries")
-            .select("hours")
-            .eq("project_id", projectId)
-            .eq("company_id", companyId)
-            .gte("date", weekStart.toISOString().split('T')[0]),
-        ]);
+          return {projectId, memberCount: count || 0};
+        }),
+      ),
 
-        const totalHours = (totalHoursResult.data || []).reduce((sum, entry) => sum + (entry.hours || 0), 0);
-        const recentHours = (recentHoursResult.data || []).reduce((sum, entry) => sum + (entry.hours || 0), 0);
+      // Time tracking metrics for all projects
+      Promise.all(
+        projectIds.map(async (projectId) => {
+          const [totalHoursResult, recentHoursResult] = await Promise.all([
+            supabase
+              .from('time_entries')
+              .select('hours')
+              .eq('project_id', projectId)
+              .eq('company_id', companyId),
 
-        return { projectId, totalHours, recentHours };
-      })
-    ),
+            supabase
+              .from('time_entries')
+              .select('hours')
+              .eq('project_id', projectId)
+              .eq('company_id', companyId)
+              .gte('date', weekStart.toISOString().split('T')[0]),
+          ]);
 
-    // Last activity per project
-    Promise.all(
-      projectIds.map(async (projectId) => {
-        const { data } = await supabase
-          .from("tickets")
-          .select("updated_at")
-          .eq("project_id", projectId)
-          .eq("company_id", companyId)
-          .order("updated_at", { ascending: false })
-          .limit(1);
+          const totalHours = (totalHoursResult.data || []).reduce(
+            (sum, entry) => sum + (entry.hours || 0),
+            0,
+          );
+          const recentHours = (recentHoursResult.data || []).reduce(
+            (sum, entry) => sum + (entry.hours || 0),
+            0,
+          );
 
-        return { 
-          projectId, 
-          lastActivity: data?.[0]?.updated_at || accessibleProjects.find(p => p.id === projectId)?.updated_at 
-        };
-      })
-    ),
-  ]);
+          return {projectId, totalHours, recentHours};
+        }),
+      ),
+
+      // Last activity per project
+      Promise.all(
+        projectIds.map(async (projectId) => {
+          const {data} = await supabase
+            .from('tickets')
+            .select('updated_at')
+            .eq('project_id', projectId)
+            .eq('company_id', companyId)
+            .order('updated_at', {ascending: false})
+            .limit(1);
+
+          return {
+            projectId,
+            lastActivity:
+              data?.[0]?.updated_at ||
+              accessibleProjects.find((p) => p.id === projectId)?.updated_at,
+          };
+        }),
+      ),
+    ]);
 
   // Helper function to format last activity
   const formatLastActivity = (dateString: string): string => {
@@ -201,7 +209,7 @@ export async function getProjectHealth(
     } else if (diffHours < 24) {
       return `${diffHours} hours ago`;
     } else if (diffDays === 1) {
-      return "1 day ago";
+      return '1 day ago';
     } else {
       return `${diffDays} days ago`;
     }
@@ -223,7 +231,7 @@ export async function getProjectHealth(
     velocity: number,
     blockers: number,
     daysRemaining?: number,
-  ): ProjectHealth["health"] => {
+  ): ProjectHealth['health'] => {
     let score = 0;
 
     // Progress score (40% weight)
@@ -247,10 +255,10 @@ export async function getProjectHealth(
     else if (daysRemaining > 30) score += 10;
     else if (daysRemaining > 7) score += 5;
 
-    if (score >= 80) return "excellent";
-    if (score >= 60) return "good";
-    if (score >= 40) return "warning";
-    return "critical";
+    if (score >= 80) return 'excellent';
+    if (score >= 60) return 'good';
+    if (score >= 40) return 'warning';
+    return 'critical';
   };
 
   // Helper function to determine project status
@@ -258,15 +266,15 @@ export async function getProjectHealth(
     projectStatus: string,
     health: string,
     daysRemaining?: number,
-  ): ProjectHealth["status"] => {
-    if (projectStatus === "completed") return "completed";
-    if (projectStatus === "archived") return "on-hold";
-    
-    if (health === "critical" || (daysRemaining && daysRemaining < 7 && health !== "excellent")) {
-      return "at-risk";
+  ): ProjectHealth['status'] => {
+    if (projectStatus === 'completed') return 'completed';
+    if (projectStatus === 'archived') return 'on-hold';
+
+    if (health === 'critical' || (daysRemaining && daysRemaining < 7 && health !== 'excellent')) {
+      return 'at-risk';
     }
-    
-    return "active";
+
+    return 'active';
   };
 
   // Create lookup maps
@@ -291,7 +299,8 @@ export async function getProjectHealth(
 
     const progress = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
     const velocity = Math.round((completedTasks / 7) * 10) / 10; // Tasks per week (simplified)
-    const avgHoursPerTask = completedTasks > 0 ? Math.round((totalHours / completedTasks) * 10) / 10 : 0;
+    const avgHoursPerTask =
+      completedTasks > 0 ? Math.round((totalHours / completedTasks) * 10) / 10 : 0;
     const daysRemaining = calculateDaysRemaining(project.end_date);
 
     // Calculate trends (simplified - would need historical data for accurate trends)
@@ -324,9 +333,9 @@ export async function getProjectHealth(
         velocity: velocityTrend,
         activity: activityTrend,
       },
-      lastActivity: lastActivityData?.lastActivity 
+      lastActivity: lastActivityData?.lastActivity
         ? formatLastActivity(lastActivityData.lastActivity)
-        : "No recent activity",
+        : 'No recent activity',
     };
   });
 }

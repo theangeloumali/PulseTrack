@@ -1,18 +1,16 @@
-"use client";
+'use client';
 
-import React, { useEffect, useState } from "react";
-import dynamic from "next/dynamic";
-import { useTheme } from "next-themes";
-import { cn } from "@/lib/utils";
+import React, {useEffect, useState} from 'react';
+import dynamic from 'next/dynamic';
+import {useTheme} from 'next-themes';
+import {cn} from '@/lib/utils';
 
 // Dynamically import the markdown editor to avoid SSR issues
-const MDEditor = dynamic(() => import("@uiw/react-md-editor"), {
+const MDEditor = dynamic(() => import('@uiw/react-md-editor'), {
   ssr: false,
   loading: () => (
     <div className="min-h-[200px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50">
-      <div className="animate-pulse text-muted-foreground">
-        Loading editor...
-      </div>
+      <div className="animate-pulse text-muted-foreground">Loading editor...</div>
     </div>
   ),
 });
@@ -25,22 +23,22 @@ interface RichTextEditorProps {
   className?: string;
   id?: string;
   name?: string;
-  preview?: "edit" | "preview" | "live";
+  preview?: 'edit' | 'preview' | 'live';
   height?: number;
 }
 
 export function RichTextEditor({
-  value = "",
+  value = '',
   onChange,
-  placeholder = "Enter description...",
+  placeholder = 'Enter description...',
   disabled = false,
   className,
   id,
   name,
-  preview = "edit",
+  preview = 'edit',
   height = 200,
 }: RichTextEditorProps) {
-  const { theme, systemTheme } = useTheme();
+  const {theme, systemTheme} = useTheme();
   const [isMounted, setIsMounted] = useState(false);
 
   // Ensure component is mounted before rendering to avoid hydration issues
@@ -50,56 +48,52 @@ export function RichTextEditor({
 
   const handleChange = (val?: string) => {
     if (onChange) {
-      onChange(val || "");
+      onChange(val || '');
     }
   };
 
   // Determine if we should use dark mode
-  const currentTheme = theme === "system" ? systemTheme : theme;
-  const isDarkMode = currentTheme === "dark";
+  const currentTheme = theme === 'system' ? systemTheme : theme;
+  const isDarkMode = currentTheme === 'dark';
 
   // Don't render until mounted to avoid hydration mismatch
   if (!isMounted) {
     return (
       <div
         className={cn(
-          "min-h-[200px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
+          'min-h-[200px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50',
           className,
-        )}
-      >
-        <div className="animate-pulse text-muted-foreground">
-          Loading editor...
-        </div>
+        )}>
+        <div className="animate-pulse text-muted-foreground">Loading editor...</div>
       </div>
     );
   }
 
   return (
     <div
-      className={cn("rich-text-editor", className)}
-      data-color-mode={isDarkMode ? "dark" : "light"}
-    >
+      className={cn('rich-text-editor', className)}
+      data-color-mode={isDarkMode ? 'dark' : 'light'}>
       <MDEditor
         id={id}
         value={value}
         onChange={handleChange}
         preview={preview}
         height={height}
-        data-color-mode={isDarkMode ? "dark" : "light"}
+        data-color-mode={isDarkMode ? 'dark' : 'light'}
         visibleDragBar={false}
         textareaProps={{
           placeholder,
           disabled,
           name,
           style: {
-            fontSize: "14px",
-            lineHeight: "1.5",
-            fontFamily: "inherit",
+            fontSize: '14px',
+            lineHeight: '1.5',
+            fontFamily: 'inherit',
           },
         }}
         toolbarHeight={40}
         style={{
-          backgroundColor: "transparent",
+          backgroundColor: 'transparent',
         }}
       />
 
@@ -251,8 +245,7 @@ export function RichTextEditor({
           border-radius: 4px !important;
         }
 
-        .rich-text-editor
-          .w-md-editor-text-textarea::-webkit-scrollbar-thumb:hover,
+        .rich-text-editor .w-md-editor-text-textarea::-webkit-scrollbar-thumb:hover,
         .rich-text-editor .w-md-editor-preview::-webkit-scrollbar-thumb:hover {
           background: hsl(var(--foreground)) !important;
         }

@@ -1,26 +1,26 @@
-"use client";
+'use client';
 
-import { useState } from "react";
+import {useState} from 'react';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@workspace/ui/components/card";
-import { Button } from "@workspace/ui/components/button";
-import { Badge } from "@workspace/ui/components/badge";
-import { PaymentStatusBadge } from "./payment-status-badge";
-import { PaymentManagementModal } from "./payment-management-modal";
-import { OutstandingPaymentsDeletionModal } from "./outstanding-payments-deletion-modal";
+} from '@workspace/ui/components/card';
+import {Button} from '@workspace/ui/components/button';
+import {Badge} from '@workspace/ui/components/badge';
+import {PaymentStatusBadge} from './payment-status-badge';
+import {PaymentManagementModal} from './payment-management-modal';
+import {OutstandingPaymentsDeletionModal} from './outstanding-payments-deletion-modal';
 import {
   useOutstandingPayments,
   useOverduePayments,
   usePaymentStats,
   useBillingPeriods,
-} from "@/lib/hooks/usePayments";
-import type { BillingPeriod } from "@/lib/db/schema";
-import { format, isAfter, isPast } from "date-fns";
+} from '@/lib/hooks/usePayments';
+import type {BillingPeriod} from '@/lib/db/schema';
+import {format, isAfter, isPast} from 'date-fns';
 import {
   DollarSign,
   AlertTriangle,
@@ -32,30 +32,22 @@ import {
   Eye,
   Settings,
   Trash2,
-} from "lucide-react";
+} from 'lucide-react';
 
 interface PaymentDashboardProps {
   companyId: string;
   isAdmin: boolean;
 }
 
-export function PaymentDashboard({
-  companyId,
-  isAdmin,
-}: PaymentDashboardProps) {
-  const [selectedPeriod, setSelectedPeriod] = useState<BillingPeriod | null>(
-    null,
-  );
+export function PaymentDashboard({companyId, isAdmin}: PaymentDashboardProps) {
+  const [selectedPeriod, setSelectedPeriod] = useState<BillingPeriod | null>(null);
   const [showManagementModal, setShowManagementModal] = useState(false);
-  const [showOutstandingDeletionModal, setShowOutstandingDeletionModal] =
-    useState(false);
+  const [showOutstandingDeletionModal, setShowOutstandingDeletionModal] = useState(false);
 
-  const { data: paymentStats, isLoading: statsLoading } =
-    usePaymentStats(companyId);
-  const { data: outstandingPayments, isLoading: outstandingLoading } =
+  const {data: paymentStats, isLoading: statsLoading} = usePaymentStats(companyId);
+  const {data: outstandingPayments, isLoading: outstandingLoading} =
     useOutstandingPayments(companyId);
-  const { data: overduePayments, isLoading: overdueLoading } =
-    useOverduePayments(companyId);
+  const {data: overduePayments, isLoading: overdueLoading} = useOverduePayments(companyId);
 
   const handleManagePayment = (period: BillingPeriod) => {
     setSelectedPeriod(period);
@@ -63,9 +55,9 @@ export function PaymentDashboard({
   };
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
     }).format(amount);
   };
 
@@ -80,9 +72,7 @@ export function PaymentDashboard({
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">
-              {statsLoading
-                ? "..."
-                : formatCurrency(paymentStats?.stats?.totalPaid || 0)}
+              {statsLoading ? '...' : formatCurrency(paymentStats?.stats?.totalPaid || 0)}
             </div>
             <p className="text-xs text-muted-foreground">
               {paymentStats?.stats?.paid || 0} periods
@@ -97,11 +87,9 @@ export function PaymentDashboard({
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-blue-600">
-              {outstandingLoading ? "..." : outstandingPayments?.length || 0}
+              {outstandingLoading ? '...' : outstandingPayments?.length || 0}
             </div>
-            <p className="text-xs text-muted-foreground">
-              Pending & sent invoices
-            </p>
+            <p className="text-xs text-muted-foreground">Pending & sent invoices</p>
           </CardContent>
         </Card>
 
@@ -112,7 +100,7 @@ export function PaymentDashboard({
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-red-600">
-              {overdueLoading ? "..." : overduePayments?.length || 0}
+              {overdueLoading ? '...' : overduePayments?.length || 0}
             </div>
             <p className="text-xs text-muted-foreground">Past due date</p>
           </CardContent>
@@ -125,7 +113,7 @@ export function PaymentDashboard({
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {statsLoading ? "..." : paymentStats?.stats?.total || 0}
+              {statsLoading ? '...' : paymentStats?.stats?.total || 0}
             </div>
             <p className="text-xs text-muted-foreground">This year</p>
           </CardContent>
@@ -142,7 +130,7 @@ export function PaymentDashboard({
             </CardTitle>
             <CardDescription className="text-red-600 dark:text-red-400">
               {overduePayments.length} payment
-              {overduePayments.length !== 1 ? "s" : ""} past due date
+              {overduePayments.length !== 1 ? 's' : ''} past due date
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -150,31 +138,23 @@ export function PaymentDashboard({
               {overduePayments.slice(0, 3).map((period: BillingPeriod) => (
                 <div
                   key={period.id}
-                  className="flex items-center justify-between p-3 bg-white dark:bg-gray-800 rounded-lg"
-                >
+                  className="flex items-center justify-between p-3 bg-white dark:bg-gray-800 rounded-lg">
                   <div className="flex-1">
                     <div className="font-medium">{period.name}</div>
                     <div className="text-sm text-muted-foreground">
-                      Due:{" "}
+                      Due:{' '}
                       {period.payment_due_date
-                        ? format(
-                            new Date(period.payment_due_date),
-                            "MMM dd, yyyy",
-                          )
-                        : "No due date"}
+                        ? format(new Date(period.payment_due_date), 'MMM dd, yyyy')
+                        : 'No due date'}
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <PaymentStatusBadge
-                      status={period.payment_status}
-                      size="sm"
-                    />
+                    <PaymentStatusBadge status={period.payment_status} size="sm" />
                     {isAdmin && (
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => handleManagePayment(period)}
-                      >
+                        onClick={() => handleManagePayment(period)}>
                         <Settings className="h-3 w-3" />
                       </Button>
                     )}
@@ -184,7 +164,7 @@ export function PaymentDashboard({
               {overduePayments.length > 3 && (
                 <div className="text-center text-sm text-muted-foreground">
                   And {overduePayments.length - 3} more overdue payment
-                  {overduePayments.length - 3 !== 1 ? "s" : ""}
+                  {overduePayments.length - 3 !== 1 ? 's' : ''}
                 </div>
               )}
             </div>
@@ -201,23 +181,18 @@ export function PaymentDashboard({
                 <FileText className="h-5 w-5" />
                 Outstanding Payments
               </CardTitle>
-              <CardDescription>
-                Billing periods awaiting payment
-              </CardDescription>
+              <CardDescription>Billing periods awaiting payment</CardDescription>
             </div>
-            {isAdmin &&
-              outstandingPayments &&
-              outstandingPayments.length > 0 && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowOutstandingDeletionModal(true)}
-                  className="flex items-center gap-2 text-destructive hover:text-destructive"
-                >
-                  <Trash2 className="h-4 w-4" />
-                  Delete Outstanding Payments
-                </Button>
-              )}
+            {isAdmin && outstandingPayments && outstandingPayments.length > 0 && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowOutstandingDeletionModal(true)}
+                className="flex items-center gap-2 text-destructive hover:text-destructive">
+                <Trash2 className="h-4 w-4" />
+                Delete Outstanding Payments
+              </Button>
+            )}
           </div>
         </CardHeader>
         <CardContent>
@@ -226,8 +201,7 @@ export function PaymentDashboard({
               {[1, 2, 3].map((i) => (
                 <div
                   key={i}
-                  className="flex items-center justify-between p-4 bg-muted rounded-lg animate-pulse"
-                >
+                  className="flex items-center justify-between p-4 bg-muted rounded-lg animate-pulse">
                   <div className="space-y-2">
                     <div className="h-4 bg-muted-foreground/20 rounded w-32"></div>
                     <div className="h-3 bg-muted-foreground/20 rounded w-24"></div>
@@ -241,41 +215,30 @@ export function PaymentDashboard({
               {outstandingPayments.map((period: BillingPeriod) => (
                 <div
                   key={period.id}
-                  className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors"
-                >
+                  className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors">
                   <div className="flex-1 space-y-1">
                     <div className="flex items-center gap-2">
                       <span className="font-medium">{period.name}</span>
                       <Badge variant="outline" className="text-xs">
-                        {period.frequency.replace("_", "-")}
+                        {period.frequency.replace('_', '-')}
                       </Badge>
                     </div>
                     <div className="text-sm text-muted-foreground">
-                      {format(new Date(period.start_date), "MMM dd")} -{" "}
-                      {format(new Date(period.end_date), "MMM dd, yyyy")}
+                      {format(new Date(period.start_date), 'MMM dd')} -{' '}
+                      {format(new Date(period.end_date), 'MMM dd, yyyy')}
                     </div>
                     {period.payment_due_date && (
                       <div className="text-xs text-muted-foreground flex items-center gap-1">
                         <Calendar className="h-3 w-3" />
-                        Due:{" "}
-                        {format(
-                          new Date(period.payment_due_date),
-                          "MMM dd, yyyy",
-                        )}
+                        Due: {format(new Date(period.payment_due_date), 'MMM dd, yyyy')}
                         {isPast(new Date(period.payment_due_date)) && (
-                          <span className="text-red-600 font-medium">
-                            (Overdue)
-                          </span>
+                          <span className="text-red-600 font-medium">(Overdue)</span>
                         )}
                       </div>
                     )}
                     {period.invoice_sent_date && (
                       <div className="text-xs text-muted-foreground">
-                        Invoice sent:{" "}
-                        {format(
-                          new Date(period.invoice_sent_date),
-                          "MMM dd, yyyy",
-                        )}
+                        Invoice sent: {format(new Date(period.invoice_sent_date), 'MMM dd, yyyy')}
                       </div>
                     )}
                   </div>
@@ -285,8 +248,7 @@ export function PaymentDashboard({
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => handleManagePayment(period)}
-                      >
+                        onClick={() => handleManagePayment(period)}>
                         <Settings className="h-4 w-4" />
                       </Button>
                     )}

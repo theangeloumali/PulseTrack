@@ -1,5 +1,5 @@
-import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import {create} from 'zustand';
+import {persist} from 'zustand/middleware';
 
 interface ResetPasswordState {
   isPasswordResetFlow: boolean;
@@ -16,11 +16,11 @@ export const useResetPasswordStore = create<ResetPasswordState>()(
   persist(
     (set, get) => ({
       isPasswordResetFlow: false,
-      resetEmail: "",
+      resetEmail: '',
       resetTimestamp: 0,
 
       setPasswordResetFlow: (email: string) => {
-        console.log("🔄 Reset Store: Setting password reset flow for:", email);
+        console.log('🔄 Reset Store: Setting password reset flow for:', email);
         set({
           isPasswordResetFlow: true,
           resetEmail: email,
@@ -29,10 +29,10 @@ export const useResetPasswordStore = create<ResetPasswordState>()(
       },
 
       clearPasswordResetFlow: () => {
-        console.log("🔄 Reset Store: Clearing password reset flow");
+        console.log('🔄 Reset Store: Clearing password reset flow');
         set({
           isPasswordResetFlow: false,
-          resetEmail: "",
+          resetEmail: '',
           resetTimestamp: 0,
         });
       },
@@ -46,10 +46,10 @@ export const useResetPasswordStore = create<ResetPasswordState>()(
         const isExpired = Date.now() - state.resetTimestamp > tenMinutes;
 
         if (isExpired) {
-          console.log("🔄 Reset Store: Reset flow expired, clearing");
+          console.log('🔄 Reset Store: Reset flow expired, clearing');
           set({
             isPasswordResetFlow: false,
-            resetEmail: "",
+            resetEmail: '',
             resetTimestamp: 0,
           });
           return false;
@@ -59,7 +59,7 @@ export const useResetPasswordStore = create<ResetPasswordState>()(
       },
     }),
     {
-      name: "reset-password-storage",
+      name: 'reset-password-storage',
       partialize: (state) => ({
         isPasswordResetFlow: state.isPasswordResetFlow,
         resetEmail: state.resetEmail,

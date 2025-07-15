@@ -1,34 +1,34 @@
 // Test invitation through the UI
 // Open this in browser: http://localhost:3001/test-invitation
 
-"use client";
+'use client';
 
-import { useState } from "react";
+import {useState} from 'react';
 
 export default function TestInvitationPage() {
-  const [email, setEmail] = useState("carions46@gmail.com");
+  const [email, setEmail] = useState('carions46@gmail.com');
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState("");
+  const [result, setResult] = useState('');
 
   const testInvitation = async () => {
     setLoading(true);
-    setResult("Sending invitation...");
+    setResult('Sending invitation...');
 
     try {
       // First, we need to be logged in to call the API
       // For testing, let's bypass the API and create directly with admin client
-      const response = await fetch("/api/invite-user", {
-        method: "POST",
+      const response = await fetch('/api/invite-user', {
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           email: email,
-          role: "user",
-          companyId: "test-company-123",
-          invitedBy: "test-admin-123",
-          firstName: "Angelo",
-          lastName: "Carions",
+          role: 'user',
+          companyId: 'test-company-123',
+          invitedBy: 'test-admin-123',
+          firstName: 'Angelo',
+          lastName: 'Carions',
           hourlyRate: 50,
         }),
       });
@@ -53,9 +53,7 @@ export default function TestInvitationPage() {
 
       <div className="space-y-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700">
-            Email
-          </label>
+          <label className="block text-sm font-medium text-gray-700">Email</label>
           <input
             type="email"
             value={email}
@@ -67,9 +65,8 @@ export default function TestInvitationPage() {
         <button
           onClick={testInvitation}
           disabled={loading}
-          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
-        >
-          {loading ? "Sending..." : "Send Test Invitation"}
+          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50">
+          {loading ? 'Sending...' : 'Send Test Invitation'}
         </button>
 
         {result && (
@@ -82,8 +79,8 @@ export default function TestInvitationPage() {
       <div className="mt-8 p-4 bg-yellow-50 border border-yellow-200 rounded-md">
         <h3 className="font-bold text-yellow-800">Expected Result:</h3>
         <p className="text-sm text-yellow-700">
-          This will likely return "Unauthorized" because we're not logged in.
-          That's expected - the API properly requires authentication.
+          This will likely return "Unauthorized" because we're not logged in. That's expected - the
+          API properly requires authentication.
         </p>
       </div>
 

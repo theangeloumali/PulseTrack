@@ -1,39 +1,37 @@
-"use client";
+'use client';
 
-import { useState, useEffect, Suspense } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import Link from "next/link";
-import Image from "next/image";
-import { Button } from "@workspace/ui/components/button";
-import { Input } from "@workspace/ui/components/input";
-import { Label } from "@workspace/ui/components/label";
+import {useState, useEffect, Suspense} from 'react';
+import {useRouter, useSearchParams} from 'next/navigation';
+import Link from 'next/link';
+import Image from 'next/image';
+import {Button} from '@workspace/ui/components/button';
+import {Input} from '@workspace/ui/components/input';
+import {Label} from '@workspace/ui/components/label';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@workspace/ui/components/card";
-import { useAuthStore } from "@/lib/stores/auth";
-import { Eye, EyeOff, Loader2 } from "lucide-react";
-import { supabase } from "@/lib/db";
+} from '@workspace/ui/components/card';
+import {useAuthStore} from '@/lib/stores/auth';
+import {Eye, EyeOff, Loader2} from 'lucide-react';
+import {supabase} from '@/lib/db';
 
 const isDev = false;
 
 function LoginContent() {
-  const [email, setEmail] = useState(
-    isDev ? "christianangeloumaliofficial@gmail.com" : "",
-  );
-  const [password, setPassword] = useState(isDev ? "@Testing123" : "");
+  const [email, setEmail] = useState(isDev ? 'christianangeloumaliofficial@gmail.com' : '');
+  const [password, setPassword] = useState(isDev ? '@Testing123' : '');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState('');
 
-  const { signIn } = useAuthStore();
+  const {signIn} = useAuthStore();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const urlError = searchParams.get("error");
-  const authCode = searchParams.get("code");
+  const urlError = searchParams.get('error');
+  const authCode = searchParams.get('code');
 
   useEffect(() => {
     if (urlError) {
@@ -46,36 +44,31 @@ function LoginContent() {
     const handlePasswordResetCode = async () => {
       if (!authCode) return;
 
-      console.log(
-        "Login - Detected auth code, checking if password reset flow",
-      );
+      console.log('Login - Detected auth code, checking if password reset flow');
       setIsLoading(true);
 
       try {
         // Exchange the code for a session
-        const { data, error } =
-          await supabase.auth.exchangeCodeForSession(authCode);
+        const {data, error} = await supabase.auth.exchangeCodeForSession(authCode);
 
         if (error) {
-          console.error("Login - Code exchange error:", error);
-          setError("Invalid or expired reset link");
+          console.error('Login - Code exchange error:', error);
+          setError('Invalid or expired reset link');
           setIsLoading(false);
           return;
         }
 
         if (data.user) {
-          console.log(
-            "Login - Code exchange successful, redirecting to reset password",
-          );
+          console.log('Login - Code exchange successful, redirecting to reset password');
           // Successfully exchanged code for session, redirect to reset password
-          router.push("/reset-password");
+          router.push('/reset-password');
         } else {
-          setError("Invalid reset link");
+          setError('Invalid reset link');
           setIsLoading(false);
         }
       } catch (err) {
-        console.error("Login - Code exchange failed:", err);
-        setError("An error occurred while processing the reset link");
+        console.error('Login - Code exchange failed:', err);
+        setError('An error occurred while processing the reset link');
         setIsLoading(false);
       }
     };
@@ -86,26 +79,26 @@ function LoginContent() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    setError("");
+    setError('');
 
     try {
-      const { error } = await signIn(email, password);
+      const {error} = await signIn(email, password);
 
       if (error) {
         setError(error.message);
       } else {
         // Login successful, redirecting to dashboard
         // Use a combination approach: first try client-side, then fallback to server-side
-        router.push("/dashboard");
+        router.push('/dashboard');
         // As a backup, force reload after a short delay if client-side navigation fails
         setTimeout(() => {
-          if (window.location.pathname === "/login") {
-            window.location.href = "/dashboard";
+          if (window.location.pathname === '/login') {
+            window.location.href = '/dashboard';
           }
         }, 500);
       }
     } catch (err) {
-      setError("An unexpected error occurred");
+      setError('An unexpected error occurred');
     } finally {
       setIsLoading(false);
     }
@@ -126,15 +119,10 @@ function LoginContent() {
               />
             </div>
           </div>
-          <h2 className="mt-2 text-3xl font-extrabold text-foreground">
-            Sign in to your account
-          </h2>
+          <h2 className="mt-2 text-3xl font-extrabold text-foreground">Sign in to your account</h2>
           <p className="mt-2 text-sm text-muted-foreground">
-            Or{" "}
-            <Link
-              href="/signup"
-              className="font-medium text-primary hover:text-primary/80"
-            >
+            Or{' '}
+            <Link href="/signup" className="font-medium text-primary hover:text-primary/80">
               create a new account
             </Link>
           </p>
@@ -143,9 +131,7 @@ function LoginContent() {
         <Card className="shadow-sm">
           <CardHeader>
             <CardTitle>Welcome back</CardTitle>
-            <CardDescription>
-              Enter your credentials to access your workspace
-            </CardDescription>
+            <CardDescription>Enter your credentials to access your workspace</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
@@ -177,7 +163,7 @@ function LoginContent() {
                   <Input
                     id="password"
                     name="password"
-                    type={showPassword ? "text" : "password"}
+                    type={showPassword ? 'text' : 'password'}
                     autoComplete="current-password"
                     required
                     value={password}
@@ -188,8 +174,7 @@ function LoginContent() {
                   <button
                     type="button"
                     className="absolute inset-y-0 right-0 pr-3 flex items-center"
-                    onClick={() => setShowPassword(!showPassword)}
-                  >
+                    onClick={() => setShowPassword(!showPassword)}>
                     {showPassword ? (
                       <EyeOff className="h-4 w-4 text-muted-foreground" />
                     ) : (
@@ -203,8 +188,7 @@ function LoginContent() {
                 <div className="text-sm">
                   <Link
                     href="/forgot-password"
-                    className="font-medium text-primary hover:text-primary/80"
-                  >
+                    className="font-medium text-primary hover:text-primary/80">
                     Forgot your password?
                   </Link>
                 </div>
@@ -213,15 +197,14 @@ function LoginContent() {
               <Button
                 type="submit"
                 className="w-full bg-blue-600 hover:bg-blue-700 text-white"
-                disabled={isLoading}
-              >
+                disabled={isLoading}>
                 {isLoading ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin" />
                     Signing in...
                   </>
                 ) : (
-                  "Sign in"
+                  'Sign in'
                 )}
               </Button>
             </form>
@@ -242,8 +225,7 @@ export default function LoginPage() {
             <p className="mt-4 text-gray-600">Loading...</p>
           </div>
         </div>
-      }
-    >
+      }>
       <LoginContent />
     </Suspense>
   );

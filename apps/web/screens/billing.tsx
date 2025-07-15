@@ -1,6 +1,6 @@
-"use client";
-import React, { useState, useEffect } from "react";
-import { useAuthStore } from "@/lib/stores/auth";
+'use client';
+import React, {useState, useEffect} from 'react';
+import {useAuthStore} from '@/lib/stores/auth';
 import {
   useBillingSettings,
   useUpdateBillingSettings,
@@ -8,29 +8,29 @@ import {
   useBillingRates,
   useCreateBillingRate,
   useDeleteBillingRate,
-} from "@/lib/hooks/useBilling";
-import { useCompanyUsers } from "@/lib/hooks/useUsers";
-import { useAllCompanyProjectsQuery } from "@/lib/hooks/useProjects";
-import { formatISO } from "date-fns";
-import { Button } from "@workspace/ui/components/button";
-import { Input } from "@workspace/ui/components/input";
-import { Label } from "@workspace/ui/components/label";
+} from '@/lib/hooks/useBilling';
+import {useCompanyUsers} from '@/lib/hooks/useUsers';
+import {useAllCompanyProjectsQuery} from '@/lib/hooks/useProjects';
+import {formatISO} from 'date-fns';
+import {Button} from '@workspace/ui/components/button';
+import {Input} from '@workspace/ui/components/input';
+import {Label} from '@workspace/ui/components/label';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@workspace/ui/components/select";
+} from '@workspace/ui/components/select';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@workspace/ui/components/card";
-import { Badge } from "@workspace/ui/components/badge";
-import type { BillingFrequency, NewBillingRate } from "@/lib/db/schema";
+} from '@workspace/ui/components/card';
+import {Badge} from '@workspace/ui/components/badge';
+import type {BillingFrequency, NewBillingRate} from '@/lib/db/schema';
 import {
   startOfWeek,
   endOfWeek,
@@ -39,102 +39,75 @@ import {
   startOfYear,
   endOfYear,
   format,
-} from "date-fns";
-import { Clock, DollarSign, Calendar, Users, Settings } from "lucide-react";
-import { DateRangePicker } from "@/components/ui/date-range-picker";
-import { PaymentDashboard } from "@/components/payments/payment-dashboard";
-import { BillingPeriodsList } from "@/components/billing/billing-periods-list";
+} from 'date-fns';
+import {Clock, DollarSign, Calendar, Users, Settings} from 'lucide-react';
+import {DateRangePicker} from '@/components/ui/date-range-picker';
+import {PaymentDashboard} from '@/components/payments/payment-dashboard';
+import {BillingPeriodsList} from '@/components/billing/billing-periods-list';
 import {
   BillingFilters,
   getDefaultBillingFilters,
   saveBillingFiltersToStorage,
   loadBillingFiltersFromStorage,
-} from "@/lib/utils";
+} from '@/lib/utils';
 
-const currencies = [
-  "USD",
-  "EUR",
-  "GBP",
-  "JPY",
-  "AUD",
-  "CAD",
-  "CHF",
-  "CNY",
-  "SEK",
-  "NZD",
-];
+const currencies = ['USD', 'EUR', 'GBP', 'JPY', 'AUD', 'CAD', 'CHF', 'CNY', 'SEK', 'NZD'];
 
 const BillingPage = () => {
-  const { user } = useAuthStore();
+  const {user} = useAuthStore();
   const companyId = user?.company_id;
   const isAdmin =
-    user?.role === "company_admin" ||
-    user?.role === "system_admin" ||
-    user?.role === "super_admin";
+    user?.role === 'company_admin' || user?.role === 'system_admin' || user?.role === 'super_admin';
 
   // Helper function to format duration hours to HH:MM:SS
   const formatDuration = (hours: number | null) => {
-    if (!hours) return "00:00:00";
+    if (!hours) return '00:00:00';
 
     const totalSeconds = Math.round(hours * 3600); // Convert hours to seconds
     const wholeHours = Math.floor(totalSeconds / 3600);
     const minutes = Math.floor((totalSeconds % 3600) / 60);
     const seconds = totalSeconds % 60;
 
-    return `${wholeHours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
+    return `${wholeHours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
   };
 
-  const {
-    data: settings,
-    isLoading,
-    isError,
-  } = useBillingSettings(companyId || "");
-  const { mutate: updateSettings, isPending: isUpdating } =
-    useUpdateBillingSettings(companyId || "");
+  const {data: settings, isLoading, isError} = useBillingSettings(companyId || '');
+  const {mutate: updateSettings, isPending: isUpdating} = useUpdateBillingSettings(companyId || '');
 
   const [currency, setCurrency] = useState<string | undefined>(undefined);
-  const [billingFrequency, setBillingFrequency] = useState<
-    BillingFrequency | undefined
-  >(undefined);
-  const [invoicePrefix, setInvoicePrefix] = useState("");
+  const [billingFrequency, setBillingFrequency] = useState<BillingFrequency | undefined>(undefined);
+  const [invoicePrefix, setInvoicePrefix] = useState('');
 
-  const [filters, setFilters] = useState<BillingFilters>(
-    getDefaultBillingFilters(),
-  );
+  const [filters, setFilters] = useState<BillingFilters>(getDefaultBillingFilters());
   const [isInitialized, setIsInitialized] = useState(false);
   const [showReport, setShowReport] = useState(false);
-  const [activeTab, setActiveTab] = useState("periods");
+  const [activeTab, setActiveTab] = useState('periods');
 
   const {
     data: billingReport,
     isLoading: isReportLoading,
     isError: isReportError,
     error: reportError,
-  } = useBillingReport(
-    companyId || "",
-    filters.reportStartDate,
-    filters.reportEndDate,
-  );
+  } = useBillingReport(companyId || '', filters.reportStartDate, filters.reportEndDate);
 
   const {
     data: billingRates,
     isLoading: isRatesLoading,
     isError: isRatesError,
-  } = useBillingRates(companyId || "");
-  const { mutate: createRate, isPending: isCreatingRate } =
-    useCreateBillingRate(companyId || "");
-  const { mutate: deleteRate } = useDeleteBillingRate(companyId || "");
+  } = useBillingRates(companyId || '');
+  const {mutate: createRate, isPending: isCreatingRate} = useCreateBillingRate(companyId || '');
+  const {mutate: deleteRate} = useDeleteBillingRate(companyId || '');
 
-  const { data: users } = useCompanyUsers();
-  const { data: projects } = useAllCompanyProjectsQuery();
-  console.log("BillingPage rendered with companyId:", billingReport);
+  const {data: users} = useCompanyUsers();
+  const {data: projects} = useAllCompanyProjectsQuery();
+  console.log('BillingPage rendered with companyId:', billingReport);
   const filteredBillingReport = React.useMemo(() => {
     if (!billingReport) return null;
-    if (isAdmin && filters.selectedUserId === "all") {
+    if (isAdmin && filters.selectedUserId === 'all') {
       return billingReport;
     }
     const filteredReport: typeof billingReport = {};
-    const targetUserId = isAdmin ? filters.selectedUserId : user?.id || "";
+    const targetUserId = isAdmin ? filters.selectedUserId : user?.id || '';
 
     for (const date in billingReport) {
       if (billingReport[date][targetUserId]) {
@@ -149,7 +122,7 @@ const BillingPage = () => {
   // Calculate dashboard statistics
   const dashboardStats = React.useMemo(() => {
     if (!filteredBillingReport)
-      return { totalHours: 0, totalAmount: 0, totalUsers: 0, avgHourlyRate: 0 };
+      return {totalHours: 0, totalAmount: 0, totalUsers: 0, avgHourlyRate: 0};
 
     let totalHours = 0;
     let totalAmount = 0;
@@ -173,29 +146,20 @@ const BillingPage = () => {
     };
   }, [filteredBillingReport]);
 
-  const [newRateType, setNewRateType] = useState<
-    "company" | "user" | "project"
-  >("company");
-  const [newRateValue, setNewRateValue] = useState<string>("");
-  const [newRateUserId, setNewRateUserId] = useState<string | undefined>(
-    undefined,
-  );
-  const [newRateProjectId, setNewRateProjectId] = useState<string | undefined>(
-    undefined,
-  );
+  const [newRateType, setNewRateType] = useState<'company' | 'user' | 'project'>('company');
+  const [newRateValue, setNewRateValue] = useState<string>('');
+  const [newRateUserId, setNewRateUserId] = useState<string | undefined>(undefined);
+  const [newRateProjectId, setNewRateProjectId] = useState<string | undefined>(undefined);
   const [newRateEffectiveFrom, setNewRateEffectiveFrom] = useState<string>(
-    formatISO(new Date(), { representation: "date" }),
+    formatISO(new Date(), {representation: 'date'}),
   );
-  const [newRateEffectiveTo, setNewRateEffectiveTo] = useState<
-    string | undefined
-  >(undefined);
+  const [newRateEffectiveTo, setNewRateEffectiveTo] = useState<string | undefined>(undefined);
 
   const handleCreateRate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!companyId || !newRateValue || !newRateEffectiveFrom) return;
 
-    if (!companyId || !newRateValue || !newRateEffectiveFrom || !user?.id)
-      return;
+    if (!companyId || !newRateValue || !newRateEffectiveFrom || !user?.id) return;
 
     const rateData: NewBillingRate = {
       company_id: companyId,
@@ -205,25 +169,23 @@ const BillingPage = () => {
       created_by: user.id,
     };
 
-    if (newRateType === "user" && newRateUserId) {
+    if (newRateType === 'user' && newRateUserId) {
       rateData.user_id = newRateUserId;
-    } else if (newRateType === "project" && newRateProjectId) {
+    } else if (newRateType === 'project' && newRateProjectId) {
       rateData.project_id = newRateProjectId;
     }
 
     createRate(rateData, {
       onSuccess: () => {
-        setNewRateValue("");
+        setNewRateValue('');
         setNewRateUserId(undefined);
         setNewRateProjectId(undefined);
-        setNewRateEffectiveFrom(
-          formatISO(new Date(), { representation: "date" }),
-        );
+        setNewRateEffectiveFrom(formatISO(new Date(), {representation: 'date'}));
         setNewRateEffectiveTo(undefined);
       },
       onError: (error) => {
-        console.error("Failed to create billing rate:", error);
-        alert("Failed to create billing rate.");
+        console.error('Failed to create billing rate:', error);
+        alert('Failed to create billing rate.');
       },
     });
   };
@@ -232,7 +194,7 @@ const BillingPage = () => {
     e.preventDefault();
     if (!currency) {
       // TODO: Add user-friendly validation
-      alert("Currency is required.");
+      alert('Currency is required.');
       return;
     }
     updateSettings({
@@ -248,11 +210,11 @@ const BillingPage = () => {
     let end: Date;
 
     switch (filters.reportFilter) {
-      case "weekly":
-        start = startOfWeek(today, { weekStartsOn: 0 }); // Sunday
-        end = endOfWeek(today, { weekStartsOn: 0 });
+      case 'weekly':
+        start = startOfWeek(today, {weekStartsOn: 0}); // Sunday
+        end = endOfWeek(today, {weekStartsOn: 0});
         break;
-      case "bi_monthly":
+      case 'bi_monthly':
         // This is a simplified bi-monthly, you might need more complex logic
         // For example, 1st-15th and 16th-end of month
         if (today.getDate() <= 15) {
@@ -263,15 +225,15 @@ const BillingPage = () => {
           end = endOfMonth(today);
         }
         break;
-      case "monthly":
+      case 'monthly':
         start = startOfMonth(today);
         end = endOfMonth(today);
         break;
-      case "yearly":
+      case 'yearly':
         start = startOfYear(today);
         end = endOfYear(today);
         break;
-      case "overall":
+      case 'overall':
         start = new Date(2000, 0, 1); // A very old date to get all data
         end = today;
         break;
@@ -285,13 +247,13 @@ const BillingPage = () => {
             end = endDate;
           } else {
             // Fallback to this week if dates are invalid
-            start = startOfWeek(today, { weekStartsOn: 0 });
-            end = endOfWeek(today, { weekStartsOn: 0 });
+            start = startOfWeek(today, {weekStartsOn: 0});
+            end = endOfWeek(today, {weekStartsOn: 0});
           }
         } else {
           // Fallback to this week if dates are empty
-          start = startOfWeek(today, { weekStartsOn: 0 });
-          end = endOfWeek(today, { weekStartsOn: 0 });
+          start = startOfWeek(today, {weekStartsOn: 0});
+          end = endOfWeek(today, {weekStartsOn: 0});
         }
         break;
     }
@@ -299,19 +261,19 @@ const BillingPage = () => {
     try {
       setFilters((prev) => ({
         ...prev,
-        reportStartDate: format(start, "yyyy-MM-dd"),
-        reportEndDate: format(end, "yyyy-MM-dd"),
+        reportStartDate: format(start, 'yyyy-MM-dd'),
+        reportEndDate: format(end, 'yyyy-MM-dd'),
       }));
       setShowReport(true);
     } catch (error) {
-      console.error("Error formatting dates:", error);
+      console.error('Error formatting dates:', error);
       // Fallback to this week on error
-      const fallbackStart = startOfWeek(today, { weekStartsOn: 0 });
-      const fallbackEnd = endOfWeek(today, { weekStartsOn: 0 });
+      const fallbackStart = startOfWeek(today, {weekStartsOn: 0});
+      const fallbackEnd = endOfWeek(today, {weekStartsOn: 0});
       setFilters((prev) => ({
         ...prev,
-        reportStartDate: format(fallbackStart, "yyyy-MM-dd"),
-        reportEndDate: format(fallbackEnd, "yyyy-MM-dd"),
+        reportStartDate: format(fallbackStart, 'yyyy-MM-dd'),
+        reportEndDate: format(fallbackEnd, 'yyyy-MM-dd'),
       }));
       setShowReport(true);
     }
@@ -321,11 +283,8 @@ const BillingPage = () => {
   useEffect(() => {
     const storedFilters = loadBillingFiltersFromStorage();
     // Set default user selection based on role if not already set
-    if (
-      !storedFilters.selectedUserId ||
-      storedFilters.selectedUserId === "all"
-    ) {
-      storedFilters.selectedUserId = isAdmin ? "all" : user?.id || "all";
+    if (!storedFilters.selectedUserId || storedFilters.selectedUserId === 'all') {
+      storedFilters.selectedUserId = isAdmin ? 'all' : user?.id || 'all';
     }
     setFilters(storedFilters);
     setIsInitialized(true);
@@ -343,7 +302,7 @@ const BillingPage = () => {
       setTimeout(() => {
         setCurrency(settings.currency ?? undefined);
         setBillingFrequency(settings.billing_frequency ?? undefined);
-        setInvoicePrefix(settings.invoice_prefix ?? "");
+        setInvoicePrefix(settings.invoice_prefix ?? '');
       }, 200);
     }
   }, [settings]);
@@ -367,15 +326,15 @@ const BillingPage = () => {
         Error loading billing settings.
       </div>
     );
-  console.log("filteredBillingReport:", filteredBillingReport);
+  console.log('filteredBillingReport:', filteredBillingReport);
   return (
     <div className="p-4 space-y-4 bg-background min-h-screen">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold text-foreground">
-          {isAdmin ? "Company Billing Dashboard" : "My Timesheet"}
+          {isAdmin ? 'Company Billing Dashboard' : 'My Timesheet'}
         </h1>
         <Badge variant="outline" className="text-sm">
-          {format(new Date(), "MMM dd, yyyy")}
+          {format(new Date(), 'MMM dd, yyyy')}
         </Badge>
       </div>
 
@@ -390,9 +349,7 @@ const BillingPage = () => {
             <div className="text-2xl font-bold font-mono">
               {formatDuration(dashboardStats.totalHours)}
             </div>
-            <p className="text-xs text-muted-foreground">
-              {filters.reportFilter} period
-            </p>
+            <p className="text-xs text-muted-foreground">{filters.reportFilter} period</p>
           </CardContent>
         </Card>
         <Card>
@@ -402,12 +359,10 @@ const BillingPage = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {settings?.currency || "$"}
+              {settings?.currency || '$'}
               {dashboardStats.totalAmount.toFixed(2)}
             </div>
-            <p className="text-xs text-muted-foreground">
-              {filters.reportFilter} period
-            </p>
+            <p className="text-xs text-muted-foreground">{filters.reportFilter} period</p>
           </CardContent>
         </Card>
         <Card>
@@ -417,7 +372,7 @@ const BillingPage = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {settings?.currency || "$"}
+              {settings?.currency || '$'}
               {dashboardStats.avgHourlyRate.toFixed(2)}
             </div>
             <p className="text-xs text-muted-foreground">per hour</p>
@@ -426,15 +381,11 @@ const BillingPage = () => {
         {isAdmin && (
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                Active Users
-              </CardTitle>
+              <CardTitle className="text-sm font-medium">Active Users</CardTitle>
               <Users className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">
-                {dashboardStats.totalUsers}
-              </div>
+              <div className="text-2xl font-bold">{dashboardStats.totalUsers}</div>
               <p className="text-xs text-muted-foreground">with time entries</p>
             </CardContent>
           </Card>
@@ -444,51 +395,42 @@ const BillingPage = () => {
       {/* Navigation Tabs */}
       <div className="flex border-b border-border mb-6">
         <button
-          className={`px-4 py-2 font-medium ${activeTab === "payments" ? "border-b-2 border-blue-500 text-blue-600 dark:text-blue-400" : "text-muted-foreground hover:text-foreground"}`}
-          onClick={() => setActiveTab("payments")}
-        >
-          {isAdmin ? "Payments" : "My Payments"}
+          className={`px-4 py-2 font-medium ${activeTab === 'payments' ? 'border-b-2 border-blue-500 text-blue-600 dark:text-blue-400' : 'text-muted-foreground hover:text-foreground'}`}
+          onClick={() => setActiveTab('payments')}>
+          {isAdmin ? 'Payments' : 'My Payments'}
         </button>
         <button
-          className={`px-4 py-2 font-medium ml-4 ${activeTab === "periods" ? "border-b-2 border-blue-500 text-blue-600 dark:text-blue-400" : "text-muted-foreground hover:text-foreground"}`}
-          onClick={() => setActiveTab("periods")}
-        >
-          {isAdmin ? "Billing Periods" : "My Billing Periods"}
+          className={`px-4 py-2 font-medium ml-4 ${activeTab === 'periods' ? 'border-b-2 border-blue-500 text-blue-600 dark:text-blue-400' : 'text-muted-foreground hover:text-foreground'}`}
+          onClick={() => setActiveTab('periods')}>
+          {isAdmin ? 'Billing Periods' : 'My Billing Periods'}
         </button>
         <button
-          className={`px-4 py-2 font-medium ml-4 ${activeTab === "timesheet" ? "border-b-2 border-blue-500 text-blue-600 dark:text-blue-400" : "text-muted-foreground hover:text-foreground"}`}
-          onClick={() => setActiveTab("timesheet")}
-        >
+          className={`px-4 py-2 font-medium ml-4 ${activeTab === 'timesheet' ? 'border-b-2 border-blue-500 text-blue-600 dark:text-blue-400' : 'text-muted-foreground hover:text-foreground'}`}
+          onClick={() => setActiveTab('timesheet')}>
           Timesheet
         </button>
         <button
-          className={`px-4 py-2 font-medium ml-4 ${activeTab === "rates" ? "border-b-2 border-blue-500 text-blue-600 dark:text-blue-400" : "text-muted-foreground hover:text-foreground"}`}
-          onClick={() => setActiveTab("rates")}
-        >
+          className={`px-4 py-2 font-medium ml-4 ${activeTab === 'rates' ? 'border-b-2 border-blue-500 text-blue-600 dark:text-blue-400' : 'text-muted-foreground hover:text-foreground'}`}
+          onClick={() => setActiveTab('rates')}>
           Billing Rates
         </button>
         {isAdmin && (
           <button
-            className={`px-4 py-2 font-medium ml-4 ${activeTab === "settings" ? "border-b-2 border-blue-500 text-blue-600 dark:text-blue-400" : "text-muted-foreground hover:text-foreground"}`}
-            onClick={() => setActiveTab("settings")}
-          >
+            className={`px-4 py-2 font-medium ml-4 ${activeTab === 'settings' ? 'border-b-2 border-blue-500 text-blue-600 dark:text-blue-400' : 'text-muted-foreground hover:text-foreground'}`}
+            onClick={() => setActiveTab('settings')}>
             Settings
           </button>
         )}
       </div>
 
       {/* Payments Tab */}
-      {activeTab === "payments" && (
-        <PaymentDashboard companyId={companyId!} isAdmin={isAdmin} />
-      )}
+      {activeTab === 'payments' && <PaymentDashboard companyId={companyId!} isAdmin={isAdmin} />}
 
       {/* Billing Periods Tab */}
-      {activeTab === "periods" && (
-        <BillingPeriodsList companyId={companyId!} isAdmin={isAdmin} />
-      )}
+      {activeTab === 'periods' && <BillingPeriodsList companyId={companyId!} isAdmin={isAdmin} />}
 
       {/* Timesheet Tab */}
-      {activeTab === "timesheet" && (
+      {activeTab === 'timesheet' && (
         <div className="space-y-6">
           <Card>
             <CardHeader>
@@ -518,24 +460,17 @@ const BillingPage = () => {
                                 ...prev,
                                 reportFilter: value,
                               }))
-                            }
-                          >
+                            }>
                             <SelectTrigger id="reportFilter" className="w-36">
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
                               <SelectItem value="weekly">This Week</SelectItem>
-                              <SelectItem value="bi_monthly">
-                                Bi-monthly
-                              </SelectItem>
-                              <SelectItem value="monthly">
-                                This Month
-                              </SelectItem>
+                              <SelectItem value="bi_monthly">Bi-monthly</SelectItem>
+                              <SelectItem value="monthly">This Month</SelectItem>
                               <SelectItem value="yearly">This Year</SelectItem>
                               <SelectItem value="overall">All Time</SelectItem>
-                              <SelectItem value="custom">
-                                Custom Range
-                              </SelectItem>
+                              <SelectItem value="custom">Custom Range</SelectItem>
                             </SelectContent>
                           </Select>
                         </div>
@@ -544,8 +479,8 @@ const BillingPage = () => {
                             <span className="font-medium">Current Range:</span>
                             <span>
                               {filters.reportStartDate && filters.reportEndDate
-                                ? `${format(new Date(filters.reportStartDate), "MMM dd")} - ${format(new Date(filters.reportEndDate), "MMM dd, yyyy")}`
-                                : "Loading..."}
+                                ? `${format(new Date(filters.reportStartDate), 'MMM dd')} - ${format(new Date(filters.reportEndDate), 'MMM dd, yyyy')}`
+                                : 'Loading...'}
                             </span>
                           </div>
                         </div>
@@ -560,14 +495,14 @@ const BillingPage = () => {
                             setFilters((prev) => ({
                               ...prev,
                               reportStartDate: date,
-                              reportFilter: "custom",
+                              reportFilter: 'custom',
                             }));
                           }}
                           onEndDateChange={(date) => {
                             setFilters((prev) => ({
                               ...prev,
                               reportEndDate: date,
-                              reportFilter: "custom",
+                              reportFilter: 'custom',
                             }));
                           }}
                           onRangeChange={(startDate, endDate) => {
@@ -575,7 +510,7 @@ const BillingPage = () => {
                               ...prev,
                               reportStartDate: startDate,
                               reportEndDate: endDate,
-                              reportFilter: "custom",
+                              reportFilter: 'custom',
                             }));
                             // Auto-refresh the report when range is applied
                             setTimeout(() => {
@@ -594,8 +529,7 @@ const BillingPage = () => {
                                 ...prev,
                                 selectedUserId: value,
                               }))
-                            }
-                          >
+                            }>
                             <SelectTrigger id="userFilter" className="w-40">
                               <SelectValue />
                             </SelectTrigger>
@@ -610,11 +544,8 @@ const BillingPage = () => {
                           </Select>
                         </div>
                       )}
-                      <Button
-                        onClick={handleGenerateReport}
-                        disabled={isReportLoading}
-                      >
-                        {isReportLoading ? "Loading..." : "Refresh"}
+                      <Button onClick={handleGenerateReport} disabled={isReportLoading}>
+                        {isReportLoading ? 'Loading...' : 'Refresh'}
                       </Button>
                     </div>
                   </div>
@@ -626,9 +557,7 @@ const BillingPage = () => {
                 <div className="flex items-center justify-center py-8">
                   <div className="text-center">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-foreground mx-auto mb-2"></div>
-                    <p className="text-sm text-muted-foreground">
-                      Loading timesheet data...
-                    </p>
+                    <p className="text-sm text-muted-foreground">Loading timesheet data...</p>
                   </div>
                 </div>
               ) : isReportError ? (
@@ -638,21 +567,18 @@ const BillingPage = () => {
                   </p>
                   {reportError && (
                     <p className="text-xs text-muted-foreground mt-2">
-                      {(reportError as Error).message ||
-                        "Unknown error occurred"}
+                      {(reportError as Error).message || 'Unknown error occurred'}
                     </p>
                   )}
                   <Button
                     onClick={handleGenerateReport}
                     className="mt-4"
                     variant="outline"
-                    size="sm"
-                  >
+                    size="sm">
                     Retry
                   </Button>
                 </div>
-              ) : filteredBillingReport &&
-                Object.keys(filteredBillingReport).length > 0 ? (
+              ) : filteredBillingReport && Object.keys(filteredBillingReport).length > 0 ? (
                 <div className="space-y-6">
                   {/* Timesheet Table */}
                   <div className="overflow-x-auto">
@@ -690,58 +616,47 @@ const BillingPage = () => {
                       <tbody className="bg-card divide-y divide-border">
                         {Object.entries(filteredBillingReport).map(
                           ([date, usersData]: [string, any]) =>
-                            Object.entries(usersData).map(
-                              ([userId, userData]: [string, any]) =>
-                                Object.entries(userData.projects).map(
-                                  ([projectId, projectData]: [string, any]) =>
-                                    projectData.tickets.map(
-                                      (ticket: any, ticketIndex: number) => (
-                                        <tr
-                                          key={`${date}-${userId}-${projectId}-${ticketIndex}`}
-                                          className="hover:bg-muted/50"
-                                        >
-                                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-foreground">
-                                            {format(new Date(date), "MMM dd")}
-                                          </td>
-                                          {isAdmin && (
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-foreground">
-                                              {userData.userFirstName}{" "}
-                                              {userData.userLastName}
-                                            </td>
-                                          )}
-                                          <td className="px-6 py-4 whitespace-nowrap text-sm text-foreground">
-                                            <div className="font-medium">
-                                              {projectData.projectName}
-                                            </div>
-                                          </td>
-                                          <td className="px-6 py-4 whitespace-nowrap text-sm text-foreground">
-                                            <div className="font-medium">
-                                              {ticket.ticketTitle}
-                                            </div>
-                                          </td>
-                                          <td className="px-6 py-4 whitespace-nowrap text-sm text-foreground">
-                                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium font-mono bg-muted text-foreground">
-                                              {formatDuration(ticket.hours)}
-                                            </span>
-                                          </td>
-                                          <td className="px-6 py-4 whitespace-nowrap text-sm text-foreground">
-                                            {settings?.currency || "$"}
-                                            {(
-                                              ticket.amount / ticket.hours
-                                            ).toFixed(2)}
-                                            /hr
-                                          </td>
-                                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-foreground">
-                                            {settings?.currency || "$"}
-                                            {ticket.amount.toFixed(2)}
-                                          </td>
-                                          <td className="px-6 py-4 text-sm text-muted-foreground max-w-xs truncate">
-                                            {ticket.description || "-"}
-                                          </td>
-                                        </tr>
-                                      ),
-                                    ),
-                                ),
+                            Object.entries(usersData).map(([userId, userData]: [string, any]) =>
+                              Object.entries(userData.projects).map(
+                                ([projectId, projectData]: [string, any]) =>
+                                  projectData.tickets.map((ticket: any, ticketIndex: number) => (
+                                    <tr
+                                      key={`${date}-${userId}-${projectId}-${ticketIndex}`}
+                                      className="hover:bg-muted/50">
+                                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-foreground">
+                                        {format(new Date(date), 'MMM dd')}
+                                      </td>
+                                      {isAdmin && (
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-foreground">
+                                          {userData.userFirstName} {userData.userLastName}
+                                        </td>
+                                      )}
+                                      <td className="px-6 py-4 whitespace-nowrap text-sm text-foreground">
+                                        <div className="font-medium">{projectData.projectName}</div>
+                                      </td>
+                                      <td className="px-6 py-4 whitespace-nowrap text-sm text-foreground">
+                                        <div className="font-medium">{ticket.ticketTitle}</div>
+                                      </td>
+                                      <td className="px-6 py-4 whitespace-nowrap text-sm text-foreground">
+                                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium font-mono bg-muted text-foreground">
+                                          {formatDuration(ticket.hours)}
+                                        </span>
+                                      </td>
+                                      <td className="px-6 py-4 whitespace-nowrap text-sm text-foreground">
+                                        {settings?.currency || '$'}
+                                        {(ticket.amount / ticket.hours).toFixed(2)}
+                                        /hr
+                                      </td>
+                                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-foreground">
+                                        {settings?.currency || '$'}
+                                        {ticket.amount.toFixed(2)}
+                                      </td>
+                                      <td className="px-6 py-4 text-sm text-muted-foreground max-w-xs truncate">
+                                        {ticket.description || '-'}
+                                      </td>
+                                    </tr>
+                                  )),
+                              ),
                             ),
                         )}
                       </tbody>
@@ -750,32 +665,28 @@ const BillingPage = () => {
 
                   {/* Summary Section */}
                   <div className="border-t pt-6">
-                    <h4 className="text-lg font-semibold mb-4">
-                      Period Summary
-                    </h4>
+                    <h4 className="text-lg font-semibold mb-4">Period Summary</h4>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      {Object.entries(
-                        calculateWeeklyTotal(filteredBillingReport),
-                      ).map(([userId, weeklyData]: [string, any]) => (
-                        <Card key={userId}>
-                          <CardContent className="pt-6">
-                            <div className="text-center">
-                              <h5 className="font-medium">
-                                {weeklyData.userName}
-                              </h5>
-                              <div className="mt-2 space-y-1">
-                                <div className="text-2xl font-bold font-mono">
-                                  {formatDuration(weeklyData.totalHours)}
-                                </div>
-                                <div className="text-lg font-semibold text-green-600 dark:text-green-400">
-                                  {settings?.currency || "$"}
-                                  {weeklyData.totalAmount.toFixed(2)}
+                      {Object.entries(calculateWeeklyTotal(filteredBillingReport)).map(
+                        ([userId, weeklyData]: [string, any]) => (
+                          <Card key={userId}>
+                            <CardContent className="pt-6">
+                              <div className="text-center">
+                                <h5 className="font-medium">{weeklyData.userName}</h5>
+                                <div className="mt-2 space-y-1">
+                                  <div className="text-2xl font-bold font-mono">
+                                    {formatDuration(weeklyData.totalHours)}
+                                  </div>
+                                  <div className="text-lg font-semibold text-green-600 dark:text-green-400">
+                                    {settings?.currency || '$'}
+                                    {weeklyData.totalAmount.toFixed(2)}
+                                  </div>
                                 </div>
                               </div>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      ))}
+                            </CardContent>
+                          </Card>
+                        ),
+                      )}
                     </div>
                   </div>
                 </div>
@@ -795,7 +706,7 @@ const BillingPage = () => {
       )}
 
       {/* Billing Rates Tab */}
-      {activeTab === "rates" && (
+      {activeTab === 'rates' && (
         <div className="space-y-6">
           <Card>
             <CardHeader>
@@ -811,19 +722,16 @@ const BillingPage = () => {
                     <Label htmlFor="rateType">Rate Type</Label>
                     <Select
                       value={newRateType}
-                      onValueChange={(value: "company" | "user" | "project") =>
+                      onValueChange={(value: 'company' | 'user' | 'project') =>
                         setNewRateType(value)
-                      }
-                    >
+                      }>
                       <SelectTrigger id="rateType">
                         <SelectValue placeholder="Select rate type" />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="company">Company Default</SelectItem>
                         <SelectItem value="user">User Specific</SelectItem>
-                        <SelectItem value="project">
-                          Project Specific
-                        </SelectItem>
+                        <SelectItem value="project">Project Specific</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -841,13 +749,10 @@ const BillingPage = () => {
                   </div>
                 </div>
 
-                {newRateType === "user" && (
+                {newRateType === 'user' && (
                   <div>
                     <Label htmlFor="userSelect">Select User</Label>
-                    <Select
-                      value={newRateUserId}
-                      onValueChange={setNewRateUserId}
-                    >
+                    <Select value={newRateUserId} onValueChange={setNewRateUserId}>
                       <SelectTrigger id="userSelect">
                         <SelectValue placeholder="Select a user" />
                       </SelectTrigger>
@@ -862,13 +767,10 @@ const BillingPage = () => {
                   </div>
                 )}
 
-                {newRateType === "project" && (
+                {newRateType === 'project' && (
                   <div>
                     <Label htmlFor="projectSelect">Select Project</Label>
-                    <Select
-                      value={newRateProjectId}
-                      onValueChange={setNewRateProjectId}
-                    >
+                    <Select value={newRateProjectId} onValueChange={setNewRateProjectId}>
                       <SelectTrigger id="projectSelect">
                         <SelectValue placeholder="Select a project" />
                       </SelectTrigger>
@@ -899,23 +801,19 @@ const BillingPage = () => {
                     <Input
                       id="effectiveTo"
                       type="date"
-                      value={newRateEffectiveTo || ""}
-                      onChange={(e) =>
-                        setNewRateEffectiveTo(e.target.value || undefined)
-                      }
+                      value={newRateEffectiveTo || ''}
+                      onChange={(e) => setNewRateEffectiveTo(e.target.value || undefined)}
                     />
                   </div>
                 </div>
 
                 <Button type="submit" disabled={isCreatingRate}>
-                  {isCreatingRate ? "Adding..." : "Add Billing Rate"}
+                  {isCreatingRate ? 'Adding...' : 'Add Billing Rate'}
                 </Button>
               </form>
 
               <div className="space-y-4">
-                <h3 className="text-lg font-semibold">
-                  Existing Billing Rates
-                </h3>
+                <h3 className="text-lg font-semibold">Existing Billing Rates</h3>
                 {isRatesLoading ? (
                   <div className="text-center py-4">Loading rates...</div>
                 ) : isRatesError ? (
@@ -949,34 +847,24 @@ const BillingPage = () => {
                           <tr key={rate.id} className="hover:bg-muted/50">
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-foreground">
                               <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-muted text-foreground border border-border">
-                                {rate.project_id
-                                  ? "Project"
-                                  : rate.user_id
-                                    ? "User"
-                                    : "Company"}
+                                {rate.project_id ? 'Project' : rate.user_id ? 'User' : 'Company'}
                               </span>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-foreground">
                               {rate.project_id &&
-                                projects?.find((p) => p.id === rate.project_id)
-                                  ?.name}
+                                projects?.find((p) => p.id === rate.project_id)?.name}
                               {rate.user_id &&
                                 `${users?.find((u) => u.id === rate.user_id)?.first_name} ${users?.find((u) => u.id === rate.user_id)?.last_name}`}
-                              {!rate.project_id &&
-                                !rate.user_id &&
-                                "Default Rate"}
+                              {!rate.project_id && !rate.user_id && 'Default Rate'}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-foreground">
-                              {settings?.currency || "$"}
+                              {settings?.currency || '$'}
                               {rate.hourly_rate}/hr
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-foreground">
-                              {format(
-                                new Date(rate.effective_from),
-                                "MMM dd, yyyy",
-                              )}
+                              {format(new Date(rate.effective_from), 'MMM dd, yyyy')}
                               {rate.effective_to &&
-                                ` - ${format(new Date(rate.effective_to), "MMM dd, yyyy")}`}
+                                ` - ${format(new Date(rate.effective_to), 'MMM dd, yyyy')}`}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-foreground">
                               <Button
@@ -984,14 +872,11 @@ const BillingPage = () => {
                                 size="sm"
                                 onClick={() => {
                                   if (
-                                    window.confirm(
-                                      "Are you sure you want to delete this rate?",
-                                    )
+                                    window.confirm('Are you sure you want to delete this rate?')
                                   ) {
                                     deleteRate(rate.id);
                                   }
-                                }}
-                              >
+                                }}>
                                 Delete
                               </Button>
                             </td>
@@ -1012,7 +897,7 @@ const BillingPage = () => {
       )}
 
       {/* Settings Tab (Admin Only) */}
-      {isAdmin && activeTab === "settings" && (
+      {isAdmin && activeTab === 'settings' && (
         <div className="space-y-6">
           <Card>
             <CardHeader>
@@ -1020,9 +905,7 @@ const BillingPage = () => {
                 <Settings className="h-5 w-5" />
                 Company Billing Settings
               </CardTitle>
-              <CardDescription>
-                Configure billing preferences for your company
-              </CardDescription>
+              <CardDescription>Configure billing preferences for your company</CardDescription>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-6">
@@ -1046,10 +929,7 @@ const BillingPage = () => {
                     <Label htmlFor="billingFrequency">Billing Frequency</Label>
                     <Select
                       value={billingFrequency}
-                      onValueChange={(value) =>
-                        setBillingFrequency(value as BillingFrequency)
-                      }
-                    >
+                      onValueChange={(value) => setBillingFrequency(value as BillingFrequency)}>
                       <SelectTrigger id="billingFrequency">
                         <SelectValue placeholder="Select frequency" />
                       </SelectTrigger>
@@ -1071,7 +951,7 @@ const BillingPage = () => {
                   />
                 </div>
                 <Button type="submit" disabled={isUpdating}>
-                  {isUpdating ? "Saving..." : "Save Settings"}
+                  {isUpdating ? 'Saving...' : 'Save Settings'}
                 </Button>
               </form>
             </CardContent>

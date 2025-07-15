@@ -1,7 +1,7 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useSessionAwareQuery } from "./useSessionAwareQuery";
-import { useEffect } from "react";
-import { useAuth } from "./useAuth";
+import {useMutation, useQueryClient} from '@tanstack/react-query';
+import {useSessionAwareQuery} from './useSessionAwareQuery';
+import {useEffect} from 'react';
+import {useAuth} from './useAuth';
 import {
   getUsersInCompany,
   getCompanyUsers,
@@ -11,30 +11,27 @@ import {
   removeUserFromCompany,
   inviteUserToCompany,
   getAssignableUsers,
-} from "@/lib/db/service";
-import { canElevateRole } from "@/lib/auth-utils";
-import type { UserRole } from "@/lib/db/schema";
-import { useAuthStore } from "@/lib/stores/auth";
-import { useCompanyStore } from "@/lib/stores/company";
+} from '@/lib/db/service';
+import {canElevateRole} from '@/lib/auth-utils';
+import type {UserRole} from '@/lib/db/schema';
+import {useAuthStore} from '@/lib/stores/auth';
+import {useCompanyStore} from '@/lib/stores/company';
 
 // Query keys
 export const userKeys = {
-  all: ["users"] as const,
-  byCompany: (companyId: string) =>
-    [...userKeys.all, "company", companyId] as const,
-  companyUsers: (companyId: string) =>
-    [...userKeys.all, "company-users", companyId] as const,
-  assignableUsers: (companyId: string) =>
-    [...userKeys.all, "assignable", companyId] as const,
+  all: ['users'] as const,
+  byCompany: (companyId: string) => [...userKeys.all, 'company', companyId] as const,
+  companyUsers: (companyId: string) => [...userKeys.all, 'company-users', companyId] as const,
+  assignableUsers: (companyId: string) => [...userKeys.all, 'assignable', companyId] as const,
 };
 
 // Get users in the current user's company (for assignment)
 export function useUsersInCompany() {
-  const { user } = useAuth();
+  const {user} = useAuth();
 
   return useSessionAwareQuery({
-    queryKey: userKeys.byCompany(user?.company_id || ""),
-    queryFn: () => getUsersInCompany(user?.company_id || ""),
+    queryKey: userKeys.byCompany(user?.company_id || ''),
+    queryFn: () => getUsersInCompany(user?.company_id || ''),
     enabled: !!user?.company_id,
     staleTime: 1000 * 60 * 10, // 10 minutes (users don't change often)
   });
@@ -44,13 +41,13 @@ export function useUsersInCompany() {
  * Hook to fetch company users with full details for management
  */
 export function useCompanyUsers() {
-  const { user } = useAuthStore();
-  const { setUsers, setUsersLoading, setUsersError } = useCompanyStore();
+  const {user} = useAuthStore();
+  const {setUsers, setUsersLoading, setUsersError} = useCompanyStore();
 
   const query = useSessionAwareQuery({
-    queryKey: userKeys.companyUsers(user?.company_id || ""),
+    queryKey: userKeys.companyUsers(user?.company_id || ''),
     queryFn: async () => {
-      if (!user?.company_id) throw new Error("No company ID available");
+      if (!user?.company_id) throw new Error('No company ID available');
       return getCompanyUsers(user.company_id);
     },
     enabled: !!user?.company_id,
@@ -64,23 +61,12 @@ export function useCompanyUsers() {
       setUsersLoading(false);
       setUsersError(null);
     } else if (query.error) {
-      setUsersError(
-        query.error instanceof Error
-          ? query.error.message
-          : "Failed to load users",
-      );
+      setUsersError(query.error instanceof Error ? query.error.message : 'Failed to load users');
       setUsersLoading(false);
     } else if (query.isLoading) {
       setUsersLoading(true);
     }
-  }, [
-    query.data,
-    query.error,
-    query.isLoading,
-    setUsers,
-    setUsersLoading,
-    setUsersError,
-  ]);
+  }, [query.data, query.error, query.isLoading, setUsers, setUsersLoading, setUsersError]);
 
   return query;
 }
@@ -89,12 +75,12 @@ export function useCompanyUsers() {
  * Hook to fetch assignable users (active users only)
  */
 export function useAssignableUsers() {
-  const { user } = useAuthStore();
+  const {user} = useAuthStore();
 
   return useSessionAwareQuery({
-    queryKey: userKeys.assignableUsers(user?.company_id || ""),
+    queryKey: userKeys.assignableUsers(user?.company_id || ''),
     queryFn: async () => {
-      if (!user?.company_id) throw new Error("No company ID available");
+      if (!user?.company_id) throw new Error('No company ID available');
       return getAssignableUsers(user.company_id);
     },
     enabled: !!user?.company_id,
@@ -107,7 +93,7 @@ export function useAssignableUsers() {
  */
 export function useUpdateUserRole() {
   const queryClient = useQueryClient();
-  const { user } = useAuthStore();
+  const {user} = useAuthStore();
 
   return useMutation({
     mutationFn: ({
@@ -115,23 +101,18 @@ export function useUpdateUserRole() {
       role,
     }: {
       userId: string;
-      role:
-        | "super_admin"
-        | "system_admin"
-        | "company_admin"
-        | "manager"
-        | "user";
+      role: 'super_admin' | 'system_admin' | 'company_admin' | 'manager' | 'user';
     }) => updateUserRole(userId, role),
     onSuccess: () => {
       // Invalidate and refetch company users
       queryClient.invalidateQueries({
-        queryKey: userKeys.companyUsers(user?.company_id || ""),
+        queryKey: userKeys.companyUsers(user?.company_id || ''),
       });
       queryClient.invalidateQueries({
-        queryKey: userKeys.assignableUsers(user?.company_id || ""),
+        queryKey: userKeys.assignableUsers(user?.company_id || ''),
       });
       queryClient.invalidateQueries({
-        queryKey: userKeys.byCompany(user?.company_id || ""),
+        queryKey: userKeys.byCompany(user?.company_id || ''),
       });
     },
   });
@@ -142,26 +123,21 @@ export function useUpdateUserRole() {
  */
 export function useUpdateUserStatus() {
   const queryClient = useQueryClient();
-  const { user } = useAuthStore();
+  const {user} = useAuthStore();
 
   return useMutation({
-    mutationFn: ({
-      userId,
-      status,
-    }: {
-      userId: string;
-      status: "active" | "inactive";
-    }) => updateUserStatus(userId, status),
+    mutationFn: ({userId, status}: {userId: string; status: 'active' | 'inactive'}) =>
+      updateUserStatus(userId, status),
     onSuccess: () => {
       // Invalidate and refetch company users
       queryClient.invalidateQueries({
-        queryKey: userKeys.companyUsers(user?.company_id || ""),
+        queryKey: userKeys.companyUsers(user?.company_id || ''),
       });
       queryClient.invalidateQueries({
-        queryKey: userKeys.assignableUsers(user?.company_id || ""),
+        queryKey: userKeys.assignableUsers(user?.company_id || ''),
       });
       queryClient.invalidateQueries({
-        queryKey: userKeys.byCompany(user?.company_id || ""),
+        queryKey: userKeys.byCompany(user?.company_id || ''),
       });
     },
   });
@@ -172,24 +148,19 @@ export function useUpdateUserStatus() {
  */
 export function useUpdateUserHourlyRate() {
   const queryClient = useQueryClient();
-  const { user } = useAuthStore();
+  const {user} = useAuthStore();
 
   return useMutation({
-    mutationFn: ({
-      userId,
-      hourlyRate,
-    }: {
-      userId: string;
-      hourlyRate: number | null;
-    }) => updateUserHourlyRate(userId, hourlyRate),
+    mutationFn: ({userId, hourlyRate}: {userId: string; hourlyRate: number | null}) =>
+      updateUserHourlyRate(userId, hourlyRate),
     onSuccess: () => {
       // Invalidate and refetch company users
       queryClient.invalidateQueries({
-        queryKey: userKeys.companyUsers(user?.company_id || ""),
+        queryKey: userKeys.companyUsers(user?.company_id || ''),
       });
 
       // Invalidate billing reports since hourly rates affect billing calculations
-      queryClient.invalidateQueries({ queryKey: ["billing-report"] });
+      queryClient.invalidateQueries({queryKey: ['billing-report']});
     },
   });
 }
@@ -199,20 +170,20 @@ export function useUpdateUserHourlyRate() {
  */
 export function useRemoveUser() {
   const queryClient = useQueryClient();
-  const { user } = useAuthStore();
+  const {user} = useAuthStore();
 
   return useMutation({
     mutationFn: (userId: string) => removeUserFromCompany(userId),
     onSuccess: () => {
       // Invalidate and refetch company users
       queryClient.invalidateQueries({
-        queryKey: userKeys.companyUsers(user?.company_id || ""),
+        queryKey: userKeys.companyUsers(user?.company_id || ''),
       });
       queryClient.invalidateQueries({
-        queryKey: userKeys.assignableUsers(user?.company_id || ""),
+        queryKey: userKeys.assignableUsers(user?.company_id || ''),
       });
       queryClient.invalidateQueries({
-        queryKey: userKeys.byCompany(user?.company_id || ""),
+        queryKey: userKeys.byCompany(user?.company_id || ''),
       });
     },
   });
@@ -223,23 +194,18 @@ export function useRemoveUser() {
  */
 export function useInviteUser() {
   const queryClient = useQueryClient();
-  const { user } = useAuthStore();
+  const {user} = useAuthStore();
 
   return useMutation({
     mutationFn: (data: {
       email: string;
-      role:
-        | "super_admin"
-        | "system_admin"
-        | "company_admin"
-        | "manager"
-        | "user";
+      role: 'super_admin' | 'system_admin' | 'company_admin' | 'manager' | 'user';
       firstName?: string;
       lastName?: string;
       hourlyRate?: number;
     }) => {
       if (!user?.company_id || !user?.id) {
-        throw new Error("User or company information not available");
+        throw new Error('User or company information not available');
       }
 
       return inviteUserToCompany({
@@ -251,7 +217,7 @@ export function useInviteUser() {
     onSuccess: () => {
       // Invalidate and refetch company users
       queryClient.invalidateQueries({
-        queryKey: userKeys.companyUsers(user?.company_id || ""),
+        queryKey: userKeys.companyUsers(user?.company_id || ''),
       });
     },
   });
@@ -262,24 +228,16 @@ export function useInviteUser() {
  */
 export function useElevateUserRole() {
   const queryClient = useQueryClient();
-  const { user } = useAuthStore();
+  const {user} = useAuthStore();
 
   return useMutation({
-    mutationFn: ({
-      userId,
-      newRole,
-    }: {
-      userId: string;
-      newRole: UserRole;
-    }) => {
+    mutationFn: ({userId, newRole}: {userId: string; newRole: UserRole}) => {
       if (!user?.role) {
-        throw new Error("Current user role not available");
+        throw new Error('Current user role not available');
       }
 
       if (!canElevateRole(user.role as UserRole, newRole)) {
-        throw new Error(
-          `You don't have permission to elevate users to ${newRole} role`,
-        );
+        throw new Error(`You don't have permission to elevate users to ${newRole} role`);
       }
 
       return updateUserRole(userId, newRole);
@@ -287,13 +245,13 @@ export function useElevateUserRole() {
     onSuccess: () => {
       // Invalidate and refetch company users
       queryClient.invalidateQueries({
-        queryKey: userKeys.companyUsers(user?.company_id || ""),
+        queryKey: userKeys.companyUsers(user?.company_id || ''),
       });
       queryClient.invalidateQueries({
-        queryKey: userKeys.assignableUsers(user?.company_id || ""),
+        queryKey: userKeys.assignableUsers(user?.company_id || ''),
       });
       queryClient.invalidateQueries({
-        queryKey: userKeys.byCompany(user?.company_id || ""),
+        queryKey: userKeys.byCompany(user?.company_id || ''),
       });
     },
   });
@@ -303,7 +261,7 @@ export function useElevateUserRole() {
  * Hook to check if current user can elevate another user to a specific role
  */
 export function useCanElevateRole() {
-  const { user } = useAuthStore();
+  const {user} = useAuthStore();
 
   return (targetRole: UserRole): boolean => {
     if (!user?.role) return false;
@@ -315,15 +273,9 @@ export function useCanElevateRole() {
  * Hook to get available roles that the current user can assign
  */
 export function useAvailableRoles() {
-  const { user } = useAuthStore();
+  const {user} = useAuthStore();
 
-  const allRoles: UserRole[] = [
-    "super_admin",
-    "system_admin",
-    "company_admin",
-    "manager",
-    "user",
-  ];
+  const allRoles: UserRole[] = ['super_admin', 'system_admin', 'company_admin', 'manager', 'user'];
 
   return allRoles.filter((role) => {
     if (!user?.role) return false;

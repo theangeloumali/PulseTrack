@@ -1,36 +1,36 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import { Play, Pause, Square, Clock } from "lucide-react";
-import { Button } from "@workspace/ui/components/button";
-import { Card } from "@workspace/ui/components/card";
-import { Input } from "@workspace/ui/components/input";
-import { Label } from "@workspace/ui/components/label";
-import { Textarea } from "@workspace/ui/components/textarea";
+import {useState, useEffect} from 'react';
+import {Play, Pause, Square, Clock} from 'lucide-react';
+import {Button} from '@workspace/ui/components/button';
+import {Card} from '@workspace/ui/components/card';
+import {Input} from '@workspace/ui/components/input';
+import {Label} from '@workspace/ui/components/label';
+import {Textarea} from '@workspace/ui/components/textarea';
 import {
   useActiveTimeEntry,
   useCreateTimeEntry,
   useUpdateTimeEntry,
-} from "@/lib/hooks/useTimeTracking";
-import { useTimeTrackingStore } from "@/lib/stores/timeTracking";
-import { useAuth } from "@/lib/hooks/useAuth";
-import type { Ticket } from "@/lib/db/schema";
+} from '@/lib/hooks/useTimeTracking';
+import {useTimeTrackingStore} from '@/lib/stores/timeTracking';
+import {useAuth} from '@/lib/hooks/useAuth';
+import type {Ticket} from '@/lib/db/schema';
 
 interface TimeTrackerProps {
   ticket: Ticket;
   compact?: boolean;
 }
 
-export function TimeTracker({ ticket, compact = false }: TimeTrackerProps) {
-  const { user } = useAuth();
-  const { data: activeEntry } = useActiveTimeEntry();
+export function TimeTracker({ticket, compact = false}: TimeTrackerProps) {
+  const {user} = useAuth();
+  const {data: activeEntry} = useActiveTimeEntry();
   const createTimeEntryMutation = useCreateTimeEntry();
   const updateTimeEntryMutation = useUpdateTimeEntry();
 
-  const [description, setDescription] = useState("");
+  const [description, setDescription] = useState('');
   const [elapsedTime, setElapsedTime] = useState(0);
-  const [manualHours, setManualHours] = useState("");
-  const [manualMinutes, setManualMinutes] = useState("");
+  const [manualHours, setManualHours] = useState('');
+  const [manualMinutes, setManualMinutes] = useState('');
   const [showManualEntry, setShowManualEntry] = useState(false);
 
   // Check if this ticket has an active timer
@@ -60,7 +60,7 @@ export function TimeTracker({ ticket, compact = false }: TimeTrackerProps) {
     const secs = seconds % 60;
 
     // Always show hours:minutes:seconds format
-    return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
+    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
   const startTimer = async () => {
@@ -73,9 +73,9 @@ export function TimeTracker({ ticket, compact = false }: TimeTrackerProps) {
         start_time: new Date().toISOString(),
         description: description || null,
       });
-      setDescription("");
+      setDescription('');
     } catch (error) {
-      console.error("Failed to start timer:", error);
+      console.error('Failed to start timer:', error);
     }
   };
 
@@ -84,9 +84,7 @@ export function TimeTracker({ ticket, compact = false }: TimeTrackerProps) {
 
     const endTime = new Date();
     const startTime = new Date(activeEntry.start_time);
-    const durationSeconds = Math.floor(
-      (endTime.getTime() - startTime.getTime()) / 1000,
-    );
+    const durationSeconds = Math.floor((endTime.getTime() - startTime.getTime()) / 1000);
     const durationHours = durationSeconds / 3600; // Convert to decimal hours
 
     try {
@@ -98,7 +96,7 @@ export function TimeTracker({ ticket, compact = false }: TimeTrackerProps) {
         },
       });
     } catch (error) {
-      console.error("Failed to stop timer:", error);
+      console.error('Failed to stop timer:', error);
     }
   };
 
@@ -123,12 +121,12 @@ export function TimeTracker({ ticket, compact = false }: TimeTrackerProps) {
         description: description || null,
       });
 
-      setManualHours("");
-      setManualMinutes("");
-      setDescription("");
+      setManualHours('');
+      setManualMinutes('');
+      setDescription('');
       setShowManualEntry(false);
     } catch (error) {
-      console.error("Failed to add manual time entry:", error);
+      console.error('Failed to add manual time entry:', error);
     }
   };
 
@@ -145,8 +143,7 @@ export function TimeTracker({ ticket, compact = false }: TimeTrackerProps) {
               size="sm"
               variant="outline"
               onClick={stopTimer}
-              disabled={updateTimeEntryMutation.isPending}
-            >
+              disabled={updateTimeEntryMutation.isPending}>
               <Square className="w-3 h-3" />
             </Button>
           </>
@@ -155,8 +152,7 @@ export function TimeTracker({ ticket, compact = false }: TimeTrackerProps) {
             size="sm"
             variant="outline"
             onClick={startTimer}
-            disabled={createTimeEntryMutation.isPending || !!activeEntry}
-          >
+            disabled={createTimeEntryMutation.isPending || !!activeEntry}>
             <Play className="w-3 h-3" />
           </Button>
         )}
@@ -169,11 +165,7 @@ export function TimeTracker({ ticket, compact = false }: TimeTrackerProps) {
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <h3 className="text-lg font-semibold">Time Tracking</h3>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowManualEntry(!showManualEntry)}
-          >
+          <Button variant="outline" size="sm" onClick={() => setShowManualEntry(!showManualEntry)}>
             Manual Entry
           </Button>
         </div>
@@ -209,19 +201,15 @@ export function TimeTracker({ ticket, compact = false }: TimeTrackerProps) {
                   <Button
                     onClick={stopTimer}
                     disabled={updateTimeEntryMutation.isPending}
-                    className="flex-1"
-                  >
+                    className="flex-1">
                     <Square className="w-4 h-4 mr-2" />
                     Stop Timer
                   </Button>
                 ) : (
                   <Button
                     onClick={startTimer}
-                    disabled={
-                      createTimeEntryMutation.isPending || !!activeEntry
-                    }
-                    className="flex-1"
-                  >
+                    disabled={createTimeEntryMutation.isPending || !!activeEntry}
+                    className="flex-1">
                     <Play className="w-4 h-4 mr-2" />
                     Start Timer
                   </Button>
@@ -230,8 +218,8 @@ export function TimeTracker({ ticket, compact = false }: TimeTrackerProps) {
 
               {activeEntry && !isActiveForTicket && (
                 <p className="text-sm text-amber-600">
-                  Timer is running on another ticket:{" "}
-                  {(activeEntry as any).tickets?.title || "Unknown ticket"}
+                  Timer is running on another ticket:{' '}
+                  {(activeEntry as any).tickets?.title || 'Unknown ticket'}
                 </p>
               )}
             </div>
@@ -273,9 +261,7 @@ export function TimeTracker({ ticket, compact = false }: TimeTrackerProps) {
               </div>
 
               <div>
-                <Label htmlFor="manual-description">
-                  Description (optional)
-                </Label>
+                <Label htmlFor="manual-description">Description (optional)</Label>
                 <Textarea
                   id="manual-description"
                   value={description}
@@ -290,18 +276,11 @@ export function TimeTracker({ ticket, compact = false }: TimeTrackerProps) {
               <div className="flex gap-2">
                 <Button
                   onClick={addManualEntry}
-                  disabled={
-                    createTimeEntryMutation.isPending ||
-                    (!manualHours && !manualMinutes)
-                  }
-                  className="flex-1"
-                >
+                  disabled={createTimeEntryMutation.isPending || (!manualHours && !manualMinutes)}
+                  className="flex-1">
                   Add Time Entry
                 </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => setShowManualEntry(false)}
-                >
+                <Button variant="outline" onClick={() => setShowManualEntry(false)}>
                   Cancel
                 </Button>
               </div>

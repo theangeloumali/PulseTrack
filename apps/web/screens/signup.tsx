@@ -1,43 +1,42 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
-import Image from "next/image";
-import { Button } from "@workspace/ui/components/button";
-import { Input } from "@workspace/ui/components/input";
-import { Label } from "@workspace/ui/components/label";
+import {useState} from 'react';
+import {useRouter} from 'next/navigation';
+import Link from 'next/link';
+import Image from 'next/image';
+import {Button} from '@workspace/ui/components/button';
+import {Input} from '@workspace/ui/components/input';
+import {Label} from '@workspace/ui/components/label';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@workspace/ui/components/card";
-import { useAuthStore } from "@/lib/stores/auth";
-import { generateSlug } from "@/lib/utils";
-import { Eye, EyeOff, Loader2 } from "lucide-react";
+} from '@workspace/ui/components/card';
+import {useAuthStore} from '@/lib/stores/auth';
+import {generateSlug} from '@/lib/utils';
+import {Eye, EyeOff, Loader2} from 'lucide-react';
 
 export default function SignUpPage() {
   const isDev =
-    typeof window !== "undefined" &&
-    (window.location.hostname === "localhost" ||
-      window.location.hostname === "127.0.0.1");
+    typeof window !== 'undefined' &&
+    (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
   const [formData, setFormData] = useState({
-    email: isDev ? "christianangeloumaliofficial@gmail.com" : "",
-    password: isDev ? "@Testing123" : "",
-    confirmPassword: isDev ? "@Testing123" : "",
-    firstName: isDev ? "Christian" : "",
-    lastName: isDev ? "Maliofficial" : "",
-    companyName: isDev ? "Christian Inc." : "",
+    email: isDev ? 'christianangeloumaliofficial@gmail.com' : '',
+    password: isDev ? '@Testing123' : '',
+    confirmPassword: isDev ? '@Testing123' : '',
+    firstName: isDev ? 'Christian' : '',
+    lastName: isDev ? 'Maliofficial' : '',
+    companyName: isDev ? 'Christian Inc.' : '',
   });
 
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState('');
 
-  const { signUp } = useAuthStore();
+  const {signUp} = useAuthStore();
   const router = useRouter();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -50,29 +49,29 @@ export default function SignUpPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    setError("");
+    setError('');
 
     // Validation
     if (formData.password !== formData.confirmPassword) {
-      setError("Passwords do not match");
+      setError('Passwords do not match');
       setIsLoading(false);
       return;
     }
 
     if (formData.password.length < 8) {
-      setError("Password must be at least 8 characters long");
+      setError('Password must be at least 8 characters long');
       setIsLoading(false);
       return;
     }
 
     try {
-      const { error } = await signUp(formData.email, formData.password, {
+      const {error} = await signUp(formData.email, formData.password, {
         firstName: formData.firstName,
         lastName: formData.lastName,
         companyName: formData.companyName,
         companySlug: generateSlug(formData.companyName),
         email: formData.email, // Ensure email is included in user data
-        role: "admin", // First user becomes admin
+        role: 'admin', // First user becomes admin
       });
 
       if (error) {
@@ -82,7 +81,7 @@ export default function SignUpPage() {
         router.push(`/verify-email?email=${formData.email}`);
       }
     } catch (err) {
-      setError("An unexpected error occurred");
+      setError('An unexpected error occurred');
     } finally {
       setIsLoading(false);
     }
@@ -103,15 +102,10 @@ export default function SignUpPage() {
               />
             </div>
           </div>
-          <h2 className="mt-2 text-3xl font-extrabold text-foreground">
-            Create your account
-          </h2>
+          <h2 className="mt-2 text-3xl font-extrabold text-foreground">Create your account</h2>
           <p className="mt-2 text-sm text-muted-foreground">
-            Already have an account?{" "}
-            <Link
-              href="/login"
-              className="font-medium text-primary hover:text-primary/80"
-            >
+            Already have an account?{' '}
+            <Link href="/login" className="font-medium text-primary hover:text-primary/80">
               Sign in
             </Link>
           </p>
@@ -120,9 +114,7 @@ export default function SignUpPage() {
         <Card>
           <CardHeader>
             <CardTitle>Get started</CardTitle>
-            <CardDescription>
-              Create your account and company workspace
-            </CardDescription>
+            <CardDescription>Create your account and company workspace</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
@@ -184,9 +176,7 @@ export default function SignUpPage() {
                   onChange={handleChange}
                   placeholder="Acme Corp"
                 />
-                <p className="text-xs text-gray-500">
-                  This will be your company workspace name
-                </p>
+                <p className="text-xs text-gray-500">This will be your company workspace name</p>
               </div>
 
               <div className="space-y-2">
@@ -195,7 +185,7 @@ export default function SignUpPage() {
                   <Input
                     id="password"
                     name="password"
-                    type={showPassword ? "text" : "password"}
+                    type={showPassword ? 'text' : 'password'}
                     autoComplete="new-password"
                     required
                     value={formData.password}
@@ -205,8 +195,7 @@ export default function SignUpPage() {
                   <button
                     type="button"
                     className="absolute inset-y-0 right-0 pr-3 flex items-center"
-                    onClick={() => setShowPassword(!showPassword)}
-                  >
+                    onClick={() => setShowPassword(!showPassword)}>
                     {showPassword ? (
                       <EyeOff className="h-4 w-4 text-gray-400" />
                     ) : (
@@ -222,7 +211,7 @@ export default function SignUpPage() {
                   <Input
                     id="confirmPassword"
                     name="confirmPassword"
-                    type={showConfirmPassword ? "text" : "password"}
+                    type={showConfirmPassword ? 'text' : 'password'}
                     autoComplete="new-password"
                     required
                     value={formData.confirmPassword}
@@ -232,8 +221,7 @@ export default function SignUpPage() {
                   <button
                     type="button"
                     className="absolute inset-y-0 right-0 pr-3 flex items-center"
-                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  >
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}>
                     {showConfirmPassword ? (
                       <EyeOff className="h-4 w-4 text-gray-400" />
                     ) : (
@@ -250,23 +238,17 @@ export default function SignUpPage() {
                     Creating account...
                   </>
                 ) : (
-                  "Create account"
+                  'Create account'
                 )}
               </Button>
 
               <p className="text-xs text-gray-500 text-center">
-                By creating an account, you agree to our{" "}
-                <Link
-                  href="/terms"
-                  className="text-indigo-600 hover:text-indigo-500"
-                >
+                By creating an account, you agree to our{' '}
+                <Link href="/terms" className="text-indigo-600 hover:text-indigo-500">
                   Terms of Service
-                </Link>{" "}
-                and{" "}
-                <Link
-                  href="/privacy"
-                  className="text-indigo-600 hover:text-indigo-500"
-                >
+                </Link>{' '}
+                and{' '}
+                <Link href="/privacy" className="text-indigo-600 hover:text-indigo-500">
                   Privacy Policy
                 </Link>
               </p>

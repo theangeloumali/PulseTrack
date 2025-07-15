@@ -1,20 +1,16 @@
-"use client";
+'use client';
 
-import { useAuthStore } from "@/lib/stores/auth";
-import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import {useAuthStore} from '@/lib/stores/auth';
+import {useRouter} from 'next/navigation';
+import {useEffect} from 'react';
 
-export default function AdminLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  const { user, isLoading } = useAuthStore();
+export default function AdminLayout({children}: {children: React.ReactNode}) {
+  const {user, isLoading} = useAuthStore();
   const router = useRouter();
 
   useEffect(() => {
-    if (!isLoading && (!user || user.role !== "super_admin")) {
-      router.replace("/dashboard");
+    if (!isLoading && (!user || user.role !== 'super_admin')) {
+      router.replace('/dashboard');
     }
   }, [user, isLoading, router]);
 
@@ -29,7 +25,7 @@ export default function AdminLayout({
     );
   }
 
-  if (!user || user.role !== "super_admin") {
+  if (!user || user.role !== 'super_admin') {
     return <div></div>; // Will redirect via useEffect
   }
 

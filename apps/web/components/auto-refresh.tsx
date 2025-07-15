@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { useEffect } from "react";
-import { useQueryClient } from "@tanstack/react-query";
+import {useEffect} from 'react';
+import {useQueryClient} from '@tanstack/react-query';
 
 interface AutoRefreshProps {
   queryKeys?: string[][];
@@ -12,20 +12,20 @@ interface AutoRefreshProps {
  * Component that automatically refreshes specific queries when the tab becomes visible
  * This ensures data stays fresh when users switch between tabs
  */
-export function AutoRefresh({ queryKeys, disabled = false }: AutoRefreshProps) {
+export function AutoRefresh({queryKeys, disabled = false}: AutoRefreshProps) {
   const queryClient = useQueryClient();
 
   useEffect(() => {
     if (disabled) return;
 
     const handleVisibilityChange = () => {
-      if (document.visibilityState === "visible") {
-        console.log("🔄 Tab became visible, refreshing data...");
+      if (document.visibilityState === 'visible') {
+        console.log('🔄 Tab became visible, refreshing data...');
 
         if (queryKeys && queryKeys.length > 0) {
           // Refetch specific query keys
           queryKeys.forEach((queryKey) => {
-            queryClient.invalidateQueries({ queryKey });
+            queryClient.invalidateQueries({queryKey});
           });
         } else {
           // Refetch all queries if no specific keys provided
@@ -36,22 +36,22 @@ export function AutoRefresh({ queryKeys, disabled = false }: AutoRefreshProps) {
 
     const handleFocus = () => {
       if (queryKeys && queryKeys.length > 0) {
-        console.log("🔄 Window focused, refreshing specific data...");
+        console.log('🔄 Window focused, refreshing specific data...');
         queryKeys.forEach((queryKey) => {
-          queryClient.invalidateQueries({ queryKey });
+          queryClient.invalidateQueries({queryKey});
         });
       }
     };
 
     // Listen for visibility change (tab switching)
-    document.addEventListener("visibilitychange", handleVisibilityChange);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
 
     // Listen for window focus (clicking on browser window)
-    window.addEventListener("focus", handleFocus);
+    window.addEventListener('focus', handleFocus);
 
     return () => {
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
-      window.removeEventListener("focus", handleFocus);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleFocus);
     };
   }, [queryClient, queryKeys, disabled]);
 
