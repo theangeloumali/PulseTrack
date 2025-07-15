@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { useEffect } from "react";
-import { sessionManager } from "@/lib/session-manager";
+import {useEffect} from 'react';
+import {sessionManager} from '@/lib/session-manager';
 
 export function SessionInitializer() {
   useEffect(() => {

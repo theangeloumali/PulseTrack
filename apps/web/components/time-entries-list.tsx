@@ -1,19 +1,19 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { Edit, Trash2, Clock, Shield } from "lucide-react";
-import { Button } from "@workspace/ui/components/button";
-import { Card } from "@workspace/ui/components/card";
-import { Input } from "@workspace/ui/components/input";
-import { Label } from "@workspace/ui/components/label";
-import { Textarea } from "@workspace/ui/components/textarea";
+import {useState} from 'react';
+import {Edit, Trash2, Clock, Shield} from 'lucide-react';
+import {Button} from '@workspace/ui/components/button';
+import {Card} from '@workspace/ui/components/card';
+import {Input} from '@workspace/ui/components/input';
+import {Label} from '@workspace/ui/components/label';
+import {Textarea} from '@workspace/ui/components/textarea';
 import {
   useTimeEntriesByTicket,
   useUpdateTimeEntry,
   useDeleteTimeEntry,
-} from "@/lib/hooks/useTimeTracking";
-import { useRoleAccess } from "@/lib/hooks/useRoleAccess";
-import type { TimeEntryWithUser } from "@/lib/db/schema";
+} from '@/lib/hooks/useTimeTracking';
+import {useRoleAccess} from '@/lib/hooks/useRoleAccess';
+import type {TimeEntryWithUser} from '@/lib/db/schema';
 
 interface TimeEntriesListProps {
   ticketId: string;
@@ -26,17 +26,16 @@ interface EditingEntry {
   minutes: string;
 }
 
-export function TimeEntriesList({ ticketId }: TimeEntriesListProps) {
-  const { data: timeEntries = [], isLoading } =
-    useTimeEntriesByTicket(ticketId);
+export function TimeEntriesList({ticketId}: TimeEntriesListProps) {
+  const {data: timeEntries = [], isLoading} = useTimeEntriesByTicket(ticketId);
   const updateTimeEntryMutation = useUpdateTimeEntry();
   const deleteTimeEntryMutation = useDeleteTimeEntry();
-  const { canDeleteTimeEntry } = useRoleAccess();
+  const {canDeleteTimeEntry} = useRoleAccess();
 
   const [editingEntry, setEditingEntry] = useState<EditingEntry | null>(null);
 
   const formatDuration = (hours: number | null) => {
-    if (!hours) return "00:00:00";
+    if (!hours) return '00:00:00';
 
     const totalSeconds = Math.round(hours * 3600); // Convert hours to seconds
     const wholeHours = Math.floor(totalSeconds / 3600);
@@ -44,25 +43,22 @@ export function TimeEntriesList({ ticketId }: TimeEntriesListProps) {
     const seconds = totalSeconds % 60;
 
     // Always show hours:minutes:seconds format
-    return `${wholeHours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
+    return `${wholeHours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
   };
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
     });
   };
 
   const getTotalTime = () => {
-    return timeEntries.reduce(
-      (total, entry) => total + (entry.duration || 0),
-      0,
-    );
+    return timeEntries.reduce((total, entry) => total + (entry.duration || 0), 0);
   };
 
   const startEditing = (entry: TimeEntryWithUser) => {
@@ -72,7 +68,7 @@ export function TimeEntriesList({ ticketId }: TimeEntriesListProps) {
 
     setEditingEntry({
       id: entry.id,
-      description: entry.description || "",
+      description: entry.description || '',
       hours: hours.toString(),
       minutes: minutes.toString(),
     });
@@ -95,7 +91,7 @@ export function TimeEntriesList({ ticketId }: TimeEntriesListProps) {
       });
       setEditingEntry(null);
     } catch (error) {
-      console.error("Failed to update time entry:", error);
+      console.error('Failed to update time entry:', error);
     }
   };
 
@@ -105,7 +101,7 @@ export function TimeEntriesList({ ticketId }: TimeEntriesListProps) {
 
   const deleteEntry = async (entry: TimeEntryWithUser) => {
     // Check permissions first
-    const { canDelete, reason } = canDeleteTimeEntry({
+    const {canDelete, reason} = canDeleteTimeEntry({
       user_id: entry.user_id,
       // Note: We don't have billing info in the list view, so the backend will handle that check
       isPaidPeriod: false, // Will be properly checked on backend
@@ -130,9 +126,8 @@ export function TimeEntriesList({ ticketId }: TimeEntriesListProps) {
         );
       }
     } catch (error: any) {
-      console.error("Failed to delete time entry:", error);
-      const errorMessage =
-        error?.message || "Failed to delete time entry. Please try again.";
+      console.error('Failed to delete time entry:', error);
+      const errorMessage = error?.message || 'Failed to delete time entry. Please try again.';
       alert(`Error: ${errorMessage}`);
     }
   };
@@ -181,7 +176,7 @@ export function TimeEntriesList({ ticketId }: TimeEntriesListProps) {
                           id="edit-hours"
                           type="number"
                           min="0"
-                          value={editingEntry?.hours || ""}
+                          value={editingEntry?.hours || ''}
                           onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                             editingEntry &&
                             setEditingEntry({
@@ -198,7 +193,7 @@ export function TimeEntriesList({ ticketId }: TimeEntriesListProps) {
                           type="number"
                           min="0"
                           max="59"
-                          value={editingEntry?.minutes || ""}
+                          value={editingEntry?.minutes || ''}
                           onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                             editingEntry &&
                             setEditingEntry({
@@ -214,7 +209,7 @@ export function TimeEntriesList({ ticketId }: TimeEntriesListProps) {
                       <Label htmlFor="edit-description">Description</Label>
                       <Textarea
                         id="edit-description"
-                        value={editingEntry?.description || ""}
+                        value={editingEntry?.description || ''}
                         onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
                           editingEntry &&
                           setEditingEntry({
@@ -230,8 +225,7 @@ export function TimeEntriesList({ ticketId }: TimeEntriesListProps) {
                       <Button
                         size="sm"
                         onClick={saveEdit}
-                        disabled={updateTimeEntryMutation.isPending}
-                      >
+                        disabled={updateTimeEntryMutation.isPending}>
                         Save
                       </Button>
                       <Button size="sm" variant="outline" onClick={cancelEdit}>
@@ -244,34 +238,26 @@ export function TimeEntriesList({ ticketId }: TimeEntriesListProps) {
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-1">
-                        <span className="font-medium">
-                          {formatDuration(entry.duration)}
-                        </span>
+                        <span className="font-medium">{formatDuration(entry.duration)}</span>
                         <span className="text-sm text-gray-500">
                           {formatDate(entry.start_time)}
                         </span>
                         <span className="text-sm text-gray-500">
-                          by {(entry.users as any)?.first_name || "Unknown"}{" "}
-                          {(entry.users as any)?.last_name || ""}
+                          by {(entry.users as any)?.first_name || 'Unknown'}{' '}
+                          {(entry.users as any)?.last_name || ''}
                         </span>
                       </div>
                       {entry.description && (
-                        <p className="text-sm text-gray-600 mt-1">
-                          {entry.description}
-                        </p>
+                        <p className="text-sm text-gray-600 mt-1">{entry.description}</p>
                       )}
                     </div>
 
                     <div className="flex gap-1">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => startEditing(entry)}
-                      >
+                      <Button size="sm" variant="outline" onClick={() => startEditing(entry)}>
                         <Edit className="w-3 h-3" />
                       </Button>
                       {(() => {
-                        const { canDelete, reason } = canDeleteTimeEntry({
+                        const {canDelete, reason} = canDeleteTimeEntry({
                           user_id: entry.user_id,
                           isPaidPeriod: false, // Backend will handle the real check
                         });
@@ -283,8 +269,7 @@ export function TimeEntriesList({ ticketId }: TimeEntriesListProps) {
                               variant="outline"
                               disabled
                               title={reason}
-                              className="opacity-50"
-                            >
+                              className="opacity-50">
                               <Shield className="w-3 h-3" />
                             </Button>
                           );
@@ -296,8 +281,7 @@ export function TimeEntriesList({ ticketId }: TimeEntriesListProps) {
                             variant="outline"
                             onClick={() => deleteEntry(entry)}
                             disabled={deleteTimeEntryMutation.isPending}
-                            title="Delete time entry"
-                          >
+                            title="Delete time entry">
                             <Trash2 className="w-3 h-3" />
                           </Button>
                         );

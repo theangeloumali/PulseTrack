@@ -1,13 +1,13 @@
-import { supabase } from "@/lib/supabase/client";
-import type { NewCompany, NewUser } from "@/lib/db/schema";
-import { generateSlug } from "@/lib/utils";
+import {supabase} from '@/lib/supabase/client';
+import type {NewCompany, NewUser} from '@/lib/db/schema';
+import {generateSlug} from '@/lib/utils';
 
 export async function ensureUserRecord(authUser: any) {
   // First check if user already exists in our users table
-  const { data: existingUser, error } = await supabase
-    .from("users")
-    .select("*")
-    .eq("id", authUser.id)
+  const {data: existingUser, error} = await supabase
+    .from('users')
+    .select('*')
+    .eq('id', authUser.id)
     .single();
 
   if (existingUser && !error) {
@@ -23,19 +23,17 @@ export async function ensureUserRecord(authUser: any) {
     return await createUserFromMetadata(authUser, metadata);
   } else {
     // User was created outside our signup flow (e.g., directly in Supabase)
-    throw new Error(
-      "User record incomplete. Please complete your profile setup.",
-    );
+    throw new Error('User record incomplete. Please complete your profile setup.');
   }
 }
 
 async function createUserFromMetadata(authUser: any, metadata: any) {
   // Check if company exists
   let companyId: string;
-  const { data: existingCompany, error: companyError } = await supabase
-    .from("companies")
-    .select("id")
-    .eq("slug", metadata.companySlug)
+  const {data: existingCompany, error: companyError} = await supabase
+    .from('companies')
+    .select('id')
+    .eq('slug', metadata.companySlug)
     .single();
 
   if (existingCompany && !companyError) {
@@ -47,16 +45,14 @@ async function createUserFromMetadata(authUser: any, metadata: any) {
       slug: metadata.companySlug || generateSlug(metadata.companyName),
     };
 
-    const { data: newCompany, error: createCompanyError } = await supabase
-      .from("companies")
+    const {data: newCompany, error: createCompanyError} = await supabase
+      .from('companies')
       .insert(companyData)
       .select()
       .single();
 
     if (createCompanyError || !newCompany) {
-      throw new Error(
-        "Failed to create company: " + createCompanyError?.message,
-      );
+      throw new Error('Failed to create company: ' + createCompanyError?.message);
     }
 
     companyId = newCompany.id;
@@ -68,18 +64,18 @@ async function createUserFromMetadata(authUser: any, metadata: any) {
     email: authUser.email,
     first_name: metadata.firstName || null,
     last_name: metadata.lastName || null,
-    role: metadata.role || "user",
+    role: metadata.role || 'user',
     company_id: companyId,
   };
 
-  const { data: newUser, error: userError } = await supabase
-    .from("users")
+  const {data: newUser, error: userError} = await supabase
+    .from('users')
     .insert(userData)
     .select()
     .single();
 
   if (userError || !newUser) {
-    throw new Error("Failed to create user record: " + userError?.message);
+    throw new Error('Failed to create user record: ' + userError?.message);
   }
 
   return newUser;
@@ -92,19 +88,19 @@ export async function createUserFromSignup(
     lastName: string;
     companyName?: string;
     companySlug?: string;
-    role?: "admin" | "manager" | "user";
+    role?: 'admin' | 'manager' | 'user';
   },
 ) {
   if (!userData.companyName || !userData.companySlug) {
-    throw new Error("Company information is required for signup");
+    throw new Error('Company information is required for signup');
   }
 
   // Check if company already exists
   let companyId: string;
-  const { data: existingCompany, error: companyError } = await supabase
-    .from("companies")
-    .select("id")
-    .eq("slug", userData.companySlug)
+  const {data: existingCompany, error: companyError} = await supabase
+    .from('companies')
+    .select('id')
+    .eq('slug', userData.companySlug)
     .single();
 
   if (existingCompany && !companyError) {
@@ -116,16 +112,14 @@ export async function createUserFromSignup(
       slug: userData.companySlug,
     };
 
-    const { data: newCompany, error: createCompanyError } = await supabase
-      .from("companies")
+    const {data: newCompany, error: createCompanyError} = await supabase
+      .from('companies')
       .insert(companyData)
       .select()
       .single();
 
     if (createCompanyError || !newCompany) {
-      throw new Error(
-        "Database error creating company: " + createCompanyError?.message,
-      );
+      throw new Error('Database error creating company: ' + createCompanyError?.message);
     }
 
     companyId = newCompany.id;
@@ -139,31 +133,20 @@ export async function createUserFromSignup(
     last_name: userData.lastName || null,
     role:
       userData.role &&
-      [
-        "super_admin",
-        "system_admin",
-        "company_admin",
-        "manager",
-        "user",
-      ].includes(userData.role)
-        ? (userData.role as
-            | "super_admin"
-            | "system_admin"
-            | "company_admin"
-            | "manager"
-            | "user")
-        : "user",
+      ['super_admin', 'system_admin', 'company_admin', 'manager', 'user'].includes(userData.role)
+        ? (userData.role as 'super_admin' | 'system_admin' | 'company_admin' | 'manager' | 'user')
+        : 'user',
     company_id: companyId,
   };
 
-  const { data: newUser, error: userError } = await supabase
-    .from("users")
+  const {data: newUser, error: userError} = await supabase
+    .from('users')
     .insert(userRecord)
     .select()
     .single();
 
   if (userError || !newUser) {
-    throw new Error("Database error saving new user: " + userError?.message);
+    throw new Error('Database error saving new user: ' + userError?.message);
   }
 
   return newUser;

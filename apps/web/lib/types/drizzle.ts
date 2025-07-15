@@ -20,7 +20,7 @@ import type {
   NewCompanyBillingSettings,
   TimeEntryBilling,
   NewTimeEntryBilling,
-} from "@/lib/db/schema";
+} from '@/lib/db/schema';
 
 export type {
   Company,
@@ -58,9 +58,9 @@ export type CreateCompanyBillingSettings = NewCompanyBillingSettings;
 export type CreateTimeEntryBilling = NewTimeEntryBilling;
 
 // Enum types for type safety
-export type UserRole = "admin" | "manager" | "user";
-export type ProjectStatus = "active" | "archived" | "completed";
-export type TicketStatus = "new" | "in_progress" | "review" | "done";
-export type TicketPriority = "low" | "medium" | "high" | "critical";
-export type BillingFrequency = "weekly" | "bi_monthly" | "monthly";
-export type BillingStatus = "draft" | "active" | "closed";
+export type UserRole = 'admin' | 'manager' | 'user';
+export type ProjectStatus = 'active' | 'archived' | 'completed';
+export type TicketStatus = 'new' | 'in_progress' | 'review' | 'done';
+export type TicketPriority = 'low' | 'medium' | 'high' | 'critical';
+export type BillingFrequency = 'weekly' | 'bi_monthly' | 'monthly';
+export type BillingStatus = 'draft' | 'active' | 'closed';

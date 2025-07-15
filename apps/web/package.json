@@ -11,7 +11,8 @@
     "lint:fix": "next lint --fix",
     "typecheck": "tsc --noEmit",
     "migration:generate": "drizzle-kit generate",
-    "migration:run": "drizzle-kit migrate"
+    "migration:run": "drizzle-kit migrate",
+    "format": "prettier --write \"**/*.{ts,tsx,md}\""
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

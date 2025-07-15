@@ -1,16 +1,16 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { Button } from "@workspace/ui/components/button";
-import { Input } from "@workspace/ui/components/input";
-import { Label } from "@workspace/ui/components/label";
-import { RichTextEditor } from "@/components/ui/rich-text-editor";
-import { Modal } from "@/components/ui/modal";
-import { useCreateTicketMutation } from "@/lib/hooks/useTickets";
-import { useProjectsQuery } from "@/lib/hooks/useProjects";
-import { useAuthStore } from "@/lib/stores/auth";
-import { TicketPriority, TicketStatus } from "@/lib/db/schema";
-import { Loader2, Save } from "lucide-react";
+import {useState} from 'react';
+import {Button} from '@workspace/ui/components/button';
+import {Input} from '@workspace/ui/components/input';
+import {Label} from '@workspace/ui/components/label';
+import {RichTextEditor} from '@/components/ui/rich-text-editor';
+import {Modal} from '@/components/ui/modal';
+import {useCreateTicketMutation} from '@/lib/hooks/useTickets';
+import {useProjectsQuery} from '@/lib/hooks/useProjects';
+import {useAuthStore} from '@/lib/stores/auth';
+import {TicketPriority, TicketStatus} from '@/lib/db/schema';
+import {Loader2, Save} from 'lucide-react';
 
 interface CreateTicketModalProps {
   isOpen: boolean;
@@ -18,29 +18,23 @@ interface CreateTicketModalProps {
   defaultProjectId?: string;
 }
 
-export function CreateTicketModal({
-  isOpen,
-  onClose,
-  defaultProjectId,
-}: CreateTicketModalProps) {
+export function CreateTicketModal({isOpen, onClose, defaultProjectId}: CreateTicketModalProps) {
   const [formData, setFormData] = useState({
-    title: "",
-    description: "",
-    priority: "medium" as TicketPriority,
-    status: "new" as TicketStatus,
-    project_id: defaultProjectId || "",
-    assignee_id: "", // Empty means unassigned
+    title: '',
+    description: '',
+    priority: 'medium' as TicketPriority,
+    status: 'new' as TicketStatus,
+    project_id: defaultProjectId || '',
+    assignee_id: '', // Empty means unassigned
   });
-  const [error, setError] = useState("");
+  const [error, setError] = useState('');
 
-  const { user } = useAuthStore();
-  const { data: projects = [] } = useProjectsQuery();
+  const {user} = useAuthStore();
+  const {data: projects = []} = useProjectsQuery();
   const createTicketMutation = useCreateTicketMutation();
 
-  const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
-  ) => {
-    const { name, value } = e.target;
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const {name, value} = e.target;
     setFormData((prev) => ({
       ...prev,
       [name]: value,
@@ -66,16 +60,16 @@ export function CreateTicketModal({
 
     if (!user) return;
 
-    setError("");
+    setError('');
 
     // Validation according to PRD: tickets require title and project
     if (!formData.title.trim()) {
-      setError("Ticket title is required");
+      setError('Ticket title is required');
       return;
     }
 
     if (!formData.project_id) {
-      setError("Please select a project");
+      setError('Please select a project');
       return;
     }
 
@@ -97,29 +91,29 @@ export function CreateTicketModal({
 
       // Reset form and close modal
       setFormData({
-        title: "",
-        description: "",
-        priority: "medium",
-        status: "new",
-        project_id: defaultProjectId || "",
-        assignee_id: "",
+        title: '',
+        description: '',
+        priority: 'medium',
+        status: 'new',
+        project_id: defaultProjectId || '',
+        assignee_id: '',
       });
       onClose();
     } catch (err: any) {
-      setError(err.message || "Failed to create ticket");
+      setError(err.message || 'Failed to create ticket');
     }
   };
 
   const handleClose = () => {
     if (!createTicketMutation.isPending) {
-      setError("");
+      setError('');
       setFormData({
-        title: "",
-        description: "",
-        priority: "medium",
-        status: "new",
-        project_id: defaultProjectId || "",
-        assignee_id: "",
+        title: '',
+        description: '',
+        priority: 'medium',
+        status: 'new',
+        project_id: defaultProjectId || '',
+        assignee_id: '',
       });
       onClose();
     }
@@ -131,8 +125,7 @@ export function CreateTicketModal({
       onClose={handleClose}
       title="Create New Ticket"
       description="Fill in the information for your new ticket"
-      size="lg"
-    >
+      size="lg">
       <form onSubmit={handleSubmit} className="space-y-6">
         {error && (
           <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 text-red-700 dark:text-red-400 px-4 py-3 rounded-md text-sm">
@@ -149,11 +142,10 @@ export function CreateTicketModal({
             id="project_id"
             name="project_id"
             value={formData.project_id}
-            onChange={(e) => handleSelectChange("project_id", e.target.value)}
+            onChange={(e) => handleSelectChange('project_id', e.target.value)}
             required
             disabled={createTicketMutation.isPending || !!defaultProjectId}
-            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-          >
+            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50">
             <option value="">Select a project</option>
             {projects.map((project) => (
               <option key={project.id} value={project.id}>
@@ -194,8 +186,7 @@ export function CreateTicketModal({
             preview="edit"
           />
           <p className="text-xs text-muted-foreground">
-            Supports markdown formatting: **bold**, *italic*, `code`,
-            [links](url), lists, and more.
+            Supports markdown formatting: **bold**, *italic*, `code`, [links](url), lists, and more.
           </p>
         </div>
 
@@ -207,10 +198,9 @@ export function CreateTicketModal({
               id="priority"
               name="priority"
               value={formData.priority}
-              onChange={(e) => handleSelectChange("priority", e.target.value)}
+              onChange={(e) => handleSelectChange('priority', e.target.value)}
               disabled={createTicketMutation.isPending}
-              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-            >
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50">
               <option value="low">Low</option>
               <option value="medium">Medium</option>
               <option value="high">High</option>
@@ -225,10 +215,9 @@ export function CreateTicketModal({
               id="status"
               name="status"
               value={formData.status}
-              onChange={(e) => handleSelectChange("status", e.target.value)}
+              onChange={(e) => handleSelectChange('status', e.target.value)}
               disabled={createTicketMutation.isPending}
-              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-            >
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50">
               <option value="new">New</option>
               <option value="in_progress">In Progress</option>
               <option value="review">Review</option>
@@ -245,18 +234,14 @@ export function CreateTicketModal({
             type="button"
             variant="outline"
             onClick={handleClose}
-            disabled={createTicketMutation.isPending}
-          >
+            disabled={createTicketMutation.isPending}>
             Cancel
           </Button>
           <Button
             type="submit"
             disabled={
-              createTicketMutation.isPending ||
-              !formData.title.trim() ||
-              !formData.project_id
-            }
-          >
+              createTicketMutation.isPending || !formData.title.trim() || !formData.project_id
+            }>
             {createTicketMutation.isPending ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />

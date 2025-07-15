@@ -1,24 +1,24 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { Button } from "@workspace/ui/components/button";
+import {useState, useEffect} from 'react';
+import {useRouter} from 'next/navigation';
+import {Button} from '@workspace/ui/components/button';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@workspace/ui/components/card";
-import { Badge } from "@workspace/ui/components/badge";
-import { Input } from "@workspace/ui/components/input";
-import { useAuthStore } from "@/lib/stores/auth";
-import { useRoleAccess } from "@/lib/hooks/useRoleAccess";
+} from '@workspace/ui/components/card';
+import {Badge} from '@workspace/ui/components/badge';
+import {Input} from '@workspace/ui/components/input';
+import {useAuthStore} from '@/lib/stores/auth';
+import {useRoleAccess} from '@/lib/hooks/useRoleAccess';
 import {
   useAllCompanyProjectsQuery,
   useAllCompanyProjectsWithTicketCountsQuery,
-} from "@/lib/hooks/useProjects";
-import { useAllCompanyTicketsQuery } from "@/lib/hooks/useTickets";
+} from '@/lib/hooks/useProjects';
+import {useAllCompanyTicketsQuery} from '@/lib/hooks/useTickets';
 import {
   createProject,
   createTicket,
@@ -27,8 +27,8 @@ import {
   getProjectsWithTicketCounts,
   getTicketCountByProject,
   getTicketsByProject,
-} from "@/lib/db/service";
-import { supabase } from "@/lib/supabase/client";
+} from '@/lib/db/service';
+import {supabase} from '@/lib/supabase/client';
 import {
   Activity,
   Database,
@@ -42,12 +42,12 @@ import {
   Eye,
   TestTube,
   ExternalLink,
-} from "lucide-react";
+} from 'lucide-react';
 
 export default function DiagnosticsPage() {
-  const [activeTab, setActiveTab] = useState("overview");
+  const [activeTab, setActiveTab] = useState('overview');
   const [testResults, setTestResults] = useState<
-    Record<string, { status: string; message: string; details?: any }>
+    Record<string, {status: string; message: string; details?: any}>
   >({});
   const [detailedResults, setDetailedResults] = useState<
     {
@@ -59,16 +59,12 @@ export default function DiagnosticsPage() {
     }[]
   >([]);
   const [isRunningTests, setIsRunningTests] = useState(false);
-  const [testProjectName, setTestProjectName] = useState(
-    "Test Project " + Date.now(),
-  );
-  const [testTicketTitle, setTestTicketTitle] = useState(
-    "Test Ticket " + Date.now(),
-  );
+  const [testProjectName, setTestProjectName] = useState('Test Project ' + Date.now());
+  const [testTicketTitle, setTestTicketTitle] = useState('Test Ticket ' + Date.now());
   const router = useRouter();
 
-  const { user } = useAuthStore();
-  const { canAccessDiagnostics } = useRoleAccess();
+  const {user} = useAuthStore();
+  const {canAccessDiagnostics} = useRoleAccess();
   const {
     data: projects = [],
     isLoading: projectsLoading,
@@ -88,7 +84,7 @@ export default function DiagnosticsPage() {
   // Redirect users without diagnostics access
   useEffect(() => {
     if (user && !canAccessDiagnostics()) {
-      router.push("/dashboard");
+      router.push('/dashboard');
     }
   }, [user, canAccessDiagnostics, router]);
 
@@ -98,20 +94,15 @@ export default function DiagnosticsPage() {
   }
 
   const tabs = [
-    { id: "overview", label: "System Overview", icon: Activity },
-    { id: "auth", label: "Authentication", icon: Users },
-    { id: "data", label: "Data Status", icon: Database },
-    { id: "queries", label: "Query Performance", icon: Eye },
-    { id: "tests", label: "Integration Tests", icon: TestTube },
+    {id: 'overview', label: 'System Overview', icon: Activity},
+    {id: 'auth', label: 'Authentication', icon: Users},
+    {id: 'data', label: 'Data Status', icon: Database},
+    {id: 'queries', label: 'Query Performance', icon: Eye},
+    {id: 'tests', label: 'Integration Tests', icon: TestTube},
   ];
 
   // Helper function for detailed test results (similar to test-data page)
-  const addDetailedResult = (
-    test: string,
-    success: boolean,
-    data?: any,
-    error?: any,
-  ) => {
+  const addDetailedResult = (test: string, success: boolean, data?: any, error?: any) => {
     setDetailedResults((prev) => [
       ...prev,
       {
@@ -131,62 +122,40 @@ export default function DiagnosticsPage() {
 
     try {
       // Test 0: Database Connection
-      addDetailedResult(
-        "Database Connection",
-        true,
-        "Testing database connection...",
-        null,
-      );
+      addDetailedResult('Database Connection', true, 'Testing database connection...', null);
       try {
-        const { data, error } = await supabase
-          .from("companies")
-          .select("count")
-          .limit(1);
+        const {data, error} = await supabase.from('companies').select('count').limit(1);
         if (error) {
-          addDetailedResult("Database Connection", false, null, error.message);
+          addDetailedResult('Database Connection', false, null, error.message);
           results.databaseConnection = {
-            status: "error",
-            message: "Database connection failed",
-            details: { error: error.message },
+            status: 'error',
+            message: 'Database connection failed',
+            details: {error: error.message},
           };
         } else {
-          addDetailedResult(
-            "Database Connection",
-            true,
-            "Connected to database successfully",
-          );
+          addDetailedResult('Database Connection', true, 'Connected to database successfully');
           results.databaseConnection = {
-            status: "success",
-            message: "Database connection successful",
-            details: { response: data },
+            status: 'success',
+            message: 'Database connection successful',
+            details: {response: data},
           };
         }
       } catch (error: unknown) {
-        addDetailedResult(
-          "Database Connection",
-          false,
-          null,
-          (error as Error).message,
-        );
+        addDetailedResult('Database Connection', false, null, (error as Error).message);
         results.databaseConnection = {
-          status: "error",
-          message: "Database connection failed",
-          details: { error: (error as Error).message },
+          status: 'error',
+          message: 'Database connection failed',
+          details: {error: (error as Error).message},
         };
       }
 
       // Test 1: User Authentication
-      addDetailedResult(
-        "User Authentication",
-        true,
-        "Checking user authentication...",
-        null,
-      );
+      addDetailedResult('User Authentication', true, 'Checking user authentication...', null);
       results.auth = {
-        status: user ? "success" : "error",
+        status: user ? 'success' : 'error',
         message: user
           ? `Authenticated as ${user.first_name} ${user.last_name} (${user.email})`
-          : "No user authenticated",
+          : 'No user authenticated',
         details: {
           userId: user?.id,
           companyId: user?.company_id,
@@ -194,7 +163,7 @@ export default function DiagnosticsPage() {
         },
       };
       addDetailedResult(
-        "User Authentication",
+        'User Authentication',
         !!user,
         user
           ? {
@@ -204,53 +173,41 @@ export default function DiagnosticsPage() {
               role: user.role,
             }
           : null,
-        user ? null : "No user authenticated",
+        user ? null : 'No user authenticated',
       );
       if (user?.company_id) {
         // Test 2: Data Fetching Comprehensive
-        addDetailedResult(
-          "Data Fetching - Projects",
-          true,
-          "Fetching projects...",
-          null,
-        );
+        addDetailedResult('Data Fetching - Projects', true, 'Fetching projects...', null);
         try {
           const fetchedProjects = await getProjectsByCompany(user.company_id);
-          addDetailedResult("Data Fetching - Projects", true, {
+          addDetailedResult('Data Fetching - Projects', true, {
             companyId: user.company_id,
             projectCount: fetchedProjects.length,
             projects: fetchedProjects.slice(0, 2), // Show first 2 for brevity
           });
 
-          addDetailedResult(
-            "Data Fetching - Tickets",
-            true,
-            "Fetching company tickets...",
-            null,
-          );
+          addDetailedResult('Data Fetching - Tickets', true, 'Fetching company tickets...', null);
           const fetchedTickets = await getTicketsByCompany(user.company_id);
-          addDetailedResult("Data Fetching - Tickets", true, {
+          addDetailedResult('Data Fetching - Tickets', true, {
             companyId: user.company_id,
             ticketCount: fetchedTickets.length,
             tickets: fetchedTickets.slice(0, 2), // Show first 2 for brevity
           });
 
           addDetailedResult(
-            "Data Fetching - Projects with Counts",
+            'Data Fetching - Projects with Counts',
             true,
-            "Fetching projects with ticket counts...",
+            'Fetching projects with ticket counts...',
             null,
           );
-          const projectsWithTicketCounts = await getProjectsWithTicketCounts(
-            user.company_id,
-          );
-          addDetailedResult("Data Fetching - Projects with Counts", true, {
+          const projectsWithTicketCounts = await getProjectsWithTicketCounts(user.company_id);
+          addDetailedResult('Data Fetching - Projects with Counts', true, {
             projectsWithCountsCount: projectsWithTicketCounts.length,
             sampleProjectWithCount: projectsWithTicketCounts[0] || null,
           });
 
           results.dataFetching = {
-            status: "success",
+            status: 'success',
             message: `Successfully fetched ${fetchedProjects.length} projects and ${fetchedTickets.length} tickets`,
             details: {
               projectCount: fetchedProjects.length,
@@ -270,16 +227,14 @@ export default function DiagnosticsPage() {
             const firstProject = fetchedProjects[0];
             if (firstProject) {
               addDetailedResult(
-                "Project Tickets Fetch",
+                'Project Tickets Fetch',
                 true,
                 `Fetching tickets for project: ${firstProject.name}`,
                 null,
               );
               try {
-                const projectTickets = await getTicketsByProject(
-                  firstProject.id,
-                );
-                addDetailedResult("Project Tickets Fetch", true, {
+                const projectTickets = await getTicketsByProject(firstProject.id);
+                addDetailedResult('Project Tickets Fetch', true, {
                   projectId: firstProject.id,
                   projectName: firstProject.name,
                   ticketCount: projectTickets.length,
@@ -288,17 +243,15 @@ export default function DiagnosticsPage() {
 
                 // Test 4: Ticket count accuracy
                 addDetailedResult(
-                  "Ticket Count Verification",
+                  'Ticket Count Verification',
                   true,
                   `Verifying ticket count for project: ${firstProject.name}`,
                   null,
                 );
-                const ticketCount = await getTicketCountByProject(
-                  firstProject.id,
-                );
+                const ticketCount = await getTicketCountByProject(firstProject.id);
                 const countMatch = ticketCount === projectTickets.length;
                 addDetailedResult(
-                  "Ticket Count Verification",
+                  'Ticket Count Verification',
                   countMatch,
                   {
                     projectId: firstProject.id,
@@ -306,12 +259,12 @@ export default function DiagnosticsPage() {
                     countFromArray: projectTickets.length,
                     match: countMatch,
                   },
-                  countMatch ? null : "Ticket count mismatch detected",
+                  countMatch ? null : 'Ticket count mismatch detected',
                 );
 
                 results.ticketCountAccuracy = {
-                  status: countMatch ? "success" : "warning",
-                  message: `Ticket count verification: ${countMatch ? "PASS" : "FAIL"} (${ticketCount} vs ${projectTickets.length})`,
+                  status: countMatch ? 'success' : 'warning',
+                  message: `Ticket count verification: ${countMatch ? 'PASS' : 'FAIL'} (${ticketCount} vs ${projectTickets.length})`,
                   details: {
                     projectId: firstProject.id,
                     countFromQuery: ticketCount,
@@ -320,148 +273,103 @@ export default function DiagnosticsPage() {
                   },
                 };
               } catch (error: unknown) {
-                addDetailedResult(
-                  "Project Tickets Fetch",
-                  false,
-                  null,
-                  (error as Error).message,
-                );
+                addDetailedResult('Project Tickets Fetch', false, null, (error as Error).message);
                 results.projectTickets = {
-                  status: "error",
-                  message: "Failed to fetch project tickets",
-                  details: { error: (error as Error).message },
+                  status: 'error',
+                  message: 'Failed to fetch project tickets',
+                  details: {error: (error as Error).message},
                 };
               }
             }
           }
         } catch (error: unknown) {
-          addDetailedResult(
-            "Data Fetching",
-            false,
-            null,
-            (error as Error).message,
-          );
+          addDetailedResult('Data Fetching', false, null, (error as Error).message);
           results.dataFetching = {
-            status: "error",
-            message: "Failed to fetch data",
-            details: { error: (error as Error).message },
+            status: 'error',
+            message: 'Failed to fetch data',
+            details: {error: (error as Error).message},
           };
         }
 
         // Test 5: Project Creation (if requested)
-        if (testProjectName.includes("Test Project")) {
-          addDetailedResult(
-            "Project Creation",
-            true,
-            "Creating test project...",
-            null,
-          );
+        if (testProjectName.includes('Test Project')) {
+          addDetailedResult('Project Creation', true, 'Creating test project...', null);
           try {
             const projectData = {
               name: testProjectName,
-              description: "Diagnostic test project",
-              status: "active" as const,
+              description: 'Diagnostic test project',
+              status: 'active' as const,
               company_id: user.company_id,
               owner_id: user.id,
             };
-            addDetailedResult(
-              "Project Creation - Data",
-              true,
-              projectData,
-              null,
-            );
+            addDetailedResult('Project Creation - Data', true, projectData, null);
 
             const newProject = await createProject(projectData);
-            addDetailedResult("Project Creation", true, newProject, null);
+            addDetailedResult('Project Creation', true, newProject, null);
             results.projectCreation = {
-              status: "success",
+              status: 'success',
               message: `Project "${newProject.name}" created successfully`,
-              details: { projectId: newProject.id, projectData: newProject },
+              details: {projectId: newProject.id, projectData: newProject},
             };
 
             // Test 6: Ticket Creation (for the new project)
-            if (testTicketTitle.includes("Test Ticket")) {
-              addDetailedResult(
-                "Ticket Creation",
-                true,
-                "Creating test ticket...",
-                null,
-              );
+            if (testTicketTitle.includes('Test Ticket')) {
+              addDetailedResult('Ticket Creation', true, 'Creating test ticket...', null);
               try {
                 const ticketData = {
                   title: testTicketTitle,
-                  description: "Diagnostic test ticket",
-                  status: "new" as const,
-                  priority: "medium" as const,
+                  description: 'Diagnostic test ticket',
+                  status: 'new' as const,
+                  priority: 'medium' as const,
                   project_id: newProject.id,
                   assignee_id: user.id,
                   reporter_id: user.id,
                 };
-                addDetailedResult(
-                  "Ticket Creation - Data",
-                  true,
-                  ticketData,
-                  null,
-                );
+                addDetailedResult('Ticket Creation - Data', true, ticketData, null);
 
                 const newTicket = await createTicket(ticketData);
-                addDetailedResult("Ticket Creation", true, newTicket, null);
+                addDetailedResult('Ticket Creation', true, newTicket, null);
                 results.ticketCreation = {
-                  status: "success",
+                  status: 'success',
                   message: `Ticket "${newTicket.title}" created successfully`,
-                  details: { ticketId: newTicket.id, ticketData: newTicket },
+                  details: {ticketId: newTicket.id, ticketData: newTicket},
                 };
               } catch (error: unknown) {
-                addDetailedResult(
-                  "Ticket Creation",
-                  false,
-                  null,
-                  (error as Error).message,
-                );
+                addDetailedResult('Ticket Creation', false, null, (error as Error).message);
                 results.ticketCreation = {
-                  status: "error",
-                  message: "Failed to create ticket",
-                  details: { error: (error as Error).message },
+                  status: 'error',
+                  message: 'Failed to create ticket',
+                  details: {error: (error as Error).message},
                 };
               }
             }
           } catch (error: unknown) {
-            addDetailedResult(
-              "Project Creation",
-              false,
-              null,
-              (error as Error).message,
-            );
+            addDetailedResult('Project Creation', false, null, (error as Error).message);
             results.projectCreation = {
-              status: "error",
-              message: "Failed to create project",
-              details: { error: (error as Error).message },
+              status: 'error',
+              message: 'Failed to create project',
+              details: {error: (error as Error).message},
             };
           }
         }
       } else {
         addDetailedResult(
-          "Data Operations",
+          'Data Operations',
           false,
           null,
-          "No company ID available for data operations",
+          'No company ID available for data operations',
         );
         results.dataOperations = {
-          status: "error",
-          message: "No company ID available for data operations",
+          status: 'error',
+          message: 'No company ID available for data operations',
         };
       }
     } catch (error: unknown) {
-      addDetailedResult(
-        "General Test Failure",
-        false,
-        null,
-        (error as Error).message,
-      );
+      addDetailedResult('General Test Failure', false, null, (error as Error).message);
       results.general = {
-        status: "error",
-        message: "Diagnostic tests failed",
-        details: { error: (error as Error).message },
+        status: 'error',
+        message: 'Diagnostic tests failed',
+        details: {error: (error as Error).message},
       };
     }
 
@@ -471,11 +379,11 @@ export default function DiagnosticsPage() {
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case "success":
+      case 'success':
         return <CheckCircle2 className="h-4 w-4 text-green-600" />;
-      case "warning":
+      case 'warning':
         return <AlertCircle className="h-4 w-4 text-yellow-600" />;
-      case "error":
+      case 'error':
         return <AlertCircle className="h-4 w-4 text-red-600" />;
       default:
         return <Activity className="h-4 w-4 text-muted-foreground" />;
@@ -484,14 +392,14 @@ export default function DiagnosticsPage() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "success":
-        return "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400";
-      case "warning":
-        return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400";
-      case "error":
-        return "bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400";
+      case 'success':
+        return 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400';
+      case 'warning':
+        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400';
+      case 'error':
+        return 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400';
       default:
-        return "bg-muted text-foreground";
+        return 'bg-muted text-foreground';
     }
   };
 
@@ -503,11 +411,9 @@ export default function DiagnosticsPage() {
           <Users className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">{user ? "Active" : "None"}</div>
+          <div className="text-2xl font-bold">{user ? 'Active' : 'None'}</div>
           <p className="text-xs text-muted-foreground">
-            {user
-              ? `${user.first_name} ${user.last_name}`
-              : "No user logged in"}
+            {user ? `${user.first_name} ${user.last_name}` : 'No user logged in'}
           </p>
         </CardContent>
       </Card>
@@ -518,11 +424,9 @@ export default function DiagnosticsPage() {
           <FolderOpen className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">
-            {projectsLoading ? "..." : projects.length}
-          </div>
+          <div className="text-2xl font-bold">{projectsLoading ? '...' : projects.length}</div>
           <p className="text-xs text-muted-foreground">
-            {projectsError ? "Error loading" : "Total projects"}
+            {projectsError ? 'Error loading' : 'Total projects'}
           </p>
         </CardContent>
       </Card>
@@ -533,11 +437,9 @@ export default function DiagnosticsPage() {
           <FileText className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">
-            {ticketsLoading ? "..." : tickets.length}
-          </div>
+          <div className="text-2xl font-bold">{ticketsLoading ? '...' : tickets.length}</div>
           <p className="text-xs text-muted-foreground">
-            {ticketsError ? "Error loading" : "Total tickets"}
+            {ticketsError ? 'Error loading' : 'Total tickets'}
           </p>
         </CardContent>
       </Card>
@@ -550,43 +452,33 @@ export default function DiagnosticsPage() {
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
               <div className="flex items-center space-x-2">
-                {getStatusIcon(user ? "success" : "error")}
+                {getStatusIcon(user ? 'success' : 'error')}
                 <span className="text-sm">Authentication System</span>
-                <Badge className={getStatusColor(user ? "success" : "error")}>
-                  {user ? "Online" : "Offline"}
+                <Badge className={getStatusColor(user ? 'success' : 'error')}>
+                  {user ? 'Online' : 'Offline'}
                 </Badge>
               </div>
               <div className="flex items-center space-x-2">
-                {getStatusIcon(projectsError ? "error" : "success")}
+                {getStatusIcon(projectsError ? 'error' : 'success')}
                 <span className="text-sm">Project Data</span>
-                <Badge
-                  className={getStatusColor(
-                    projectsError ? "error" : "success",
-                  )}
-                >
-                  {projectsError ? "Error" : "OK"}
+                <Badge className={getStatusColor(projectsError ? 'error' : 'success')}>
+                  {projectsError ? 'Error' : 'OK'}
                 </Badge>
               </div>
             </div>
             <div className="space-y-2">
               <div className="flex items-center space-x-2">
-                {getStatusIcon(ticketsError ? "error" : "success")}
+                {getStatusIcon(ticketsError ? 'error' : 'success')}
                 <span className="text-sm">Ticket Data</span>
-                <Badge
-                  className={getStatusColor(ticketsError ? "error" : "success")}
-                >
-                  {ticketsError ? "Error" : "OK"}
+                <Badge className={getStatusColor(ticketsError ? 'error' : 'success')}>
+                  {ticketsError ? 'Error' : 'OK'}
                 </Badge>
               </div>
               <div className="flex items-center space-x-2">
-                {getStatusIcon(projectsWithCountsError ? "error" : "success")}
+                {getStatusIcon(projectsWithCountsError ? 'error' : 'success')}
                 <span className="text-sm">Aggregated Data</span>
-                <Badge
-                  className={getStatusColor(
-                    projectsWithCountsError ? "error" : "success",
-                  )}
-                >
-                  {projectsWithCountsError ? "Error" : "OK"}
+                <Badge className={getStatusColor(projectsWithCountsError ? 'error' : 'success')}>
+                  {projectsWithCountsError ? 'Error' : 'OK'}
                 </Badge>
               </div>
             </div>
@@ -607,45 +499,29 @@ export default function DiagnosticsPage() {
           <div className="space-y-4">
             <div className="grid gap-4 md:grid-cols-2">
               <div>
-                <dt className="text-sm font-medium text-muted-foreground">
-                  User ID
-                </dt>
-                <dd className="mt-1 text-sm text-foreground font-mono">
-                  {user.id}
-                </dd>
+                <dt className="text-sm font-medium text-muted-foreground">User ID</dt>
+                <dd className="mt-1 text-sm text-foreground font-mono">{user.id}</dd>
               </div>
               <div>
-                <dt className="text-sm font-medium text-muted-foreground">
-                  Email
-                </dt>
+                <dt className="text-sm font-medium text-muted-foreground">Email</dt>
                 <dd className="mt-1 text-sm text-foreground">{user.email}</dd>
               </div>
               <div>
-                <dt className="text-sm font-medium text-muted-foreground">
-                  Name
-                </dt>
+                <dt className="text-sm font-medium text-muted-foreground">Name</dt>
                 <dd className="mt-1 text-sm text-foreground">
                   {user.first_name} {user.last_name}
                 </dd>
               </div>
               <div>
-                <dt className="text-sm font-medium text-muted-foreground">
-                  Role
-                </dt>
+                <dt className="text-sm font-medium text-muted-foreground">Role</dt>
                 <dd className="mt-1 text-sm text-foreground">{user.role}</dd>
               </div>
               <div>
-                <dt className="text-sm font-medium text-muted-foreground">
-                  Company ID
-                </dt>
-                <dd className="mt-1 text-sm text-foreground font-mono">
-                  {user.company_id}
-                </dd>
+                <dt className="text-sm font-medium text-muted-foreground">Company ID</dt>
+                <dd className="mt-1 text-sm text-foreground font-mono">{user.company_id}</dd>
               </div>
               <div>
-                <dt className="text-sm font-medium text-muted-foreground">
-                  Created
-                </dt>
+                <dt className="text-sm font-medium text-muted-foreground">Created</dt>
                 <dd className="mt-1 text-sm text-foreground">
                   {new Date(user.created_at).toLocaleString()}
                 </dd>
@@ -655,9 +531,7 @@ export default function DiagnosticsPage() {
         ) : (
           <div className="text-center py-8">
             <Users className="mx-auto h-12 w-12 text-muted-foreground" />
-            <h3 className="mt-2 text-sm font-medium text-foreground">
-              Not authenticated
-            </h3>
+            <h3 className="mt-2 text-sm font-medium text-foreground">Not authenticated</h3>
             <p className="mt-1 text-sm text-muted-foreground">
               Please log in to view authentication details
             </p>
@@ -681,24 +555,16 @@ export default function DiagnosticsPage() {
                 <FolderOpen className="h-5 w-5" />
                 <div>
                   <div className="font-medium">Projects Query</div>
-                  <div className="text-sm text-muted-foreground">
-                    Basic project data
-                  </div>
+                  <div className="text-sm text-muted-foreground">Basic project data</div>
                 </div>
               </div>
               <div className="flex items-center space-x-2">
-                {projectsLoading && (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                )}
-                <Badge
-                  className={getStatusColor(
-                    projectsError ? "error" : "success",
-                  )}
-                >
+                {projectsLoading && <Loader2 className="h-4 w-4 animate-spin" />}
+                <Badge className={getStatusColor(projectsError ? 'error' : 'success')}>
                   {projectsLoading
-                    ? "Loading"
+                    ? 'Loading'
                     : projectsError
-                      ? "Error"
+                      ? 'Error'
                       : `${projects.length} items`}
                 </Badge>
               </div>
@@ -709,24 +575,16 @@ export default function DiagnosticsPage() {
                 <FolderOpen className="h-5 w-5" />
                 <div>
                   <div className="font-medium">Projects with Ticket Counts</div>
-                  <div className="text-sm text-muted-foreground">
-                    Aggregated project data
-                  </div>
+                  <div className="text-sm text-muted-foreground">Aggregated project data</div>
                 </div>
               </div>
               <div className="flex items-center space-x-2">
-                {projectsWithCountsLoading && (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                )}
-                <Badge
-                  className={getStatusColor(
-                    projectsWithCountsError ? "error" : "success",
-                  )}
-                >
+                {projectsWithCountsLoading && <Loader2 className="h-4 w-4 animate-spin" />}
+                <Badge className={getStatusColor(projectsWithCountsError ? 'error' : 'success')}>
                   {projectsWithCountsLoading
-                    ? "Loading"
+                    ? 'Loading'
                     : projectsWithCountsError
-                      ? "Error"
+                      ? 'Error'
                       : `${projectsWithCounts.length} items`}
                 </Badge>
               </div>
@@ -737,21 +595,13 @@ export default function DiagnosticsPage() {
                 <FileText className="h-5 w-5" />
                 <div>
                   <div className="font-medium">Tickets Query</div>
-                  <div className="text-sm text-muted-foreground">
-                    Company tickets
-                  </div>
+                  <div className="text-sm text-muted-foreground">Company tickets</div>
                 </div>
               </div>
               <div className="flex items-center space-x-2">
                 {ticketsLoading && <Loader2 className="h-4 w-4 animate-spin" />}
-                <Badge
-                  className={getStatusColor(ticketsError ? "error" : "success")}
-                >
-                  {ticketsLoading
-                    ? "Loading"
-                    : ticketsError
-                      ? "Error"
-                      : `${tickets.length} items`}
+                <Badge className={getStatusColor(ticketsError ? 'error' : 'success')}>
+                  {ticketsLoading ? 'Loading' : ticketsError ? 'Error' : `${tickets.length} items`}
                 </Badge>
               </div>
             </div>
@@ -763,26 +613,19 @@ export default function DiagnosticsPage() {
         <Card>
           <CardHeader>
             <CardTitle>Project Ticket Counts</CardTitle>
-            <CardDescription>
-              Verification of ticket count aggregation
-            </CardDescription>
+            <CardDescription>Verification of ticket count aggregation</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
               {projectsWithCounts.map((project: any) => (
                 <div
                   key={project.id}
-                  className="flex items-center justify-between p-3 border rounded"
-                >
+                  className="flex items-center justify-between p-3 border rounded">
                   <div>
                     <div className="font-medium">{project.name}</div>
-                    <div className="text-sm text-muted-foreground">
-                      {project.id}
-                    </div>
+                    <div className="text-sm text-muted-foreground">{project.id}</div>
                   </div>
-                  <Badge variant="outline">
-                    {project.ticket_count} tickets
-                  </Badge>
+                  <Badge variant="outline">{project.ticket_count} tickets</Badge>
                 </div>
               ))}
             </div>
@@ -884,8 +727,7 @@ export default function DiagnosticsPage() {
               <Button
                 onClick={runDiagnosticTests}
                 disabled={isRunningTests || !user}
-                className="flex-1"
-              >
+                className="flex-1">
                 {isRunningTests ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -899,10 +741,7 @@ export default function DiagnosticsPage() {
                 )}
               </Button>
 
-              <Button
-                variant="outline"
-                onClick={() => window.open("/test-data", "_blank")}
-              >
+              <Button variant="outline" onClick={() => window.open('/test-data', '_blank')}>
                 <ExternalLink className="h-4 w-4 mr-2" />
                 Advanced Testing
               </Button>
@@ -922,9 +761,7 @@ export default function DiagnosticsPage() {
         <Card>
           <CardHeader>
             <CardTitle>Detailed Test Execution Log</CardTitle>
-            <CardDescription>
-              Step-by-step test execution with full error details
-            </CardDescription>
+            <CardDescription>Step-by-step test execution with full error details</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-2 max-h-96 overflow-auto">
@@ -937,19 +774,15 @@ export default function DiagnosticsPage() {
               {detailedResults.map((result, index) => (
                 <div
                   key={index}
-                  className={`p-3 rounded-lg border ${result.success ? "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-700" : "bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-700"}`}
-                >
+                  className={`p-3 rounded-lg border ${result.success ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-700' : 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-700'}`}>
                   <div className="font-medium flex justify-between items-start">
                     <span className="flex-1">{result.test}</span>
                     <div className="flex items-center space-x-2">
                       <span
-                        className={`text-xs px-2 py-1 rounded ${result.success ? "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400" : "bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400"}`}
-                      >
-                        {result.success ? "PASS" : "FAIL"}
+                        className={`text-xs px-2 py-1 rounded ${result.success ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400' : 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400'}`}>
+                        {result.success ? 'PASS' : 'FAIL'}
                       </span>
-                      <span className="text-xs text-muted-foreground">
-                        {result.timestamp}
-                      </span>
+                      <span className="text-xs text-muted-foreground">{result.timestamp}</span>
                     </div>
                   </div>
 
@@ -981,42 +814,34 @@ export default function DiagnosticsPage() {
         <Card>
           <CardHeader>
             <CardTitle>Test Summary</CardTitle>
-            <CardDescription>
-              High-level results from the diagnostic tests
-            </CardDescription>
+            <CardDescription>High-level results from the diagnostic tests</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {Object.entries(testResults).map(
-                ([testName, result]: [string, any]) => (
-                  <div key={testName} className="p-4 border rounded-lg">
-                    <div className="flex items-center justify-between mb-2">
-                      <h4 className="font-medium capitalize">
-                        {testName.replace(/([A-Z])/g, " $1")}
-                      </h4>
-                      <div className="flex items-center space-x-2">
-                        {getStatusIcon(result.status)}
-                        <Badge className={getStatusColor(result.status)}>
-                          {result.status}
-                        </Badge>
-                      </div>
+              {Object.entries(testResults).map(([testName, result]: [string, any]) => (
+                <div key={testName} className="p-4 border rounded-lg">
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="font-medium capitalize">
+                      {testName.replace(/([A-Z])/g, ' $1')}
+                    </h4>
+                    <div className="flex items-center space-x-2">
+                      {getStatusIcon(result.status)}
+                      <Badge className={getStatusColor(result.status)}>{result.status}</Badge>
                     </div>
-                    <p className="text-sm text-muted-foreground mb-2">
-                      {result.message}
-                    </p>
-                    {result.details && (
-                      <details>
-                        <summary className="text-sm text-muted-foreground cursor-pointer hover:text-foreground">
-                          Technical Details
-                        </summary>
-                        <pre className="text-xs bg-muted p-2 rounded overflow-x-auto mt-2">
-                          {JSON.stringify(result.details, null, 2)}
-                        </pre>
-                      </details>
-                    )}
                   </div>
-                ),
-              )}
+                  <p className="text-sm text-muted-foreground mb-2">{result.message}</p>
+                  {result.details && (
+                    <details>
+                      <summary className="text-sm text-muted-foreground cursor-pointer hover:text-foreground">
+                        Technical Details
+                      </summary>
+                      <pre className="text-xs bg-muted p-2 rounded overflow-x-auto mt-2">
+                        {JSON.stringify(result.details, null, 2)}
+                      </pre>
+                    </details>
+                  )}
+                </div>
+              ))}
             </div>
           </CardContent>
         </Card>
@@ -1031,9 +856,7 @@ export default function DiagnosticsPage() {
         <div className="mb-8">
           <div className="flex items-center space-x-3 mb-2">
             <Bug className="h-8 w-8 text-blue-600" />
-            <h1 className="text-3xl font-bold text-foreground">
-              System Diagnostics
-            </h1>
+            <h1 className="text-3xl font-bold text-foreground">System Diagnostics</h1>
           </div>
           <p className="text-muted-foreground">
             Monitor system health, test functionality, and debug issues
@@ -1049,8 +872,7 @@ export default function DiagnosticsPage() {
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`py-2 px-1 border-b-2 font-medium text-sm flex items-center space-x-2 ${activeTab === tab.id ? "border-blue-500 text-blue-600" : "border-transparent text-muted-foreground hover:text-foreground hover:border-border"}`}
-                >
+                  className={`py-2 px-1 border-b-2 font-medium text-sm flex items-center space-x-2 ${activeTab === tab.id ? 'border-blue-500 text-blue-600' : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'}`}>
                   <Icon className="h-4 w-4" />
                   <span>{tab.label}</span>
                 </button>
@@ -1061,11 +883,11 @@ export default function DiagnosticsPage() {
 
         {/* Tab Content */}
         <div>
-          {activeTab === "overview" && renderOverview()}
-          {activeTab === "auth" && renderAuth()}
-          {activeTab === "data" && renderData()}
-          {activeTab === "queries" && renderQueries()}
-          {activeTab === "tests" && renderTests()}
+          {activeTab === 'overview' && renderOverview()}
+          {activeTab === 'auth' && renderAuth()}
+          {activeTab === 'data' && renderData()}
+          {activeTab === 'queries' && renderQueries()}
+          {activeTab === 'tests' && renderTests()}
         </div>
       </div>
     </div>

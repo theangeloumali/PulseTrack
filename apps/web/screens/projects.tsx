@@ -1,66 +1,52 @@
-"use client";
+'use client';
 
-export const dynamic = "force-dynamic";
+export const dynamic = 'force-dynamic';
 
-import { useState, useEffect, Suspense } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import Link from "next/link";
-import { Button } from "@workspace/ui/components/button";
-import { Input } from "@workspace/ui/components/input";
+import {useState, useEffect, Suspense} from 'react';
+import {useRouter, useSearchParams} from 'next/navigation';
+import Link from 'next/link';
+import {Button} from '@workspace/ui/components/button';
+import {Input} from '@workspace/ui/components/input';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@workspace/ui/components/card";
-import { Badge } from "@workspace/ui/components/badge";
-import { useProjectsWithTicketCountsQuery } from "@/lib/hooks/useProjects";
-import { useAuthStore } from "@/lib/stores/auth";
-import { CreateProjectModal } from "@/components/modals/create-project-modal";
-import { ProjectMembersModal } from "@/components/modals/project-members-modal";
-import { AutoRefresh } from "@/components/auto-refresh";
-import {
-  Plus,
-  Search,
-  Loader2,
-  FolderOpen,
-  Calendar,
-  AlertCircle,
-  User,
-  Users,
-} from "lucide-react";
+} from '@workspace/ui/components/card';
+import {Badge} from '@workspace/ui/components/badge';
+import {useProjectsWithTicketCountsQuery} from '@/lib/hooks/useProjects';
+import {useAuthStore} from '@/lib/stores/auth';
+import {CreateProjectModal} from '@/components/modals/create-project-modal';
+import {ProjectMembersModal} from '@/components/modals/project-members-modal';
+import {AutoRefresh} from '@/components/auto-refresh';
+import {Plus, Search, Loader2, FolderOpen, Calendar, AlertCircle, User, Users} from 'lucide-react';
 
 function ProjectsContent() {
-  const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState<
-    "all" | "active" | "archived" | "completed"
-  >("all");
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'archived' | 'completed'>(
+    'all',
+  );
   const [showCreateProjectModal, setShowCreateProjectModal] = useState(false);
   const [membersModalProject, setMembersModalProject] = useState<{
     id: string;
     name: string;
   } | null>(null);
 
-  const { user } = useAuthStore();
+  const {user} = useAuthStore();
   const router = useRouter();
   const searchParams = useSearchParams();
 
   // Use React Query for projects with ticket counts
-  const {
-    data: projects = [],
-    isLoading,
-    error,
-    isError,
-  } = useProjectsWithTicketCountsQuery();
+  const {data: projects = [], isLoading, error, isError} = useProjectsWithTicketCountsQuery();
 
   // Handle URL parameter for opening project creation modal
   useEffect(() => {
-    const openCreateProject = searchParams.get("openCreateProject");
-    if (openCreateProject === "true") {
+    const openCreateProject = searchParams.get('openCreateProject');
+    if (openCreateProject === 'true') {
       setShowCreateProjectModal(true);
       // Clean up URL
-      router.replace("/projects", { scroll: false });
+      router.replace('/projects', {scroll: false});
     }
   }, [searchParams, router]);
 
@@ -71,28 +57,26 @@ function ProjectsContent() {
       (project.description &&
         project.description.toLowerCase().includes(searchQuery.toLowerCase()));
 
-    const matchesStatus =
-      statusFilter === "all" || project.status === statusFilter;
+    const matchesStatus = statusFilter === 'all' || project.status === statusFilter;
 
     return matchesSearch && matchesStatus;
   });
 
   // Sort projects by recent activity (updated_at desc)
   const sortedProjects = filteredProjects.sort(
-    (a, b) =>
-      new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime(),
+    (a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime(),
   );
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "active":
-        return "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400";
-      case "archived":
-        return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400";
-      case "completed":
-        return "bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400";
+      case 'active':
+        return 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400';
+      case 'archived':
+        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400';
+      case 'completed':
+        return 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400';
       default:
-        return "bg-gray-100 text-gray-800 dark:bg-gray-800/50 dark:text-gray-300";
+        return 'bg-gray-100 text-gray-800 dark:bg-gray-800/50 dark:text-gray-300';
     }
   };
 
@@ -113,9 +97,7 @@ function ProjectsContent() {
               <AlertCircle className="h-5 w-5 mr-2" />
               Error
             </CardTitle>
-            <CardDescription>
-              {error?.message || "Failed to load projects"}
-            </CardDescription>
+            <CardDescription>{error?.message || 'Failed to load projects'}</CardDescription>
           </CardHeader>
           <CardContent>
             <Button className="w-full" onClick={() => window.location.reload()}>
@@ -133,15 +115,7 @@ function ProjectsContent() {
       <AutoRefresh
         queryKeys={
           user?.company_id && user?.id && user?.role
-            ? [
-                [
-                  "projects",
-                  "withTicketCounts",
-                  user.company_id,
-                  user.id,
-                  user.role,
-                ],
-              ]
+            ? [['projects', 'withTicketCounts', user.company_id, user.id, user.role]]
             : []
         }
       />
@@ -183,8 +157,7 @@ function ProjectsContent() {
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value as any)}
-            className="flex h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-          >
+            className="flex h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
             <option value="all">All Status</option>
             <option value="active">Active</option>
             <option value="archived">Archived</option>
@@ -201,14 +174,12 @@ function ProjectsContent() {
           <div className="text-center py-12">
             <FolderOpen className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
             <h3 className="text-lg font-medium text-foreground mb-2">
-              {(projects || []).length === 0
-                ? "No projects yet"
-                : "No projects match your search"}
+              {(projects || []).length === 0 ? 'No projects yet' : 'No projects match your search'}
             </h3>
             <p className="text-muted-foreground mb-6">
               {(projects || []).length === 0
-                ? "Get started by creating your first project"
-                : "Try adjusting your search criteria"}
+                ? 'Get started by creating your first project'
+                : 'Try adjusting your search criteria'}
             </p>
             {(projects || []).length === 0 && (
               <Link href="/projects/new">
@@ -222,10 +193,7 @@ function ProjectsContent() {
         ) : (
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {sortedProjects.map((project) => (
-              <Card
-                key={project.id}
-                className="hover:shadow-lg transition-shadow"
-              >
+              <Card key={project.id} className="hover:shadow-lg transition-shadow">
                 <CardHeader>
                   <div className="flex items-start justify-between">
                     <Link href={`/projects/${project.id}`} className="flex-1">
@@ -233,9 +201,7 @@ function ProjectsContent() {
                         {project.name}
                       </CardTitle>
                     </Link>
-                    <Badge
-                      className={`${getStatusColor(project.status)} border-0 ml-2`}
-                    >
+                    <Badge className={`${getStatusColor(project.status)} border-0 ml-2`}>
                       {project.status}
                     </Badge>
                   </div>
@@ -276,8 +242,7 @@ function ProjectsContent() {
                           name: project.name,
                         });
                       }}
-                      className="flex items-center gap-1"
-                    >
+                      className="flex items-center gap-1">
                       <Users className="h-4 w-4" />
                       Members
                     </Button>
@@ -315,8 +280,7 @@ export default function ProjectsPage() {
         <div className="h-full flex items-center justify-center bg-background">
           <Loader2 className="h-8 w-8 animate-spin" />
         </div>
-      }
-    >
+      }>
       <ProjectsContent />
     </Suspense>
   );

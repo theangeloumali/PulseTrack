@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import React, { useState } from "react";
-import { Calendar, ChevronLeft, ChevronRight } from "lucide-react";
+import React, {useState} from 'react';
+import {Calendar, ChevronLeft, ChevronRight} from 'lucide-react';
 import {
   format,
   startOfMonth,
@@ -14,10 +14,10 @@ import {
   isSameMonth,
   isSameDay,
   isWithinInterval,
-} from "date-fns";
-import { Button } from "@workspace/ui/components/button";
-import { Input } from "@workspace/ui/components/input";
-import { Label } from "@workspace/ui/components/label";
+} from 'date-fns';
+import {Button} from '@workspace/ui/components/button';
+import {Input} from '@workspace/ui/components/input';
+import {Label} from '@workspace/ui/components/label';
 
 interface DateRangePickerProps {
   startDate: string;
@@ -36,15 +36,15 @@ export function DateRangePicker({
 }: DateRangePickerProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [currentMonth, setCurrentMonth] = useState(new Date());
-  const [selecting, setSelecting] = useState<"start" | "end" | null>(null);
+  const [selecting, setSelecting] = useState<'start' | 'end' | null>(null);
 
   const startDateObj = startDate ? new Date(startDate) : null;
   const endDateObj = endDate ? new Date(endDate) : null;
 
   const monthStart = startOfMonth(currentMonth);
   const monthEnd = endOfMonth(currentMonth);
-  const calendarStart = startOfWeek(monthStart, { weekStartsOn: 0 }); // Sunday
-  const calendarEnd = endOfWeek(monthEnd, { weekStartsOn: 0 });
+  const calendarStart = startOfWeek(monthStart, {weekStartsOn: 0}); // Sunday
+  const calendarEnd = endOfWeek(monthEnd, {weekStartsOn: 0});
 
   const days = [];
   let day = calendarStart;
@@ -54,7 +54,7 @@ export function DateRangePicker({
   }
 
   const handleDateClick = (date: Date) => {
-    const dateStr = format(date, "yyyy-MM-dd");
+    const dateStr = format(date, 'yyyy-MM-dd');
 
     // If clicking on a date from a different month, navigate to that month first
     if (!isSameMonth(date, currentMonth)) {
@@ -64,17 +64,17 @@ export function DateRangePicker({
     if (!selecting) {
       // First click - start selecting
       onStartDateChange(dateStr);
-      onEndDateChange("");
-      setSelecting("end");
-    } else if (selecting === "start") {
+      onEndDateChange('');
+      setSelecting('end');
+    } else if (selecting === 'start') {
       onStartDateChange(dateStr);
-      setSelecting("end");
-    } else if (selecting === "end") {
+      setSelecting('end');
+    } else if (selecting === 'end') {
       // If clicked date is before start date, make it the new start date
       if (startDateObj && date < startDateObj) {
         onStartDateChange(dateStr);
-        onEndDateChange("");
-        setSelecting("end");
+        onEndDateChange('');
+        setSelecting('end');
       } else {
         // Set end date and complete the selection
         onEndDateChange(dateStr);
@@ -87,7 +87,7 @@ export function DateRangePicker({
   const isInRange = (date: Date) => {
     if (!startDateObj || !endDateObj) return false;
     try {
-      return isWithinInterval(date, { start: startDateObj, end: endDateObj });
+      return isWithinInterval(date, {start: startDateObj, end: endDateObj});
     } catch {
       return false;
     }
@@ -102,12 +102,10 @@ export function DateRangePicker({
   };
 
   const formatDateRange = () => {
-    if (!startDate && !endDate) return "Select date range";
-    if (!endDate || endDate === "")
-      return format(new Date(startDate), "MMM dd, yyyy");
-    if (startDate === endDate)
-      return format(new Date(startDate), "MMM dd, yyyy");
-    return `${format(new Date(startDate), "MMM dd")} - ${format(new Date(endDate), "MMM dd, yyyy")}`;
+    if (!startDate && !endDate) return 'Select date range';
+    if (!endDate || endDate === '') return format(new Date(startDate), 'MMM dd, yyyy');
+    if (startDate === endDate) return format(new Date(startDate), 'MMM dd, yyyy');
+    return `${format(new Date(startDate), 'MMM dd')} - ${format(new Date(endDate), 'MMM dd, yyyy')}`;
   };
 
   return (
@@ -118,8 +116,7 @@ export function DateRangePicker({
         <Button
           variant="outline"
           onClick={() => setIsOpen(!isOpen)}
-          className="w-full justify-start text-left font-normal"
-        >
+          className="w-full justify-start text-left font-normal">
           <Calendar className="mr-2 h-4 w-4" />
           {formatDateRange()}
         </Button>
@@ -170,27 +167,22 @@ export function DateRangePicker({
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
-            >
+              onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}>
               <ChevronLeft className="h-4 w-4" />
             </Button>
-            <h3 className="font-medium">{format(currentMonth, "MMMM yyyy")}</h3>
+            <h3 className="font-medium">{format(currentMonth, 'MMMM yyyy')}</h3>
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
-            >
+              onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}>
               <ChevronRight className="h-4 w-4" />
             </Button>
           </div>
 
           {/* Weekday Headers */}
           <div className="grid grid-cols-7 gap-1 mb-2">
-            {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
-              <div
-                key={day}
-                className="p-2 text-xs font-medium text-muted-foreground text-center"
-              >
+            {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
+              <div key={day} className="p-2 text-xs font-medium text-muted-foreground text-center">
                 {day}
               </div>
             ))}
@@ -210,13 +202,12 @@ export function DateRangePicker({
                   onClick={() => handleDateClick(day)}
                   className={`
                     p-2 text-xs rounded-md transition-colors cursor-pointer
-                    ${!isCurrentMonth ? "text-muted-foreground/50" : "text-foreground"}
-                    ${isStart || isEnd ? "bg-blue-500 text-white dark:bg-blue-600" : ""}
-                    ${inRange && !isStart && !isEnd ? "bg-blue-100 dark:bg-blue-900/20" : ""}
-                    ${!inRange && !isStart && !isEnd ? "hover:bg-muted/50" : ""}
-                  `}
-                >
-                  {format(day, "d")}
+                    ${!isCurrentMonth ? 'text-muted-foreground/50' : 'text-foreground'}
+                    ${isStart || isEnd ? 'bg-blue-500 text-white dark:bg-blue-600' : ''}
+                    ${inRange && !isStart && !isEnd ? 'bg-blue-100 dark:bg-blue-900/20' : ''}
+                    ${!inRange && !isStart && !isEnd ? 'hover:bg-muted/50' : ''}
+                  `}>
+                  {format(day, 'd')}
                 </button>
               );
             })}
@@ -231,8 +222,7 @@ export function DateRangePicker({
                 setSelecting(null);
                 setIsOpen(false);
               }}
-              className="flex-1"
-            >
+              className="flex-1">
               Cancel
             </Button>
             <Button
@@ -240,29 +230,26 @@ export function DateRangePicker({
               onClick={() => {
                 setSelecting(null);
                 setIsOpen(false);
-                if (onRangeChange && startDate && endDate && endDate !== "") {
+                if (onRangeChange && startDate && endDate && endDate !== '') {
                   onRangeChange(startDate, endDate);
                 }
               }}
               className="flex-1"
-              disabled={!startDate || !endDate || endDate === ""}
-            >
+              disabled={!startDate || !endDate || endDate === ''}>
               Apply Range
             </Button>
           </div>
 
           {/* Instructions */}
           <div className="mt-2 text-xs text-muted-foreground text-center">
-            {!selecting &&
-              !startDate &&
-              "Click a date to start selecting range"}
-            {!selecting && startDate && endDate && endDate !== "" && (
+            {!selecting && !startDate && 'Click a date to start selecting range'}
+            {!selecting && startDate && endDate && endDate !== '' && (
               <span className="text-green-600 dark:text-green-400 font-medium">
                 Range selected! Click "Apply Range" to confirm.
               </span>
             )}
-            {selecting === "end" && "Click to select end date"}
-            {selecting === "start" && "Click to select start date"}
+            {selecting === 'end' && 'Click to select end date'}
+            {selecting === 'start' && 'Click to select start date'}
           </div>
         </div>
       )}

@@ -1,28 +1,25 @@
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
-import { Button } from "@workspace/ui/components/button";
+import {useEffect, useState} from 'react';
+import {useRouter} from 'next/navigation';
+import Link from 'next/link';
+import {Button} from '@workspace/ui/components/button';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@workspace/ui/components/card";
-import { MarkdownViewer } from "@/components/ui/markdown-viewer";
-import { Badge } from "@workspace/ui/components/badge";
-import { useAuthStore } from "@/lib/stores/auth";
-import { useTicketStore } from "@/lib/stores/ticket";
-import {
-  useTicketQuery,
-  useDeleteTicketMutation,
-} from "@/lib/hooks/useTickets";
-import { TimeTracker } from "@/components/time-tracker";
-import { TimeEntriesList } from "@/components/time-entries-list";
-import { TicketAssignment } from "@/components/ticket-assignment";
-import { Ticket } from "@/lib/db/schema";
+} from '@workspace/ui/components/card';
+import {MarkdownViewer} from '@/components/ui/markdown-viewer';
+import {Badge} from '@workspace/ui/components/badge';
+import {useAuthStore} from '@/lib/stores/auth';
+import {useTicketStore} from '@/lib/stores/ticket';
+import {useTicketQuery, useDeleteTicketMutation} from '@/lib/hooks/useTickets';
+import {TimeTracker} from '@/components/time-tracker';
+import {TimeEntriesList} from '@/components/time-entries-list';
+import {TicketAssignment} from '@/components/ticket-assignment';
+import {Ticket} from '@/lib/db/schema';
 import {
   ArrowLeft,
   Edit,
@@ -35,9 +32,9 @@ import {
   PlayCircle,
   Loader2,
   Trash2,
-} from "lucide-react";
+} from 'lucide-react';
 
-export const dynamic = "force-dynamic";
+export const dynamic = 'force-dynamic';
 
 interface Props {
   params: Promise<{
@@ -46,16 +43,16 @@ interface Props {
   }>;
 }
 
-export default function TicketDetailPage({ params }: Props) {
-  const [projectId, setProjectId] = useState<string>("");
-  const [ticketId, setTicketId] = useState<string>("");
+export default function TicketDetailPage({params}: Props) {
+  const [projectId, setProjectId] = useState<string>('');
+  const [ticketId, setTicketId] = useState<string>('');
 
-  const { user } = useAuthStore();
-  const { setSelectedTicketId } = useTicketStore();
+  const {user} = useAuthStore();
+  const {setSelectedTicketId} = useTicketStore();
   const router = useRouter();
 
   // Use React Query for ticket data
-  const { data: ticket, isLoading, error } = useTicketQuery(ticketId);
+  const {data: ticket, isLoading, error} = useTicketQuery(ticketId);
   const deleteTicketMutation = useDeleteTicketMutation();
 
   // Resolve params on mount
@@ -88,48 +85,48 @@ export default function TicketDetailPage({ params }: Props) {
       await deleteTicketMutation.mutateAsync(ticket.id);
       router.push(`/projects/${projectId}/tickets`);
     } catch (error) {
-      alert("Failed to delete ticket. Please try again.");
+      alert('Failed to delete ticket. Please try again.');
     }
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "new":
-        return "bg-gray-100 text-gray-800";
-      case "in_progress":
-        return "bg-blue-100 text-blue-800";
-      case "review":
-        return "bg-yellow-100 text-yellow-800";
-      case "done":
-        return "bg-green-100 text-green-800";
+      case 'new':
+        return 'bg-gray-100 text-gray-800';
+      case 'in_progress':
+        return 'bg-blue-100 text-blue-800';
+      case 'review':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'done':
+        return 'bg-green-100 text-green-800';
       default:
-        return "bg-gray-100 text-gray-800";
+        return 'bg-gray-100 text-gray-800';
     }
   };
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
-      case "low":
-        return "bg-green-100 text-green-800";
-      case "medium":
-        return "bg-yellow-100 text-yellow-800";
-      case "high":
-        return "bg-orange-100 text-orange-800";
-      case "critical":
-        return "bg-red-100 text-red-800";
+      case 'low':
+        return 'bg-green-100 text-green-800';
+      case 'medium':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'high':
+        return 'bg-orange-100 text-orange-800';
+      case 'critical':
+        return 'bg-red-100 text-red-800';
       default:
-        return "bg-gray-100 text-gray-800";
+        return 'bg-gray-100 text-gray-800';
     }
   };
 
   const getPriorityIcon = (priority: string) => {
     switch (priority) {
-      case "critical":
-      case "high":
+      case 'critical':
+      case 'high':
         return <AlertCircle className="h-5 w-5" />;
-      case "medium":
+      case 'medium':
         return <FileText className="h-5 w-5" />;
-      case "low":
+      case 'low':
         return <CheckCircle2 className="h-5 w-5" />;
       default:
         return <FileText className="h-5 w-5" />;
@@ -153,9 +150,7 @@ export default function TicketDetailPage({ params }: Props) {
           <Card className="w-96">
             <CardHeader>
               <CardTitle>Error</CardTitle>
-              <CardDescription>
-                {error?.message || "Ticket not found"}
-              </CardDescription>
+              <CardDescription>{error?.message || 'Ticket not found'}</CardDescription>
             </CardHeader>
             <CardContent>
               <Link href={`/projects/${projectId}`}>
@@ -185,25 +180,19 @@ export default function TicketDetailPage({ params }: Props) {
                 <div className="flex items-center space-x-3">
                   <div className="flex items-center space-x-2">
                     {getPriorityIcon(ticket.priority)}
-                    <h1 className="text-3xl font-bold text-foreground">
-                      {ticket.title}
-                    </h1>
+                    <h1 className="text-3xl font-bold text-foreground">{ticket.title}</h1>
                   </div>
                   <div className="flex items-center space-x-2">
-                    <Badge
-                      className={`${getStatusColor(ticket.status)} border-0`}
-                    >
-                      {ticket.status.replace("_", " ")}
+                    <Badge className={`${getStatusColor(ticket.status)} border-0`}>
+                      {ticket.status.replace('_', ' ')}
                     </Badge>
-                    <Badge
-                      className={`${getPriorityColor(ticket.priority)} border-0`}
-                    >
+                    <Badge className={`${getPriorityColor(ticket.priority)} border-0`}>
                       {ticket.priority}
                     </Badge>
                   </div>
                 </div>
                 <p className="text-muted-foreground mt-1">
-                  Project: {ticket.projects?.name || "Unknown Project"}
+                  Project: {ticket.projects?.name || 'Unknown Project'}
                 </p>
               </div>
             </div>
@@ -232,7 +221,7 @@ export default function TicketDetailPage({ params }: Props) {
                 </CardHeader>
                 <CardContent>
                   <MarkdownViewer
-                    content={ticket.description || ""}
+                    content={ticket.description || ''}
                     mode="full"
                     className="max-w-none"
                   />
@@ -271,57 +260,41 @@ export default function TicketDetailPage({ params }: Props) {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div>
-                    <dt className="text-sm font-medium text-muted-foreground">
-                      Status
-                    </dt>
+                    <dt className="text-sm font-medium text-muted-foreground">Status</dt>
                     <dd className="mt-1">
-                      <Badge
-                        className={`${getStatusColor(ticket.status)} border-0`}
-                      >
-                        {ticket.status.replace("_", " ")}
+                      <Badge className={`${getStatusColor(ticket.status)} border-0`}>
+                        {ticket.status.replace('_', ' ')}
                       </Badge>
                     </dd>
                   </div>
                   <div>
-                    <dt className="text-sm font-medium text-muted-foreground">
-                      Priority
-                    </dt>
+                    <dt className="text-sm font-medium text-muted-foreground">Priority</dt>
                     <dd className="mt-1">
-                      <Badge
-                        className={`${getPriorityColor(ticket.priority)} border-0`}
-                      >
+                      <Badge className={`${getPriorityColor(ticket.priority)} border-0`}>
                         {ticket.priority}
                       </Badge>
                     </dd>
                   </div>
                   <div>
-                    <dt className="text-sm font-medium text-muted-foreground">
-                      Assignee
-                    </dt>
+                    <dt className="text-sm font-medium text-muted-foreground">Assignee</dt>
                     <dd className="mt-1 text-sm text-foreground flex items-center">
                       <User className="h-4 w-4 mr-2" />
                       {ticket.assignee ? (
                         <span>
-                          {ticket.assignee.first_name}{" "}
-                          {ticket.assignee.last_name}
+                          {ticket.assignee.first_name} {ticket.assignee.last_name}
                         </span>
                       ) : (
-                        <span className="text-muted-foreground">
-                          Unassigned
-                        </span>
+                        <span className="text-muted-foreground">Unassigned</span>
                       )}
                     </dd>
                   </div>
                   <div>
-                    <dt className="text-sm font-medium text-muted-foreground">
-                      Reporter
-                    </dt>
+                    <dt className="text-sm font-medium text-muted-foreground">Reporter</dt>
                     <dd className="mt-1 text-sm text-foreground flex items-center">
                       <User className="h-4 w-4 mr-2" />
                       {ticket.reporter ? (
                         <span>
-                          {ticket.reporter.first_name}{" "}
-                          {ticket.reporter.last_name}
+                          {ticket.reporter.first_name} {ticket.reporter.last_name}
                         </span>
                       ) : (
                         <span>Unknown</span>
@@ -329,18 +302,14 @@ export default function TicketDetailPage({ params }: Props) {
                     </dd>
                   </div>
                   <div>
-                    <dt className="text-sm font-medium text-muted-foreground">
-                      Created
-                    </dt>
+                    <dt className="text-sm font-medium text-muted-foreground">Created</dt>
                     <dd className="mt-1 text-sm text-foreground flex items-center">
                       <Calendar className="h-4 w-4 mr-2" />
                       {new Date(ticket.created_at).toLocaleDateString()}
                     </dd>
                   </div>
                   <div>
-                    <dt className="text-sm font-medium text-muted-foreground">
-                      Last Updated
-                    </dt>
+                    <dt className="text-sm font-medium text-muted-foreground">Last Updated</dt>
                     <dd className="mt-1 text-sm text-foreground flex items-center">
                       <Calendar className="h-4 w-4 mr-2" />
                       {new Date(ticket.updated_at).toLocaleDateString()}
@@ -348,9 +317,7 @@ export default function TicketDetailPage({ params }: Props) {
                   </div>
                   {ticket.estimated_hours && (
                     <div>
-                      <dt className="text-sm font-medium text-muted-foreground">
-                        Estimated Hours
-                      </dt>
+                      <dt className="text-sm font-medium text-muted-foreground">Estimated Hours</dt>
                       <dd className="mt-1 text-sm text-foreground flex items-center">
                         <Clock className="h-4 w-4 mr-2" />
                         {ticket.estimated_hours}h
@@ -359,9 +326,7 @@ export default function TicketDetailPage({ params }: Props) {
                   )}
                   {ticket.due_date && (
                     <div>
-                      <dt className="text-sm font-medium text-muted-foreground">
-                        Due Date
-                      </dt>
+                      <dt className="text-sm font-medium text-muted-foreground">Due Date</dt>
                       <dd className="mt-1 text-sm text-foreground flex items-center">
                         <Calendar className="h-4 w-4 mr-2" />
                         {new Date(ticket.due_date).toLocaleDateString()}
@@ -377,9 +342,7 @@ export default function TicketDetailPage({ params }: Props) {
                   <CardTitle>Actions</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2">
-                  <Link
-                    href={`/projects/${projectId}/tickets/${ticket.id}/edit`}
-                  >
+                  <Link href={`/projects/${projectId}/tickets/${ticket.id}/edit`}>
                     <Button variant="outline" className="w-full justify-start">
                       <Edit className="h-4 w-4 mr-2" />
                       Edit Ticket
@@ -389,11 +352,7 @@ export default function TicketDetailPage({ params }: Props) {
                     <PlayCircle className="h-4 w-4 mr-2" />
                     Start Timer
                   </Button>
-                  <Button
-                    variant="outline"
-                    className="w-full justify-start"
-                    disabled
-                  >
+                  <Button variant="outline" className="w-full justify-start" disabled>
                     <FileText className="h-4 w-4 mr-2" />
                     Add Comment
                   </Button>
@@ -401,12 +360,9 @@ export default function TicketDetailPage({ params }: Props) {
                     variant="destructive"
                     className="w-full justify-start"
                     onClick={handleDeleteTicket}
-                    disabled={deleteTicketMutation.isPending}
-                  >
+                    disabled={deleteTicketMutation.isPending}>
                     <Trash2 className="h-4 w-4 mr-2" />
-                    {deleteTicketMutation.isPending
-                      ? "Deleting..."
-                      : "Delete Ticket"}
+                    {deleteTicketMutation.isPending ? 'Deleting...' : 'Delete Ticket'}
                   </Button>
                 </CardContent>
               </Card>

@@ -1,6 +1,6 @@
-import { create } from "zustand";
-import { devtools } from "zustand/middleware";
-import { TimeEntry } from "@/lib/types/database";
+import {create} from 'zustand';
+import {devtools} from 'zustand/middleware';
+import {TimeEntry} from '@/lib/types/database';
 
 interface TimeTrackingState {
   timeEntries: TimeEntry[];
@@ -25,14 +25,11 @@ export const useTimeTrackingStore = create<TimeTrackingState>()(
       timeEntries: [],
       activeTimer: null,
       isLoading: false,
-      setTimeEntries: (entries) => set({ timeEntries: entries }),
-      addTimeEntry: (entry) =>
-        set({ timeEntries: [...get().timeEntries, entry] }),
+      setTimeEntries: (entries) => set({timeEntries: entries}),
+      addTimeEntry: (entry) => set({timeEntries: [...get().timeEntries, entry]}),
       updateTimeEntry: (id, updates) =>
         set({
-          timeEntries: get().timeEntries.map((e) =>
-            e.id === id ? { ...e, ...updates } : e,
-          ),
+          timeEntries: get().timeEntries.map((e) => (e.id === id ? {...e, ...updates} : e)),
         }),
       removeTimeEntry: (id) =>
         set({
@@ -46,11 +43,11 @@ export const useTimeTrackingStore = create<TimeTrackingState>()(
             description,
           },
         }),
-      stopTimer: () => set({ activeTimer: null }),
-      setIsLoading: (loading) => set({ isLoading: loading }),
+      stopTimer: () => set({activeTimer: null}),
+      setIsLoading: (loading) => set({isLoading: loading}),
     }),
     {
-      name: "time-tracking-store",
+      name: 'time-tracking-store',
     },
   ),
 );

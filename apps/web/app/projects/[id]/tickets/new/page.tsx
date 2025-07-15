@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import { useEffect, use } from "react";
-import { useRouter } from "next/navigation";
+import {useEffect, use} from 'react';
+import {useRouter} from 'next/navigation';
 
-export const dynamic = "force-dynamic";
+export const dynamic = 'force-dynamic';
 
 interface Props {
   params: Promise<{
@@ -13,7 +13,7 @@ interface Props {
 
 // This page redirects to the project page with the ticket creation modal
 // We're moving away from separate pages to modal-based forms for better UX
-export default function NewTicketPage({ params }: Props) {
+export default function NewTicketPage({params}: Props) {
   const resolvedParams = use(params);
   const router = useRouter();
 

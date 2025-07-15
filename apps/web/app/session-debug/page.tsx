@@ -1,20 +1,16 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import { createBrowserClient } from "@supabase/ssr";
+import {useState, useEffect} from 'react';
+import {createBrowserClient} from '@supabase/ssr';
 
 export default function SessionDebugPage() {
   // Prevent access in production
-  if (process.env.NODE_ENV === "production") {
+  if (process.env.NODE_ENV === 'production') {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">
-            Page Not Available
-          </h1>
-          <p className="text-gray-600">
-            This debug page is only available in development mode.
-          </p>
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">Page Not Available</h1>
+          <p className="text-gray-600">This debug page is only available in development mode.</p>
         </div>
       </div>
     );
@@ -30,9 +26,9 @@ export default function SessionDebugPage() {
   useEffect(() => {
     const checkSession = async () => {
       try {
-        console.log("SessionDebug - Checking session...");
+        console.log('SessionDebug - Checking session...');
         const {
-          data: { session },
+          data: {session},
           error,
         } = await supabase.auth.getSession();
 
@@ -70,13 +66,9 @@ export default function SessionDebugPage() {
 
     // Also listen for auth state changes
     const {
-      data: { subscription },
+      data: {subscription},
     } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log(
-        "SessionDebug - Auth state change:",
-        event,
-        session?.user?.id,
-      );
+      console.log('SessionDebug - Auth state change:', event, session?.user?.id);
       setSessionInfo((prev: any) => ({
         ...prev,
         authEvent: event,
@@ -115,28 +107,23 @@ export default function SessionDebugPage() {
         <h1 className="text-3xl font-bold text-gray-900 mb-8">Session Debug</h1>
 
         <div className="bg-white rounded-lg shadow p-6">
-          <pre className="text-sm overflow-auto">
-            {JSON.stringify(sessionInfo, null, 2)}
-          </pre>
+          <pre className="text-sm overflow-auto">{JSON.stringify(sessionInfo, null, 2)}</pre>
         </div>
 
         <div className="mt-6 space-x-4">
           <button
             onClick={() => window.location.reload()}
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-          >
+            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
             Refresh
           </button>
           <button
-            onClick={() => (window.location.href = "/auth/accept-invitation")}
-            className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
-          >
+            onClick={() => (window.location.href = '/auth/accept-invitation')}
+            className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">
             Go to Accept Invitation
           </button>
           <button
-            onClick={() => (window.location.href = "/login")}
-            className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700"
-          >
+            onClick={() => (window.location.href = '/login')}
+            className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700">
             Go to Login
           </button>
         </div>

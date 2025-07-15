@@ -1,15 +1,15 @@
-"use client";
+'use client';
 
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { createBrowserClient } from "@supabase/ssr";
+import {useEffect} from 'react';
+import {useRouter} from 'next/navigation';
+import {createBrowserClient} from '@supabase/ssr';
 
 export default function RecoveryCallbackPage() {
   const router = useRouter();
 
   useEffect(() => {
     const handleRecoveryCallback = async () => {
-      console.log("Recovery callback - Starting password reset flow");
+      console.log('Recovery callback - Starting password reset flow');
 
       const supabase = createBrowserClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -19,29 +19,27 @@ export default function RecoveryCallbackPage() {
       try {
         // Check if we have a valid session from the password reset
         const {
-          data: { user },
+          data: {user},
           error,
         } = await supabase.auth.getUser();
 
         if (error) {
-          console.error("Recovery callback - Error getting user:", error);
-          router.push("/forgot-password?error=invalid_reset_link");
+          console.error('Recovery callback - Error getting user:', error);
+          router.push('/forgot-password?error=invalid_reset_link');
           return;
         }
 
         if (user) {
-          console.log(
-            "Recovery callback - Valid user session, redirecting to reset password",
-          );
+          console.log('Recovery callback - Valid user session, redirecting to reset password');
           // User has valid session from password reset, redirect to reset password page
-          router.push("/reset-password");
+          router.push('/reset-password');
         } else {
-          console.log("Recovery callback - No user session");
-          router.push("/forgot-password?error=invalid_reset_link");
+          console.log('Recovery callback - No user session');
+          router.push('/forgot-password?error=invalid_reset_link');
         }
       } catch (err) {
-        console.error("Recovery callback - Unexpected error:", err);
-        router.push("/forgot-password?error=recovery_failed");
+        console.error('Recovery callback - Unexpected error:', err);
+        router.push('/forgot-password?error=recovery_failed');
       }
     };
 

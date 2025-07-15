@@ -1,19 +1,14 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import { Button } from "@workspace/ui/components/button";
-import { Input } from "@workspace/ui/components/input";
-import { Textarea } from "@workspace/ui/components/textarea";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@workspace/ui/components/card";
-import { Badge } from "@workspace/ui/components/badge";
-import { Clock, Play, Pause, Square, Loader2 } from "lucide-react";
-import { Ticket } from "@/lib/db/schema";
-import { useAuthStore } from "@/lib/stores/auth";
+import {useState, useEffect} from 'react';
+import {Button} from '@workspace/ui/components/button';
+import {Input} from '@workspace/ui/components/input';
+import {Textarea} from '@workspace/ui/components/textarea';
+import {Card, CardContent, CardHeader, CardTitle} from '@workspace/ui/components/card';
+import {Badge} from '@workspace/ui/components/badge';
+import {Clock, Play, Pause, Square, Loader2} from 'lucide-react';
+import {Ticket} from '@/lib/db/schema';
+import {useAuthStore} from '@/lib/stores/auth';
 
 interface TimeTrackingModalProps {
   isOpen: boolean;
@@ -21,18 +16,14 @@ interface TimeTrackingModalProps {
   ticket: Ticket | null;
 }
 
-export function TimeTrackingModal({
-  isOpen,
-  onClose,
-  ticket,
-}: TimeTrackingModalProps) {
+export function TimeTrackingModal({isOpen, onClose, ticket}: TimeTrackingModalProps) {
   const [isTracking, setIsTracking] = useState(false);
   const [startTime, setStartTime] = useState<Date | null>(null);
   const [elapsedTime, setElapsedTime] = useState(0);
-  const [description, setDescription] = useState("");
-  const [manualDuration, setManualDuration] = useState("");
-  const [mode, setMode] = useState<"timer" | "manual">("timer");
-  const { user } = useAuthStore();
+  const [description, setDescription] = useState('');
+  const [manualDuration, setManualDuration] = useState('');
+  const [mode, setMode] = useState<'timer' | 'manual'>('timer');
+  const {user} = useAuthStore();
 
   // Timer effect
   useEffect(() => {
@@ -49,7 +40,7 @@ export function TimeTrackingModal({
     const hours = Math.floor(seconds / 3600);
     const minutes = Math.floor((seconds % 3600) / 60);
     const secs = seconds % 60;
-    return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
+    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
   const handleStartTimer = () => {
@@ -66,7 +57,7 @@ export function TimeTrackingModal({
     setIsTracking(false);
     setStartTime(null);
     // Here you would save the time entry
-    console.log("Time entry:", {
+    console.log('Time entry:', {
       ticket_id: ticket?.id,
       user_id: user?.id,
       duration: elapsedTime,
@@ -77,10 +68,10 @@ export function TimeTrackingModal({
   };
 
   const handleManualEntry = () => {
-    const [hours, minutes] = manualDuration.split(":").map(Number);
+    const [hours, minutes] = manualDuration.split(':').map(Number);
     const durationInSeconds = (hours || 0) * 3600 + (minutes || 0) * 60;
 
-    console.log("Manual time entry:", {
+    console.log('Manual time entry:', {
       ticket_id: ticket?.id,
       user_id: user?.id,
       duration: durationInSeconds,
@@ -93,12 +84,8 @@ export function TimeTrackingModal({
   return (
     <div
       className="fixed inset-0 flex items-center justify-center z-50 backdrop-blur-sm"
-      onClick={onClose}
-    >
-      <Card
-        className="w-full max-w-lg mx-4"
-        onClick={(e) => e.stopPropagation()}
-      >
+      onClick={onClose}>
+      <Card className="w-full max-w-lg mx-4" onClick={(e) => e.stopPropagation()}>
         <CardHeader>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -107,17 +94,15 @@ export function TimeTrackingModal({
             </div>
             <div className="flex gap-2">
               <Button
-                variant={mode === "timer" ? "default" : "outline"}
+                variant={mode === 'timer' ? 'default' : 'outline'}
                 size="sm"
-                onClick={() => setMode("timer")}
-              >
+                onClick={() => setMode('timer')}>
                 Timer
               </Button>
               <Button
-                variant={mode === "manual" ? "default" : "outline"}
+                variant={mode === 'manual' ? 'default' : 'outline'}
                 size="sm"
-                onClick={() => setMode("manual")}
-              >
+                onClick={() => setMode('manual')}>
                 Manual
               </Button>
             </div>
@@ -128,7 +113,7 @@ export function TimeTrackingModal({
             <p className="font-medium text-sm">{ticket.title}</p>
             <div className="flex items-center gap-2 mt-1">
               <Badge variant="outline" className="text-xs">
-                {ticket.status.replace("_", " ")}
+                {ticket.status.replace('_', ' ')}
               </Badge>
               <Badge variant="outline" className="text-xs">
                 {ticket.priority}
@@ -136,7 +121,7 @@ export function TimeTrackingModal({
             </div>
           </div>
 
-          {mode === "timer" ? (
+          {mode === 'timer' ? (
             <div className="space-y-4">
               <div className="text-center">
                 <div className="text-4xl font-mono font-bold text-blue-600 mb-4">
@@ -144,10 +129,7 @@ export function TimeTrackingModal({
                 </div>
                 <div className="flex justify-center gap-2">
                   {!isTracking && elapsedTime === 0 && (
-                    <Button
-                      onClick={handleStartTimer}
-                      className="flex items-center gap-2"
-                    >
+                    <Button onClick={handleStartTimer} className="flex items-center gap-2">
                       <Play className="h-4 w-4" />
                       Start
                     </Button>
@@ -156,17 +138,13 @@ export function TimeTrackingModal({
                     <Button
                       onClick={handlePauseTimer}
                       variant="outline"
-                      className="flex items-center gap-2"
-                    >
+                      className="flex items-center gap-2">
                       <Pause className="h-4 w-4" />
                       Pause
                     </Button>
                   )}
                   {!isTracking && elapsedTime > 0 && (
-                    <Button
-                      onClick={handleStartTimer}
-                      className="flex items-center gap-2"
-                    >
+                    <Button onClick={handleStartTimer} className="flex items-center gap-2">
                       <Play className="h-4 w-4" />
                       Resume
                     </Button>
@@ -175,8 +153,7 @@ export function TimeTrackingModal({
                     <Button
                       onClick={handleStopTimer}
                       variant="destructive"
-                      className="flex items-center gap-2"
-                    >
+                      className="flex items-center gap-2">
                       <Square className="h-4 w-4" />
                       Stop & Save
                     </Button>
@@ -187,9 +164,7 @@ export function TimeTrackingModal({
           ) : (
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium mb-2">
-                  Duration (HH:MM)
-                </label>
+                <label className="block text-sm font-medium mb-2">Duration (HH:MM)</label>
                 <Input
                   type="text"
                   placeholder="1:30"
@@ -208,9 +183,7 @@ export function TimeTrackingModal({
           )}
 
           <div>
-            <label className="block text-sm font-medium mb-2">
-              Description (optional)
-            </label>
+            <label className="block text-sm font-medium mb-2">Description (optional)</label>
             <Textarea
               placeholder="What did you work on?"
               value={description}

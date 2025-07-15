@@ -1,6 +1,6 @@
-import { create } from "zustand";
-import { devtools } from "zustand/middleware";
-import { Company, User } from "@/lib/db/schema";
+import {create} from 'zustand';
+import {devtools} from 'zustand/middleware';
+import {Company, User} from '@/lib/db/schema';
 
 export interface CompanyUser extends User {
   invited_by_user?: {
@@ -23,14 +23,8 @@ interface CompanyState {
   usersError: string | null;
 
   // Filters and UI state
-  roleFilter:
-    | "all"
-    | "super_admin"
-    | "system_admin"
-    | "company_admin"
-    | "manager"
-    | "user";
-  statusFilter: "all" | "active" | "inactive";
+  roleFilter: 'all' | 'super_admin' | 'system_admin' | 'company_admin' | 'manager' | 'user';
+  statusFilter: 'all' | 'active' | 'inactive';
   searchQuery: string;
 
   // Company actions
@@ -43,15 +37,9 @@ interface CompanyState {
   setUsersLoading: (loading: boolean) => void;
   setUsersError: (error: string | null) => void;
   setRoleFilter: (
-    filter:
-      | "all"
-      | "super_admin"
-      | "system_admin"
-      | "company_admin"
-      | "manager"
-      | "user",
+    filter: 'all' | 'super_admin' | 'system_admin' | 'company_admin' | 'manager' | 'user',
   ) => void;
-  setStatusFilter: (filter: "all" | "active" | "inactive") => void;
+  setStatusFilter: (filter: 'all' | 'active' | 'inactive') => void;
   setSearchQuery: (query: string) => void;
 
   // Computed getters
@@ -78,43 +66,42 @@ export const useCompanyStore = create<CompanyState>()(
       selectedUser: null,
       usersLoading: false,
       usersError: null,
-      roleFilter: "all",
-      statusFilter: "all",
-      searchQuery: "",
+      roleFilter: 'all',
+      statusFilter: 'all',
+      searchQuery: '',
 
       // Company actions
-      setCompany: (company) => set({ company }),
-      setIsLoading: (loading) => set({ isLoading: loading }),
+      setCompany: (company) => set({company}),
+      setIsLoading: (loading) => set({isLoading: loading}),
 
       // User management actions
-      setUsers: (users) => set({ users }),
-      setSelectedUser: (user) => set({ selectedUser: user }),
-      setUsersLoading: (loading) => set({ usersLoading: loading }),
-      setUsersError: (error) => set({ usersError: error }),
-      setRoleFilter: (filter) => set({ roleFilter: filter }),
-      setStatusFilter: (filter) => set({ statusFilter: filter }),
-      setSearchQuery: (query) => set({ searchQuery: query }),
+      setUsers: (users) => set({users}),
+      setSelectedUser: (user) => set({selectedUser: user}),
+      setUsersLoading: (loading) => set({usersLoading: loading}),
+      setUsersError: (error) => set({usersError: error}),
+      setRoleFilter: (filter) => set({roleFilter: filter}),
+      setStatusFilter: (filter) => set({statusFilter: filter}),
+      setSearchQuery: (query) => set({searchQuery: query}),
 
       // Computed getters
       getFilteredUsers: () => {
-        const { users, roleFilter, statusFilter, searchQuery } = get();
+        const {users, roleFilter, statusFilter, searchQuery} = get();
 
         return users.filter((user) => {
           // Role filter
-          if (roleFilter !== "all" && user.role !== roleFilter) {
+          if (roleFilter !== 'all' && user.role !== roleFilter) {
             return false;
           }
 
           // Status filter
-          if (statusFilter !== "all" && user.status !== statusFilter) {
+          if (statusFilter !== 'all' && user.status !== statusFilter) {
             return false;
           }
 
           // Search query
           if (searchQuery) {
             const query = searchQuery.toLowerCase();
-            const fullName =
-              `${user.first_name || ""} ${user.last_name || ""}`.toLowerCase();
+            const fullName = `${user.first_name || ''} ${user.last_name || ''}`.toLowerCase();
             const email = user.email.toLowerCase();
 
             if (!fullName.includes(query) && !email.includes(query)) {
@@ -127,22 +114,22 @@ export const useCompanyStore = create<CompanyState>()(
       },
 
       getUserStats: () => {
-        const { users } = get();
+        const {users} = get();
 
         return {
           total: users.length,
-          active: users.filter((u) => u.status === "active").length,
-          inactive: users.filter((u) => u.status === "inactive").length,
+          active: users.filter((u) => u.status === 'active').length,
+          inactive: users.filter((u) => u.status === 'inactive').length,
           admins: users.filter((u) =>
-            ["super_admin", "system_admin", "company_admin"].includes(u.role),
+            ['super_admin', 'system_admin', 'company_admin'].includes(u.role),
           ).length,
-          managers: users.filter((u) => u.role === "manager").length,
-          users: users.filter((u) => u.role === "user").length,
+          managers: users.filter((u) => u.role === 'manager').length,
+          users: users.filter((u) => u.role === 'user').length,
         };
       },
     }),
     {
-      name: "company-store",
+      name: 'company-store',
     },
   ),
 );

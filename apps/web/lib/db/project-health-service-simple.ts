@@ -1,12 +1,12 @@
-import { supabase } from "@/lib/db";
-import type { UserRole } from "@/lib/db/schema";
+import {supabase} from '@/lib/db';
+import type {UserRole} from '@/lib/db/schema';
 
 export interface ProjectHealth {
   id: string;
   name: string;
-  status: "active" | "completed" | "on-hold" | "at-risk";
+  status: 'active' | 'completed' | 'on-hold' | 'at-risk';
   progress: number;
-  health: "excellent" | "good" | "warning" | "critical";
+  health: 'excellent' | 'good' | 'warning' | 'critical';
   metrics: {
     tasksCompleted: number;
     totalTasks: number;
@@ -31,32 +31,29 @@ export async function getProjectHealthSimple(
   companyId: string,
   userRole: UserRole,
 ): Promise<ProjectHealth[]> {
-
   try {
     // Get accessible projects based on user role
-    let projectsQuery = supabase
-      .from("projects")
-      .select("*")
-      .eq("company_id", companyId);
+    let projectsQuery = supabase.from('projects').select('*').eq('company_id', companyId);
 
     // If not admin, filter by project membership
-    if (!["super_admin", "system_admin", "company_admin"].includes(userRole)) {
+    if (!['super_admin', 'system_admin', 'company_admin'].includes(userRole)) {
       // Get user's project IDs first
-      const { data: memberProjects } = await supabase
-        .from("project_members")
-        .select("project_id")
-        .eq("user_id", userId);
+      const {data: memberProjects} = await supabase
+        .from('project_members')
+        .select('project_id')
+        .eq('user_id', userId);
 
       if (!memberProjects || memberProjects.length === 0) {
         return [];
       }
 
-      const projectIds = memberProjects.map(p => p.project_id);
-      projectsQuery = projectsQuery.in("id", projectIds);
+      const projectIds = memberProjects.map((p) => p.project_id);
+      projectsQuery = projectsQuery.in('id', projectIds);
     }
 
-    const { data: projects, error: projectsError } = await projectsQuery
-      .order("updated_at", { ascending: false });
+    const {data: projects, error: projectsError} = await projectsQuery.order('updated_at', {
+      ascending: false,
+    });
 
     if (projectsError) {
       console.error('🏥 Error fetching projects:', projectsError);
@@ -72,36 +69,36 @@ export async function getProjectHealthSimple(
 
     for (const project of projects) {
       // Get tickets for this project
-      const { data: tickets } = await supabase
-        .from("tickets")
-        .select("id, status")
-        .eq("project_id", project.id)
-        .eq("company_id", companyId);
+      const {data: tickets} = await supabase
+        .from('tickets')
+        .select('id, status')
+        .eq('project_id', project.id)
+        .eq('company_id', companyId);
 
       // Get project members count
-      const { count: memberCount } = await supabase
-        .from("project_members")
-        .select("*", { count: "exact", head: true })
-        .eq("project_id", project.id);
+      const {count: memberCount} = await supabase
+        .from('project_members')
+        .select('*', {count: 'exact', head: true})
+        .eq('project_id', project.id);
 
       // Calculate basic metrics
       const totalTasks = tickets?.length || 0;
-      const completedTasks = tickets?.filter(t => t.status === "done").length || 0;
-      const blockedTasks = tickets?.filter(t => t.status === "blocked").length || 0;
+      const completedTasks = tickets?.filter((t) => t.status === 'done').length || 0;
+      const blockedTasks = tickets?.filter((t) => t.status === 'blocked').length || 0;
       const progress = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
 
       // Calculate health based on progress and blockers
-      let health: ProjectHealth["health"] = "good";
-      if (progress >= 80 && blockedTasks === 0) health = "excellent";
-      else if (progress >= 60 && blockedTasks <= 2) health = "good";
-      else if (progress >= 30 && blockedTasks <= 5) health = "warning";
-      else health = "critical";
+      let health: ProjectHealth['health'] = 'good';
+      if (progress >= 80 && blockedTasks === 0) health = 'excellent';
+      else if (progress >= 60 && blockedTasks <= 2) health = 'good';
+      else if (progress >= 30 && blockedTasks <= 5) health = 'warning';
+      else health = 'critical';
 
       // Determine status
-      let status: ProjectHealth["status"] = "active";
-      if (project.status === "completed") status = "completed";
-      else if (project.status === "archived") status = "on-hold";
-      else if (health === "critical") status = "at-risk";
+      let status: ProjectHealth['status'] = 'active';
+      if (project.status === 'completed') status = 'completed';
+      else if (project.status === 'archived') status = 'on-hold';
+      else if (health === 'critical') status = 'at-risk';
 
       // Calculate days remaining
       let daysRemaining: number | undefined;
@@ -121,9 +118,9 @@ export async function getProjectHealthSimple(
       const diffDays = Math.floor(diffHours / 24);
 
       let lastActivity: string;
-      if (diffHours < 1) lastActivity = "Just now";
+      if (diffHours < 1) lastActivity = 'Just now';
       else if (diffHours < 24) lastActivity = `${diffHours} hours ago`;
-      else if (diffDays === 1) lastActivity = "1 day ago";
+      else if (diffDays === 1) lastActivity = '1 day ago';
       else lastActivity = `${diffDays} days ago`;
 
       projectHealthData.push({
@@ -153,7 +150,6 @@ export async function getProjectHealthSimple(
     }
 
     return projectHealthData;
-
   } catch (error) {
     console.error('Error in getProjectHealthSimple:', error);
     return [];

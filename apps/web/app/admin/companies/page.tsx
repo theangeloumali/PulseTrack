@@ -1,13 +1,10 @@
-"use client";
+'use client';
 
-import React, { useState } from "react";
-import { useRouter } from "next/navigation";
-import {
-  useSuperAdminCompanies,
-  type SuperAdminCompany,
-} from "@/lib/hooks/useSuperAdminCompanies";
-import { useAuthStore } from "@/lib/stores/auth";
-import { Button } from "@workspace/ui/components/button";
+import React, {useState} from 'react';
+import {useRouter} from 'next/navigation';
+import {useSuperAdminCompanies, type SuperAdminCompany} from '@/lib/hooks/useSuperAdminCompanies';
+import {useAuthStore} from '@/lib/stores/auth';
+import {Button} from '@workspace/ui/components/button';
 import {
   Search,
   Building2,
@@ -18,29 +15,25 @@ import {
   Calendar,
   ExternalLink,
   BarChart3,
-} from "lucide-react";
+} from 'lucide-react';
 
 export default function SuperAdminCompaniesPage() {
   const router = useRouter();
-  const { user: currentUser } = useAuthStore();
-  const [searchQuery, setSearchQuery] = useState("");
+  const {user: currentUser} = useAuthStore();
+  const [searchQuery, setSearchQuery] = useState('');
 
-  const { data: companies = [], isLoading, error } = useSuperAdminCompanies();
+  const {data: companies = [], isLoading, error} = useSuperAdminCompanies();
 
   // Check if current user is super admin
-  if (currentUser?.role !== "super_admin") {
+  if (currentUser?.role !== 'super_admin') {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-foreground mb-4">
-            Access Denied
-          </h1>
+          <h1 className="text-2xl font-bold text-foreground mb-4">Access Denied</h1>
           <p className="text-muted-foreground mb-4">
             You don't have permission to access this page.
           </p>
-          <Button onClick={() => router.push("/dashboard")}>
-            Return to Dashboard
-          </Button>
+          <Button onClick={() => router.push('/dashboard')}>Return to Dashboard</Button>
         </div>
       </div>
     );
@@ -61,7 +54,7 @@ export default function SuperAdminCompaniesPage() {
       projects: acc.projects + company.stats.projects.total,
       tickets: acc.tickets + company.stats.tickets.total,
     }),
-    { users: 0, activeUsers: 0, projects: 0, tickets: 0 },
+    {users: 0, activeUsers: 0, projects: 0, tickets: 0},
   );
 
   if (isLoading) {
@@ -79,12 +72,8 @@ export default function SuperAdminCompaniesPage() {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-red-600 mb-4">
-            Error Loading Companies
-          </h1>
-          <p className="text-muted-foreground">
-            Failed to load company data. Please try again.
-          </p>
+          <h1 className="text-2xl font-bold text-red-600 mb-4">Error Loading Companies</h1>
+          <p className="text-muted-foreground">Failed to load company data. Please try again.</p>
         </div>
       </div>
     );
@@ -104,9 +93,7 @@ export default function SuperAdminCompaniesPage() {
                 Overview and management of all companies in the system
               </p>
             </div>
-            <div className="text-sm text-muted-foreground">
-              Total Companies: {companies.length}
-            </div>
+            <div className="text-sm text-muted-foreground">Total Companies: {companies.length}</div>
           </div>
         </div>
 
@@ -118,12 +105,8 @@ export default function SuperAdminCompaniesPage() {
                 <Building2 className="h-6 w-6 text-blue-600 dark:text-blue-400" />
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-muted-foreground">
-                  Total Companies
-                </p>
-                <p className="text-2xl font-bold text-foreground">
-                  {companies.length}
-                </p>
+                <p className="text-sm font-medium text-muted-foreground">Total Companies</p>
+                <p className="text-2xl font-bold text-foreground">{companies.length}</p>
               </div>
             </div>
           </div>
@@ -134,15 +117,9 @@ export default function SuperAdminCompaniesPage() {
                 <Users className="h-6 w-6 text-green-600 dark:text-green-400" />
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-muted-foreground">
-                  Total Users
-                </p>
-                <p className="text-2xl font-bold text-foreground">
-                  {totalStats.users}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  {totalStats.activeUsers} active
-                </p>
+                <p className="text-sm font-medium text-muted-foreground">Total Users</p>
+                <p className="text-2xl font-bold text-foreground">{totalStats.users}</p>
+                <p className="text-xs text-muted-foreground">{totalStats.activeUsers} active</p>
               </div>
             </div>
           </div>
@@ -153,12 +130,8 @@ export default function SuperAdminCompaniesPage() {
                 <FolderOpen className="h-6 w-6 text-purple-600 dark:text-purple-400" />
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-muted-foreground">
-                  Total Projects
-                </p>
-                <p className="text-2xl font-bold text-foreground">
-                  {totalStats.projects}
-                </p>
+                <p className="text-sm font-medium text-muted-foreground">Total Projects</p>
+                <p className="text-2xl font-bold text-foreground">{totalStats.projects}</p>
               </div>
             </div>
           </div>
@@ -169,12 +142,8 @@ export default function SuperAdminCompaniesPage() {
                 <Ticket className="h-6 w-6 text-orange-600 dark:text-orange-400" />
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-muted-foreground">
-                  Total Tickets
-                </p>
-                <p className="text-2xl font-bold text-foreground">
-                  {totalStats.tickets}
-                </p>
+                <p className="text-sm font-medium text-muted-foreground">Total Tickets</p>
+                <p className="text-2xl font-bold text-foreground">{totalStats.tickets}</p>
               </div>
             </div>
           </div>
@@ -199,26 +168,18 @@ export default function SuperAdminCompaniesPage() {
           {filteredCompanies.map((company) => (
             <div
               key={company.id}
-              className="bg-card rounded-lg shadow hover:shadow-lg transition-shadow"
-            >
+              className="bg-card rounded-lg shadow hover:shadow-lg transition-shadow">
               {/* Company Header */}
               <div className="p-6 border-b border-border">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h3 className="text-lg font-semibold text-foreground">
-                      {company.name}
-                    </h3>
-                    <p className="text-sm text-muted-foreground">
-                      /{company.slug}
-                    </p>
+                    <h3 className="text-lg font-semibold text-foreground">{company.name}</h3>
+                    <p className="text-sm text-muted-foreground">/{company.slug}</p>
                   </div>
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() =>
-                      router.push(`/admin/companies/${company.id}`)
-                    }
-                  >
+                    onClick={() => router.push(`/admin/companies/${company.id}`)}>
                     <ExternalLink className="h-4 w-4" />
                   </Button>
                 </div>
@@ -231,9 +192,7 @@ export default function SuperAdminCompaniesPage() {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center">
                       <Users className="h-4 w-4 text-muted-foreground mr-2" />
-                      <span className="text-sm text-muted-foreground">
-                        Users
-                      </span>
+                      <span className="text-sm text-muted-foreground">Users</span>
                     </div>
                     <div className="text-right">
                       <span className="text-sm font-medium text-foreground">
@@ -249,9 +208,7 @@ export default function SuperAdminCompaniesPage() {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center">
                       <FolderOpen className="h-4 w-4 text-muted-foreground mr-2" />
-                      <span className="text-sm text-muted-foreground">
-                        Projects
-                      </span>
+                      <span className="text-sm text-muted-foreground">Projects</span>
                     </div>
                     <div className="text-right">
                       <span className="text-sm font-medium text-foreground">
@@ -267,9 +224,7 @@ export default function SuperAdminCompaniesPage() {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center">
                       <Ticket className="h-4 w-4 text-muted-foreground mr-2" />
-                      <span className="text-sm text-muted-foreground">
-                        Tickets
-                      </span>
+                      <span className="text-sm text-muted-foreground">Tickets</span>
                     </div>
                     <div className="text-right">
                       <span className="text-sm font-medium text-foreground">
@@ -285,9 +240,7 @@ export default function SuperAdminCompaniesPage() {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center">
                       <BarChart3 className="h-4 w-4 text-muted-foreground mr-2" />
-                      <span className="text-sm text-muted-foreground">
-                        Admins
-                      </span>
+                      <span className="text-sm text-muted-foreground">Admins</span>
                     </div>
                     <span className="text-sm font-medium text-foreground">
                       {company.stats.users.admins}
@@ -310,9 +263,7 @@ export default function SuperAdminCompaniesPage() {
         {filteredCompanies.length === 0 && (
           <div className="text-center py-12">
             <Building2 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <p className="text-muted-foreground">
-              No companies found matching your search.
-            </p>
+            <p className="text-muted-foreground">No companies found matching your search.</p>
           </div>
         )}
       </div>

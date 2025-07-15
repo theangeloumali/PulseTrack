@@ -1,5 +1,5 @@
-import type { SupabaseClient } from "@supabase/supabase-js";
-import { supabase } from "@/lib/db";
+import type {SupabaseClient} from '@supabase/supabase-js';
+import {supabase} from '@/lib/db';
 import type {
   NewBillingPeriod,
   NewBillingRate,
@@ -8,11 +8,8 @@ import type {
   PaymentStatus,
   BillingFrequency,
   NewPaymentHistory,
-} from "@/lib/db/schema";
-import {
-  getTimeEntriesForBilling,
-  getTimeEntriesForBillingByUser,
-} from "./service";
+} from '@/lib/db/schema';
+import {getTimeEntriesForBilling, getTimeEntriesForBillingByUser} from './service';
 import {
   format,
   startOfWeek,
@@ -22,16 +19,13 @@ import {
   addDays,
   addWeeks,
   addMonths,
-} from "date-fns";
+} from 'date-fns';
 
 // Helper function to calculate billing for a single time entry
-export async function calculateTimeEntryBilling(
-  timeEntryId: string,
-  companyId: string,
-) {
+export async function calculateTimeEntryBilling(timeEntryId: string, companyId: string) {
   // Get the time entry with ticket and user information
-  const { data: timeEntry, error: entryError } = await supabase
-    .from("time_entries")
+  const {data: timeEntry, error: entryError} = await supabase
+    .from('time_entries')
     .select(
       `
             id,
@@ -52,7 +46,7 @@ export async function calculateTimeEntryBilling(
             )
         `,
     )
-    .eq("id", timeEntryId)
+    .eq('id', timeEntryId)
     .single();
 
   if (entryError || !timeEntry) {
@@ -69,29 +63,20 @@ export async function calculateTimeEntryBilling(
 
   // Determine applicable rate using same logic as billing report
   let applicableRate = 0;
-  const ticket = Array.isArray(timeEntry.tickets)
-    ? timeEntry.tickets[0]
-    : timeEntry.tickets;
+  const ticket = Array.isArray(timeEntry.tickets) ? timeEntry.tickets[0] : timeEntry.tickets;
   const projectId = ticket?.project_id;
   const userId = timeEntry.user_id;
-  const user = Array.isArray(timeEntry.users)
-    ? timeEntry.users[0]
-    : timeEntry.users;
+  const user = Array.isArray(timeEntry.users) ? timeEntry.users[0] : timeEntry.users;
 
   // Filter rates by effective_from and effective_to dates
   const relevantRates = billingRates.filter(
     (rate) =>
       new Date(timeEntry.start_time) >= new Date(rate.effective_from) &&
-      (!rate.effective_to ||
-        new Date(timeEntry.start_time) <= new Date(rate.effective_to)),
+      (!rate.effective_to || new Date(timeEntry.start_time) <= new Date(rate.effective_to)),
   );
 
-  const projectRate = relevantRates.find(
-    (rate) => rate.project_id === projectId && !rate.user_id,
-  );
-  const userRate = relevantRates.find(
-    (rate) => rate.user_id === userId && !rate.project_id,
-  );
+  const projectRate = relevantRates.find((rate) => rate.project_id === projectId && !rate.user_id);
+  const userRate = relevantRates.find((rate) => rate.user_id === userId && !rate.project_id);
 
   if (projectRate) {
     applicableRate = parseFloat(projectRate.hourly_rate);
@@ -115,10 +100,7 @@ export async function calculateTimeEntryBilling(
 }
 
 // Function to create or update billing record for a time entry
-export async function createOrUpdateTimeEntryBilling(
-  timeEntryId: string,
-  companyId: string,
-) {
+export async function createOrUpdateTimeEntryBilling(timeEntryId: string, companyId: string) {
   try {
     // Calculate billing data
     const billingData = await calculateTimeEntryBilling(timeEntryId, companyId);
@@ -128,22 +110,22 @@ export async function createOrUpdateTimeEntryBilling(
     }
 
     // Check if billing record already exists
-    const { data: existingBilling } = await supabase
-      .from("time_entry_billing")
-      .select("id")
-      .eq("time_entry_id", timeEntryId)
+    const {data: existingBilling} = await supabase
+      .from('time_entry_billing')
+      .select('id')
+      .eq('time_entry_id', timeEntryId)
       .single();
 
     if (existingBilling) {
       // Update existing billing record
-      const { data, error } = await supabase
-        .from("time_entry_billing")
+      const {data, error} = await supabase
+        .from('time_entry_billing')
         .update({
           hourly_rate: billingData.hourly_rate,
           billable_amount: billingData.billable_amount,
           is_billable: billingData.is_billable,
         })
-        .eq("time_entry_id", timeEntryId)
+        .eq('time_entry_id', timeEntryId)
         .select()
         .single();
 
@@ -151,8 +133,8 @@ export async function createOrUpdateTimeEntryBilling(
       return data;
     } else {
       // Create new billing record
-      const { data, error } = await supabase
-        .from("time_entry_billing")
+      const {data, error} = await supabase
+        .from('time_entry_billing')
         .insert(billingData)
         .select()
         .single();
@@ -161,87 +143,75 @@ export async function createOrUpdateTimeEntryBilling(
       return data;
     }
   } catch (error) {
-    console.error("Error creating/updating time entry billing:", error);
+    console.error('Error creating/updating time entry billing:', error);
     throw error;
   }
 }
 
 // Billing Period operations
 export async function getBillingPeriodById(id: string) {
-  const { data, error } = await supabase
-    .from("billing_periods")
-    .select("*")
-    .eq("id", id)
-    .single();
-  if (error && error.code !== "PGRST116") throw error;
+  const {data, error} = await supabase.from('billing_periods').select('*').eq('id', id).single();
+  if (error && error.code !== 'PGRST116') throw error;
   return data;
 }
 
-export async function getBillingPeriodsByCompany(
-  companyId: string,
-  filterUserId?: string,
-) {
+export async function getBillingPeriodsByCompany(companyId: string, filterUserId?: string) {
   // If filterUserId is provided, filter to user-specific billing periods
   if (filterUserId) {
     // Use multiple queries and combine results for more reliable filtering
 
     // Query 1: Get periods created by this user
-    const { data: createdByUser, error: createdByError } = await supabase
-      .from("billing_periods")
-      .select("*")
-      .eq("company_id", companyId)
-      .eq("created_by", filterUserId)
-      .order("start_date", { ascending: false });
+    const {data: createdByUser, error: createdByError} = await supabase
+      .from('billing_periods')
+      .select('*')
+      .eq('company_id', companyId)
+      .eq('created_by', filterUserId)
+      .order('start_date', {ascending: false});
 
     if (createdByError) {
-      console.error("Error fetching periods created by user:", createdByError);
+      console.error('Error fetching periods created by user:', createdByError);
     }
 
     // Query 2: Get periods with user in notes (admin-created for user)
-    const { data: notesContainUser, error: notesError } = await supabase
-      .from("billing_periods")
-      .select("*")
-      .eq("company_id", companyId)
-      .ilike("notes", `%${filterUserId}%`)
-      .order("start_date", { ascending: false });
+    const {data: notesContainUser, error: notesError} = await supabase
+      .from('billing_periods')
+      .select('*')
+      .eq('company_id', companyId)
+      .ilike('notes', `%${filterUserId}%`)
+      .order('start_date', {ascending: false});
 
     if (notesError) {
-      console.error("Error fetching periods with user in notes:", notesError);
+      console.error('Error fetching periods with user in notes:', notesError);
     }
 
     // Combine and deduplicate results
     const allPeriods = [...(createdByUser || []), ...(notesContainUser || [])];
     const uniquePeriods = allPeriods.filter(
-      (period, index, self) =>
-        index === self.findIndex((p) => p.id === period.id),
+      (period, index, self) => index === self.findIndex((p) => p.id === period.id),
     );
 
     // Sort by start_date descending
     uniquePeriods.sort(
-      (a, b) =>
-        new Date(b.start_date).getTime() - new Date(a.start_date).getTime(),
+      (a, b) => new Date(b.start_date).getTime() - new Date(a.start_date).getTime(),
     );
 
     return uniquePeriods;
   } else {
     // Admin: get all periods for the company
-    const { data, error } = await supabase
-      .from("billing_periods")
-      .select("*")
-      .eq("company_id", companyId)
-      .order("start_date", { ascending: false });
+    const {data, error} = await supabase
+      .from('billing_periods')
+      .select('*')
+      .eq('company_id', companyId)
+      .order('start_date', {ascending: false});
 
     if (error) throw error;
     return data || [];
   }
 }
 
-export async function createBillingPeriod(
-  supabase: SupabaseClient,
-  data: NewBillingPeriod,
-) {
-  const { data: result, error } = await supabase
-    .from("billing_periods")
+export async function createBillingPeriod(supabase: SupabaseClient, data: NewBillingPeriod) {
+  const {data: result, error} = await supabase
+    .from('billing_periods')
     .insert(data)
     .select()
     .single();
@@ -254,69 +224,66 @@ export async function updateBillingPeriod(
   id: string,
   updates: Partial<NewBillingPeriod>,
 ) {
-  const { data, error } = await supabase
-    .from("billing_periods")
+  const {data, error} = await supabase
+    .from('billing_periods')
     .update(updates)
-    .eq("id", id)
+    .eq('id', id)
     .select()
     .single();
   if (error) throw error;
   return data;
 }
 
-export async function deleteBillingPeriod(
-  supabase: SupabaseClient,
-  billingPeriodId: string,
-) {
+export async function deleteBillingPeriod(supabase: SupabaseClient, billingPeriodId: string) {
   // Get the current authenticated user
   const {
-    data: { user: authUser },
+    data: {user: authUser},
     error: authError,
   } = await supabase.auth.getUser();
   if (authError || !authUser) {
-    throw new Error("Authentication required to delete billing periods");
+    throw new Error('Authentication required to delete billing periods');
   }
 
   // Get user profile with role information
-  const { data: currentUser, error: userError } = await supabase
-    .from("users")
-    .select("id, role, company_id")
-    .eq("id", authUser.id)
+  const {data: currentUser, error: userError} = await supabase
+    .from('users')
+    .select('id, role, company_id')
+    .eq('id', authUser.id)
     .single();
 
   if (userError || !currentUser) {
-    throw new Error("User profile not found");
+    throw new Error('User profile not found');
   }
 
   // First check if billing period exists and get its details
-  const { data: billingPeriod, error: fetchError } = await supabase
-    .from("billing_periods")
-    .select("id, name, payment_status, company_id")
-    .eq("id", billingPeriodId)
+  const {data: billingPeriod, error: fetchError} = await supabase
+    .from('billing_periods')
+    .select('id, name, payment_status, company_id')
+    .eq('id', billingPeriodId)
     .single();
 
   if (fetchError) {
-    throw new Error("Billing period not found");
+    throw new Error('Billing period not found');
   }
 
   // Verify user has access to this billing period (company match unless super admin)
-  const isSuperAdmin = currentUser.role === "super_admin";
+  const isSuperAdmin = currentUser.role === 'super_admin';
   if (!isSuperAdmin && billingPeriod.company_id !== currentUser.company_id) {
-    throw new Error("You can only delete billing periods from your company");
+    throw new Error('You can only delete billing periods from your company');
   }
 
   // Check if it's safe to delete (not paid unless super admin)
-  if (billingPeriod.payment_status === "paid" && !isSuperAdmin) {
+  if (billingPeriod.payment_status === 'paid' && !isSuperAdmin) {
     throw new Error(
-      "Cannot delete a billing period that has been paid. Only super administrators can override this protection.",
+      'Cannot delete a billing period that has been paid. Only super administrators can override this protection.',
     );
   }
 
   // Delete the billing period (cascade will handle payment_history deletion)
-  const { error: deleteError } = await supabase
-    .from("billing_periods")
+  const {error: deleteError} = await supabase
+    .from('billing_periods')
     .delete()
-    .eq("id", billingPeriodId);
+    .eq('id', billingPeriodId);
 
   if (deleteError) {
     throw new Error(`Failed to delete billing period: ${deleteError.message}`);
@@ -328,49 +295,38 @@ export async function deleteBillingPeriod(
     deletedPeriod: billingPeriod,
     deletedByUserId: currentUser.id,
     deletedByRole: currentUser.role,
-    wasPaidPeriod: billingPeriod.payment_status === "paid",
+    wasPaidPeriod: billingPeriod.payment_status === 'paid',
   };
 }
 
 // Billing Rate operations
 export async function getBillingRateById(id: string) {
-  const { data, error } = await supabase
-    .from("billing_rates")
-    .select("*")
-    .eq("id", id)
-    .single();
-  if (error && error.code !== "PGRST116") throw error;
+  const {data, error} = await supabase.from('billing_rates').select('*').eq('id', id).single();
+  if (error && error.code !== 'PGRST116') throw error;
   return data;
 }
 
 export async function getBillingRatesByCompany(companyId: string) {
-  const { data, error } = await supabase
-    .from("billing_rates")
-    .select("*")
-    .eq("company_id", companyId)
-    .order("effective_from", { ascending: false });
+  const {data, error} = await supabase
+    .from('billing_rates')
+    .select('*')
+    .eq('company_id', companyId)
+    .order('effective_from', {ascending: false});
   if (error) throw error;
   return data || [];
 }
 
 export async function createBillingRate(data: NewBillingRate) {
-  const { data: result, error } = await supabase
-    .from("billing_rates")
-    .insert(data)
-    .select()
-    .single();
+  const {data: result, error} = await supabase.from('billing_rates').insert(data).select().single();
   if (error) throw error;
   return result;
 }
 
-export async function updateBillingRate(
-  id: string,
-  updates: Partial<NewBillingRate>,
-) {
-  const { data, error } = await supabase
-    .from("billing_rates")
+export async function updateBillingRate(id: string, updates: Partial<NewBillingRate>) {
+  const {data, error} = await supabase
+    .from('billing_rates')
     .update(updates)
-    .eq("id", id)
+    .eq('id', id)
     .select()
     .single();
   if (error) throw error;
@@ -378,24 +334,22 @@ export async function updateBillingRate(
 }
 
 export async function deleteBillingRate(id: string) {
-  const { error } = await supabase.from("billing_rates").delete().eq("id", id);
+  const {error} = await supabase.from('billing_rates').delete().eq('id', id);
   if (error) throw error;
 }
 
 // Company Billing Settings operations
 export async function getCompanyBillingSettings(companyId: string) {
-  const { data, error } = await supabase
-    .from("company_billing_settings")
-    .select("*, currency")
-    .eq("company_id", companyId)
+  const {data, error} = await supabase
+    .from('company_billing_settings')
+    .select('*, currency')
+    .eq('company_id', companyId)
     .maybeSingle();
   if (error) throw error;
   return data;
 }
 
-export async function createCompanyBillingSettings(
-  data: NewCompanyBillingSettings,
-) {
+export async function createCompanyBillingSettings(data: NewCompanyBillingSettings) {
   // Filter out undefined values
   const filteredData: Record<string, any> = {};
   Object.entries(data).forEach(([key, value]) => {
@@ -404,8 +358,8 @@ export async function createCompanyBillingSettings(
     }
   });
 
-  const { data: result, error } = await supabase
-    .from("company_billing_settings")
+  const {data: result, error} = await supabase
+    .from('company_billing_settings')
     .insert(filteredData)
     .select()
     .maybeSingle();
@@ -420,15 +374,15 @@ export async function updateCompanyBillingSettings(
   // Filter out undefined values and company_id from updates
   const filteredUpdates: Record<string, any> = {};
   Object.entries(updates).forEach(([key, value]) => {
-    if (value !== undefined && key !== "company_id") {
+    if (value !== undefined && key !== 'company_id') {
       filteredUpdates[key] = value;
     }
   });
 
-  const { data, error } = await supabase
-    .from("company_billing_settings")
+  const {data, error} = await supabase
+    .from('company_billing_settings')
     .update(filteredUpdates)
-    .eq("company_id", companyId)
+    .eq('company_id', companyId)
     .select()
     .maybeSingle();
   if (error) throw error;
@@ -437,8 +391,8 @@ export async function updateCompanyBillingSettings(
 
 // Time Entry Billing operations
 export async function createTimeEntryBilling(data: NewTimeEntryBilling) {
-  const { data: result, error } = await supabase
-    .from("time_entry_billing")
+  const {data: result, error} = await supabase
+    .from('time_entry_billing')
     .insert(data)
     .select()
     .single();
@@ -460,15 +414,15 @@ export async function updateBillingPeriodPaymentStatus(
     notes?: string;
   },
 ) {
-  const updateData: any = { payment_status: paymentStatus };
+  const updateData: any = {payment_status: paymentStatus};
 
   // Add payment received date when status is set to paid
-  if (paymentStatus === "paid") {
+  if (paymentStatus === 'paid') {
     updateData.payment_received_date = new Date().toISOString();
   }
 
   // Add invoice sent date when status is set to sent
-  if (paymentStatus === "sent" && !additionalData?.invoice_sent_date) {
+  if (paymentStatus === 'sent' && !additionalData?.invoice_sent_date) {
     updateData.invoice_sent_date = new Date().toISOString();
   }
 
@@ -477,10 +431,10 @@ export async function updateBillingPeriodPaymentStatus(
     Object.assign(updateData, additionalData);
   }
 
-  const { data, error } = await supabase
-    .from("billing_periods")
+  const {data, error} = await supabase
+    .from('billing_periods')
     .update(updateData)
-    .eq("id", billingPeriodId)
+    .eq('id', billingPeriodId)
     .select()
     .single();
 
@@ -488,20 +442,17 @@ export async function updateBillingPeriodPaymentStatus(
   return data;
 }
 
-export async function getOutstandingPayments(
-  companyId: string,
-  filterUserId?: string,
-) {
+export async function getOutstandingPayments(companyId: string, filterUserId?: string) {
   let query = supabase
-    .from("billing_periods")
+    .from('billing_periods')
     .select(
       `
             *,
             users!billing_periods_created_by_fkey(first_name, last_name, email)
         `,
     )
-    .eq("company_id", companyId)
-    .in("payment_status", ["pending", "sent", "overdue"]);
+    .eq('company_id', companyId)
+    .in('payment_status', ['pending', 'sent', 'overdue']);
 
   // If filterUserId is provided, filter to user-specific billing periods
   if (filterUserId) {
@@ -510,7 +461,7 @@ export async function getOutstandingPayments(
     );
   }
 
-  const { data, error } = await query.order("payment_due_date", {
+  const {data, error} = await query.order('payment_due_date', {
     ascending: true,
     nullsLast: true,
   });
@@ -519,20 +470,17 @@ export async function getOutstandingPayments(
   return data || [];
 }
 
-export async function getOverduePayments(
-  companyId: string,
-  filterUserId?: string,
-) {
+export async function getOverduePayments(companyId: string, filterUserId?: string) {
   let query = supabase
-    .from("billing_periods")
+    .from('billing_periods')
     .select(
       `
             *,
             users!billing_periods_created_by_fkey(first_name, last_name, email)
         `,
     )
-    .eq("company_id", companyId)
-    .eq("payment_status", "overdue");
+    .eq('company_id', companyId)
+    .eq('payment_status', 'overdue');
 
   // If filterUserId is provided, filter to user-specific billing periods
   if (filterUserId) {
@@ -541,7 +489,7 @@ export async function getOverduePayments(
     );
   }
 
-  const { data, error } = await query.order("payment_due_date", {
+  const {data, error} = await query.order('payment_due_date', {
     ascending: true,
   });
 
@@ -550,24 +498,24 @@ export async function getOverduePayments(
 }
 
 export async function getPaymentHistory(billingPeriodId: string) {
-  const { data, error } = await supabase
-    .from("payment_history")
+  const {data, error} = await supabase
+    .from('payment_history')
     .select(
       `
             *,
             users(first_name, last_name, email)
         `,
     )
-    .eq("billing_period_id", billingPeriodId)
-    .order("created_at", { ascending: false });
+    .eq('billing_period_id', billingPeriodId)
+    .order('created_at', {ascending: false});
 
   if (error) throw error;
   return data || [];
 }
 
 export async function createPaymentHistoryEntry(data: NewPaymentHistory) {
-  const { data: result, error } = await supabase
-    .from("payment_history")
+  const {data: result, error} = await supabase
+    .from('payment_history')
     .insert(data)
     .select()
     .single();
@@ -591,29 +539,29 @@ export async function generateBillingPeriodForCycle(
   let name: string;
 
   switch (frequency) {
-    case "weekly":
-      start = startOfWeek(baseDate, { weekStartsOn: 0 }); // Sunday start
-      end = endOfWeek(baseDate, { weekStartsOn: 0 }); // Saturday end
-      name = `Week of ${format(start, "MMM dd, yyyy")}`;
+    case 'weekly':
+      start = startOfWeek(baseDate, {weekStartsOn: 0}); // Sunday start
+      end = endOfWeek(baseDate, {weekStartsOn: 0}); // Saturday end
+      name = `Week of ${format(start, 'MMM dd, yyyy')}`;
       break;
 
-    case "bi_monthly":
+    case 'bi_monthly':
       const day = baseDate.getDate();
       if (day <= 15) {
         start = startOfMonth(baseDate);
         end = new Date(baseDate.getFullYear(), baseDate.getMonth(), 15);
-        name = `${format(start, "MMM yyyy")} (1st Half)`;
+        name = `${format(start, 'MMM yyyy')} (1st Half)`;
       } else {
         start = new Date(baseDate.getFullYear(), baseDate.getMonth(), 16);
         end = endOfMonth(baseDate);
-        name = `${format(start, "MMM yyyy")} (2nd Half)`;
+        name = `${format(start, 'MMM yyyy')} (2nd Half)`;
       }
       break;
 
-    case "monthly":
+    case 'monthly':
       start = startOfMonth(baseDate);
       end = endOfMonth(baseDate);
-      name = format(start, "MMM yyyy");
+      name = format(start, 'MMM yyyy');
       break;
 
     default:
@@ -626,8 +574,8 @@ export async function generateBillingPeriodForCycle(
     start_date: start.toISOString(),
     end_date: end.toISOString(),
     frequency,
-    status: "active",
-    payment_status: "pending",
+    status: 'active',
+    payment_status: 'pending',
     created_by: userId || null, // Set to provided userId or null if not provided
   };
 
@@ -638,30 +586,23 @@ export async function generateBillingPeriodForCycle(
   try {
     const totalAmount = await calculateBillingPeriodAmount(
       companyId,
-      start.toISOString().split("T")[0], // Format as YYYY-MM-DD
-      end.toISOString().split("T")[0], // Format as YYYY-MM-DD
+      start.toISOString().split('T')[0], // Format as YYYY-MM-DD
+      end.toISOString().split('T')[0], // Format as YYYY-MM-DD
       undefined, // No user filter for company-wide periods
     );
 
     if (totalAmount > 0) {
       // Update the billing period with the calculated amount
-      const updatedPeriod = await updateBillingPeriod(
-        supabase,
-        createdPeriod.id,
-        {
-          payment_amount: totalAmount,
-        },
-      );
+      const updatedPeriod = await updateBillingPeriod(supabase, createdPeriod.id, {
+        payment_amount: totalAmount,
+      });
       console.log(
         `✅ Updated billing period ${createdPeriod.id} with payment amount: $${totalAmount}`,
       );
       return updatedPeriod;
     }
   } catch (error) {
-    console.error(
-      "❌ Failed to calculate payment amount for billing period:",
-      error,
-    );
+    console.error('❌ Failed to calculate payment amount for billing period:', error);
     // Continue without failing - the period is created but without payment amount
   }
 
@@ -677,21 +618,21 @@ export async function generateNextBillingPeriod(
   // Get the current period to determine frequency and dates
   const currentPeriod = await getBillingPeriodById(currentPeriodId);
   if (!currentPeriod) {
-    throw new Error("Current billing period not found");
+    throw new Error('Current billing period not found');
   }
 
   const currentEnd = new Date(currentPeriod.end_date);
   let nextStart: Date;
 
   switch (currentPeriod.frequency) {
-    case "weekly":
+    case 'weekly':
       nextStart = addWeeks(currentEnd, 1);
       break;
-    case "bi_monthly":
+    case 'bi_monthly':
       // For bi-monthly, the next period starts the day after current ends
       nextStart = addDays(currentEnd, 1);
       break;
-    case "monthly":
+    case 'monthly':
       nextStart = addMonths(startOfMonth(currentEnd), 1);
       break;
     default:
@@ -716,15 +657,15 @@ export async function generateBillingPeriodForUser(
   createdByUserId?: string,
 ) {
   // Validate that target user exists and belongs to the company
-  const { data: targetUser, error: userError } = await supabase
-    .from("users")
-    .select("id, company_id, first_name, last_name")
-    .eq("id", targetUserId)
-    .eq("company_id", companyId)
+  const {data: targetUser, error: userError} = await supabase
+    .from('users')
+    .select('id, company_id, first_name, last_name')
+    .eq('id', targetUserId)
+    .eq('company_id', companyId)
     .single();
 
   if (userError || !targetUser) {
-    throw new Error("Target user not found or does not belong to the company");
+    throw new Error('Target user not found or does not belong to the company');
   }
 
   const baseDate = startDate || new Date();
@@ -733,29 +674,29 @@ export async function generateBillingPeriodForUser(
   let name: string;
 
   switch (frequency) {
-    case "weekly":
-      start = startOfWeek(baseDate, { weekStartsOn: 0 }); // Sunday start
-      end = endOfWeek(baseDate, { weekStartsOn: 0 }); // Saturday end
-      name = `${targetUser.first_name} ${targetUser.last_name} - Week of ${format(start, "MMM dd, yyyy")}`;
+    case 'weekly':
+      start = startOfWeek(baseDate, {weekStartsOn: 0}); // Sunday start
+      end = endOfWeek(baseDate, {weekStartsOn: 0}); // Saturday end
+      name = `${targetUser.first_name} ${targetUser.last_name} - Week of ${format(start, 'MMM dd, yyyy')}`;
       break;
 
-    case "bi_monthly":
+    case 'bi_monthly':
       const day = baseDate.getDate();
       if (day <= 15) {
         start = startOfMonth(baseDate);
         end = new Date(baseDate.getFullYear(), baseDate.getMonth(), 15);
-        name = `${targetUser.first_name} ${targetUser.last_name} - ${format(start, "MMM yyyy")} (1st Half)`;
+        name = `${targetUser.first_name} ${targetUser.last_name} - ${format(start, 'MMM yyyy')} (1st Half)`;
       } else {
         start = new Date(baseDate.getFullYear(), baseDate.getMonth(), 16);
         end = endOfMonth(baseDate);
-        name = `${targetUser.first_name} ${targetUser.last_name} - ${format(start, "MMM yyyy")} (2nd Half)`;
+        name = `${targetUser.first_name} ${targetUser.last_name} - ${format(start, 'MMM yyyy')} (2nd Half)`;
       }
       break;
 
-    case "monthly":
+    case 'monthly':
       start = startOfMonth(baseDate);
       end = endOfMonth(baseDate);
-      name = `${targetUser.first_name} ${targetUser.last_name} - ${format(start, "MMM yyyy")}`;
+      name = `${targetUser.first_name} ${targetUser.last_name} - ${format(start, 'MMM yyyy')}`;
       break;
 
     default:
@@ -768,8 +709,8 @@ export async function generateBillingPeriodForUser(
     start_date: start.toISOString(),
     end_date: end.toISOString(),
     frequency,
-    status: "active",
-    payment_status: "pending",
+    status: 'active',
+    payment_status: 'pending',
     created_by: createdByUserId || null,
     // Add user-specific note to track this is for a specific user
     notes: `Generated for user: ${targetUser.first_name} ${targetUser.last_name} (${targetUser.id})`,
@@ -782,30 +723,23 @@ export async function generateBillingPeriodForUser(
   try {
     const totalAmount = await calculateBillingPeriodAmount(
       companyId,
-      start.toISOString().split("T")[0], // Format as YYYY-MM-DD
-      end.toISOString().split("T")[0], // Format as YYYY-MM-DD
+      start.toISOString().split('T')[0], // Format as YYYY-MM-DD
+      end.toISOString().split('T')[0], // Format as YYYY-MM-DD
       targetUserId, // Filter for specific user
     );
 
     if (totalAmount > 0) {
       // Update the billing period with the calculated amount
-      const updatedPeriod = await updateBillingPeriod(
-        supabase,
-        createdPeriod.id,
-        {
-          payment_amount: totalAmount,
-        },
-      );
+      const updatedPeriod = await updateBillingPeriod(supabase, createdPeriod.id, {
+        payment_amount: totalAmount,
+      });
       console.log(
         `✅ Updated user billing period ${createdPeriod.id} with payment amount: $${totalAmount}`,
       );
       return updatedPeriod;
     }
   } catch (error) {
-    console.error(
-      "❌ Failed to calculate payment amount for user billing period:",
-      error,
-    );
+    console.error('❌ Failed to calculate payment amount for user billing period:', error);
     // Continue without failing - the period is created but without payment amount
   }
 
@@ -820,11 +754,11 @@ export async function getBillingCycleStats(
   const targetYear = year || new Date().getFullYear();
 
   let query = supabase
-    .from("billing_periods")
-    .select("*")
-    .eq("company_id", companyId)
-    .gte("start_date", `${targetYear}-01-01`)
-    .lt("start_date", `${targetYear + 1}-01-01`);
+    .from('billing_periods')
+    .select('*')
+    .eq('company_id', companyId)
+    .gte('start_date', `${targetYear}-01-01`)
+    .lt('start_date', `${targetYear + 1}-01-01`);
 
   // If filterUserId is provided, filter to user-specific billing periods
   if (filterUserId) {
@@ -833,24 +767,24 @@ export async function getBillingCycleStats(
     );
   }
 
-  const { data, error } = await query;
+  const {data, error} = await query;
 
   if (error) throw error;
 
   const periods = data || [];
   const stats = {
     total: periods.length,
-    pending: periods.filter((p) => p.payment_status === "pending").length,
-    sent: periods.filter((p) => p.payment_status === "sent").length,
-    paid: periods.filter((p) => p.payment_status === "paid").length,
-    overdue: periods.filter((p) => p.payment_status === "overdue").length,
-    cancelled: periods.filter((p) => p.payment_status === "cancelled").length,
+    pending: periods.filter((p) => p.payment_status === 'pending').length,
+    sent: periods.filter((p) => p.payment_status === 'sent').length,
+    paid: periods.filter((p) => p.payment_status === 'paid').length,
+    overdue: periods.filter((p) => p.payment_status === 'overdue').length,
+    cancelled: periods.filter((p) => p.payment_status === 'cancelled').length,
     totalPaid: periods
-      .filter((p) => p.payment_status === "paid")
+      .filter((p) => p.payment_status === 'paid')
       .reduce((sum, p) => sum + (p.payment_amount || 0), 0),
   };
 
-  return { periods, stats };
+  return {periods, stats};
 }
 
 export async function markInvoiceAsSent(
@@ -859,7 +793,7 @@ export async function markInvoiceAsSent(
   dueDate?: string,
 ) {
   const updateData: any = {
-    payment_status: "sent",
+    payment_status: 'sent',
     invoice_sent_date: new Date().toISOString(),
   };
 
@@ -877,7 +811,7 @@ export async function markPaymentAsReceived(
   reference?: string,
 ) {
   const updateData: any = {
-    payment_status: "paid",
+    payment_status: 'paid',
     payment_received_date: new Date().toISOString(),
   };
 
@@ -901,12 +835,7 @@ export async function generateBillingReport(
   try {
     // Fetch all required data - use user-specific function if targetUserId provided
     const timeEntries = targetUserId
-      ? await getTimeEntriesForBillingByUser(
-          companyId,
-          targetUserId,
-          startDate,
-          endDate,
-        )
+      ? await getTimeEntriesForBillingByUser(companyId, targetUserId, startDate, endDate)
       : await getTimeEntriesForBilling(companyId, startDate, endDate);
     const billingRates = await getBillingRatesByCompany(companyId);
     const companySettings = await getCompanyBillingSettings(companyId);
@@ -945,30 +874,21 @@ export async function generateBillingReport(
 
     // Add detailed logging for the first few entries to understand data structure
     if (timeEntries.length > 0) {
-      console.log(
-        "🔍 Sample time entry structure:",
-        JSON.stringify(timeEntries[0], null, 2),
-      );
+      console.log('🔍 Sample time entry structure:', JSON.stringify(timeEntries[0], null, 2));
     }
 
     timeEntries.forEach((entry, index) => {
       try {
         // Debug log for problematic entries
-        if (
-          index < 3 ||
-          (!entry.users && !entry.user) ||
-          (!entry.tickets && !entry.ticket)
-        ) {
+        if (index < 3 || (!entry.users && !entry.user) || (!entry.tickets && !entry.ticket)) {
           console.log(`🔍 Entry ${index} structure:`, {
             id: entry.id,
             hasUsers: !!entry.users,
             hasUser: !!entry.user,
             hasTickets: !!entry.tickets,
             hasTicket: !!entry.ticket,
-            ticketsStructure: entry.tickets
-              ? Object.keys(entry.tickets)
-              : "null",
-            usersStructure: entry.users ? Object.keys(entry.users) : "null",
+            ticketsStructure: entry.tickets ? Object.keys(entry.tickets) : 'null',
+            usersStructure: entry.users ? Object.keys(entry.users) : 'null',
           });
         }
 
@@ -983,28 +903,21 @@ export async function generateBillingReport(
             hasUser: !!user,
             hasTicket: !!ticket,
             hasProject: !!project,
-            ticketStructure: ticket ? Object.keys(ticket) : "null",
+            ticketStructure: ticket ? Object.keys(ticket) : 'null',
           });
           skippedEntries++;
           return;
         }
 
-        const entryDate = format(new Date(entry.start_time), "yyyy-MM-dd");
+        const entryDate = format(new Date(entry.start_time), 'yyyy-MM-dd');
         const userId = user.id;
         // Handle project data - it might be nested under ticket.projects
         const projectData = Array.isArray(project) ? project[0] : project;
         if (!projectData) {
-          console.warn(
-            `⚠️ Skipping entry ${index} due to missing project data:`,
-            {
-              entryId: entry.id,
-              projectStructure: project
-                ? Array.isArray(project)
-                  ? "array"
-                  : "object"
-                : "null",
-            },
-          );
+          console.warn(`⚠️ Skipping entry ${index} due to missing project data:`, {
+            entryId: entry.id,
+            projectStructure: project ? (Array.isArray(project) ? 'array' : 'object') : 'null',
+          });
           skippedEntries++;
           return;
         }
@@ -1014,49 +927,39 @@ export async function generateBillingReport(
         const durationHours = entry.duration || 0;
 
         if (durationHours <= 0) {
-          console.warn(
-            `⚠️ Skipping entry ${index} due to zero duration:`,
-            entry.id,
-          );
+          console.warn(`⚠️ Skipping entry ${index} due to zero duration:`, entry.id);
           skippedEntries++;
           return;
         }
 
         let applicableRate = 0;
-        let rateSource = "none";
+        let rateSource = 'none';
 
         // Determine applicable rate: Project > User > Company Default
         const entryDateTime = new Date(entry.start_time);
         const relevantRates = billingRates.filter((rate) => {
           const effectiveFrom = new Date(rate.effective_from);
-          const effectiveTo = rate.effective_to
-            ? new Date(rate.effective_to)
-            : null;
-          return (
-            entryDateTime >= effectiveFrom &&
-            (!effectiveTo || entryDateTime <= effectiveTo)
-          );
+          const effectiveTo = rate.effective_to ? new Date(rate.effective_to) : null;
+          return entryDateTime >= effectiveFrom && (!effectiveTo || entryDateTime <= effectiveTo);
         });
 
         const projectRate = relevantRates.find(
           (rate) => rate.project_id === projectId && !rate.user_id,
         );
-        const userRate = relevantRates.find(
-          (rate) => rate.user_id === userId && !rate.project_id,
-        );
+        const userRate = relevantRates.find((rate) => rate.user_id === userId && !rate.project_id);
 
         if (projectRate) {
           applicableRate = parseFloat(projectRate.hourly_rate);
-          rateSource = "project";
+          rateSource = 'project';
         } else if (userRate) {
           applicableRate = parseFloat(userRate.hourly_rate);
-          rateSource = "user";
+          rateSource = 'user';
         } else if (companySettings?.default_hourly_rate) {
           applicableRate = parseFloat(companySettings.default_hourly_rate);
-          rateSource = "company_default";
+          rateSource = 'company_default';
         } else if (user.hourly_rate) {
           applicableRate = parseFloat(user.hourly_rate);
-          rateSource = "user_fallback";
+          rateSource = 'user_fallback';
         }
 
         if (applicableRate <= 0) {
@@ -1077,8 +980,8 @@ export async function generateBillingReport(
         }
         if (!report[entryDate][userId]) {
           report[entryDate][userId] = {
-            userFirstName: user.first_name || "",
-            userLastName: user.last_name || "",
+            userFirstName: user.first_name || '',
+            userLastName: user.last_name || '',
             totalHours: 0,
             totalAmount: 0,
             projects: {},
@@ -1086,7 +989,7 @@ export async function generateBillingReport(
         }
         if (!report[entryDate][userId].projects[projectId]) {
           report[entryDate][userId].projects[projectId] = {
-            projectName: projectData.name || "Unknown Project",
+            projectName: projectData.name || 'Unknown Project',
             totalHours: 0,
             totalAmount: 0,
             tickets: [],
@@ -1096,13 +999,11 @@ export async function generateBillingReport(
         // Add to totals
         report[entryDate][userId].totalHours += durationHours;
         report[entryDate][userId].totalAmount += billableAmount;
-        report[entryDate][userId].projects[projectId].totalHours +=
-          durationHours;
-        report[entryDate][userId].projects[projectId].totalAmount +=
-          billableAmount;
+        report[entryDate][userId].projects[projectId].totalHours += durationHours;
+        report[entryDate][userId].projects[projectId].totalAmount += billableAmount;
         report[entryDate][userId].projects[projectId].tickets.push({
           ticketId,
-          ticketTitle: ticketTitle || "Untitled Ticket",
+          ticketTitle: ticketTitle || 'Untitled Ticket',
           hours: durationHours,
           amount: billableAmount,
           description: entry.description || undefined,
@@ -1124,10 +1025,8 @@ export async function generateBillingReport(
 
     return report;
   } catch (error) {
-    console.error("❌ Error generating billing report:", error);
-    throw new Error(
-      `Failed to generate billing report: ${(error as Error).message}`,
-    );
+    console.error('❌ Error generating billing report:', error);
+    throw new Error(`Failed to generate billing report: ${(error as Error).message}`);
   }
 }
 
@@ -1139,7 +1038,7 @@ export async function calculateBillingPeriodAmount(
   targetUserId?: string,
 ): Promise<number> {
   try {
-    console.log("💰 Calculating billing period amount:", {
+    console.log('💰 Calculating billing period amount:', {
       companyId,
       startDate,
       endDate,
@@ -1147,12 +1046,7 @@ export async function calculateBillingPeriodAmount(
     });
 
     // Generate billing report for the period
-    const billingReport = await generateBillingReport(
-      companyId,
-      startDate,
-      endDate,
-      targetUserId,
-    );
+    const billingReport = await generateBillingReport(companyId, startDate, endDate, targetUserId);
 
     // Calculate total amount from the report
     let totalAmount = 0;
@@ -1163,10 +1057,10 @@ export async function calculateBillingPeriodAmount(
       });
     });
 
-    console.log("💰 Calculated total amount:", totalAmount);
+    console.log('💰 Calculated total amount:', totalAmount);
     return totalAmount;
   } catch (error) {
-    console.error("❌ Error calculating billing period amount:", error);
+    console.error('❌ Error calculating billing period amount:', error);
     return 0; // Return 0 if calculation fails rather than throwing
   }
 }
@@ -1180,13 +1074,13 @@ export async function recalculateBillingPeriodAmount(
     // Get the billing period
     const billingPeriod = await getBillingPeriodById(billingPeriodId);
     if (!billingPeriod) {
-      throw new Error("Billing period not found");
+      throw new Error('Billing period not found');
     }
 
     // Extract user ID if this is a user-specific period
     const targetUserId = extractTargetUserIdFromBillingPeriod(billingPeriod);
 
-    console.log("🔄 Recalculating payment amount for billing period:", {
+    console.log('🔄 Recalculating payment amount for billing period:', {
       id: billingPeriodId,
       name: billingPeriod.name,
       targetUserId,
@@ -1196,8 +1090,8 @@ export async function recalculateBillingPeriodAmount(
     // Calculate the new amount
     const totalAmount = await calculateBillingPeriodAmount(
       billingPeriod.company_id,
-      billingPeriod.start_date.split("T")[0], // Format as YYYY-MM-DD
-      billingPeriod.end_date.split("T")[0], // Format as YYYY-MM-DD
+      billingPeriod.start_date.split('T')[0], // Format as YYYY-MM-DD
+      billingPeriod.end_date.split('T')[0], // Format as YYYY-MM-DD
       targetUserId || undefined,
     );
 
@@ -1211,15 +1105,13 @@ export async function recalculateBillingPeriodAmount(
     );
     return updatedPeriod;
   } catch (error) {
-    console.error("❌ Failed to recalculate payment amount:", error);
+    console.error('❌ Failed to recalculate payment amount:', error);
     throw error;
   }
 }
 
 // Helper function to extract target user ID from billing period notes
-export function extractTargetUserIdFromBillingPeriod(
-  billingPeriod: any,
-): string | null {
+export function extractTargetUserIdFromBillingPeriod(billingPeriod: any): string | null {
   if (!billingPeriod?.notes) {
     return null;
   }
@@ -1232,20 +1124,14 @@ export function extractTargetUserIdFromBillingPeriod(
 
 // Payment deletion functions
 
-export async function deletePaymentHistory(
-  supabase: SupabaseClient,
-  paymentHistoryId: string,
-) {
-  const { error } = await supabase
-    .from("payment_history")
-    .delete()
-    .eq("id", paymentHistoryId);
+export async function deletePaymentHistory(supabase: SupabaseClient, paymentHistoryId: string) {
+  const {error} = await supabase.from('payment_history').delete().eq('id', paymentHistoryId);
 
   if (error) {
     throw new Error(`Failed to delete payment history: ${error.message}`);
   }
 
-  return { message: "Payment history deleted successfully" };
+  return {message: 'Payment history deleted successfully'};
 }
 
 export async function resetBillingPeriodPaymentStatus(
@@ -1254,52 +1140,47 @@ export async function resetBillingPeriodPaymentStatus(
   userId: string,
 ) {
   // First, get the billing period to check current status
-  const { data: billingPeriod, error: fetchError } = await supabase
-    .from("billing_periods")
-    .select("*")
-    .eq("id", billingPeriodId)
+  const {data: billingPeriod, error: fetchError} = await supabase
+    .from('billing_periods')
+    .select('*')
+    .eq('id', billingPeriodId)
     .single();
 
   if (fetchError || !billingPeriod) {
-    throw new Error("Billing period not found");
+    throw new Error('Billing period not found');
   }
 
   // Check if we can reset the payment status (prevent resetting paid periods unless explicitly allowed)
-  if (billingPeriod.payment_status === "paid") {
+  if (billingPeriod.payment_status === 'paid') {
     // Allow reset but create a warning in payment history
     await createPaymentHistoryEntry({
       billing_period_id: billingPeriodId,
       user_id: userId,
-      action: "payment_status_reset",
-      old_value: "paid",
-      new_value: "pending",
-      notes:
-        "Payment status reset by admin - WARNING: This was previously marked as paid",
+      action: 'payment_status_reset',
+      old_value: 'paid',
+      new_value: 'pending',
+      notes: 'Payment status reset by admin - WARNING: This was previously marked as paid',
     });
   }
 
   // Reset payment status and clear payment-related fields
-  const { data, error } = await supabase
-    .from("billing_periods")
+  const {data, error} = await supabase
+    .from('billing_periods')
     .update({
-      payment_status: "pending",
+      payment_status: 'pending',
       payment_amount: null,
       payment_reference: null,
       payment_due_date: null,
       payment_received_date: null,
       invoice_sent_date: null,
-      notes: billingPeriod.notes
-        ? `${billingPeriod.notes} [RESET BY ADMIN]`
-        : "[RESET BY ADMIN]",
+      notes: billingPeriod.notes ? `${billingPeriod.notes} [RESET BY ADMIN]` : '[RESET BY ADMIN]',
     })
-    .eq("id", billingPeriodId)
+    .eq('id', billingPeriodId)
     .select()
     .single();
 
   if (error) {
-    throw new Error(
-      `Failed to reset billing period payment status: ${error.message}`,
-    );
+    throw new Error(`Failed to reset billing period payment status: ${error.message}`);
   }
 
   return data;
@@ -1314,23 +1195,23 @@ export async function deleteAllPaymentHistory(
   await createPaymentHistoryEntry({
     billing_period_id: billingPeriodId,
     user_id: userId,
-    action: "bulk_payment_history_deletion",
-    old_value: "multiple_entries",
-    new_value: "deleted",
-    notes: "All payment history entries deleted by admin",
+    action: 'bulk_payment_history_deletion',
+    old_value: 'multiple_entries',
+    new_value: 'deleted',
+    notes: 'All payment history entries deleted by admin',
   });
 
   // Delete all payment history for this billing period
-  const { error } = await supabase
-    .from("payment_history")
+  const {error} = await supabase
+    .from('payment_history')
     .delete()
-    .eq("billing_period_id", billingPeriodId);
+    .eq('billing_period_id', billingPeriodId);
 
   if (error) {
     throw new Error(`Failed to delete payment history: ${error.message}`);
   }
 
-  return { message: "All payment history deleted successfully" };
+  return {message: 'All payment history deleted successfully'};
 }
 
 // Outstanding payments bulk deletion functions
@@ -1340,24 +1221,24 @@ export async function deleteMultipleOutstandingPayments(
   userId: string,
 ) {
   if (!billingPeriodIds.length) {
-    throw new Error("No billing periods provided for deletion");
+    throw new Error('No billing periods provided for deletion');
   }
 
   // Validate all billing periods and check they can be safely deleted
-  const { data: periods, error: fetchError } = await supabase
-    .from("billing_periods")
-    .select("id, name, payment_status, company_id")
-    .in("id", billingPeriodIds);
+  const {data: periods, error: fetchError} = await supabase
+    .from('billing_periods')
+    .select('id, name, payment_status, company_id')
+    .in('id', billingPeriodIds);
 
   if (fetchError || !periods) {
-    throw new Error("Failed to fetch billing periods for validation");
+    throw new Error('Failed to fetch billing periods for validation');
   }
 
   // Check for any paid periods that shouldn't be deleted
-  const paidPeriods = periods.filter((p) => p.payment_status === "paid");
+  const paidPeriods = periods.filter((p) => p.payment_status === 'paid');
   if (paidPeriods.length > 0) {
     throw new Error(
-      `Cannot delete ${paidPeriods.length} paid billing period(s): ${paidPeriods.map((p) => p.name).join(", ")}`,
+      `Cannot delete ${paidPeriods.length} paid billing period(s): ${paidPeriods.map((p) => p.name).join(', ')}`,
     );
   }
 
@@ -1366,18 +1247,18 @@ export async function deleteMultipleOutstandingPayments(
     await createPaymentHistoryEntry({
       billing_period_id: period.id,
       user_id: userId,
-      action: "outstanding_payment_deletion",
+      action: 'outstanding_payment_deletion',
       old_value: period.payment_status,
-      new_value: "deleted",
+      new_value: 'deleted',
       notes: `Outstanding payment deleted as part of bulk deletion by admin`,
     });
   }
 
   // Delete all selected billing periods
-  const { error: deleteError } = await supabase
-    .from("billing_periods")
+  const {error: deleteError} = await supabase
+    .from('billing_periods')
     .delete()
-    .in("id", billingPeriodIds);
+    .in('id', billingPeriodIds);
 
   if (deleteError) {
     throw new Error(`Failed to delete billing periods: ${deleteError.message}`);
@@ -1386,7 +1267,7 @@ export async function deleteMultipleOutstandingPayments(
   return {
     message: `Successfully deleted ${periods.length} outstanding payment(s)`,
     deletedCount: periods.length,
-    deletedPeriods: periods.map((p) => ({ id: p.id, name: p.name })),
+    deletedPeriods: periods.map((p) => ({id: p.id, name: p.name})),
   };
 }
 
@@ -1397,19 +1278,19 @@ export async function deleteOutstandingPaymentsByStatus(
   userId: string,
 ) {
   // Find all billing periods with the specified statuses
-  const { data: periods, error: fetchError } = await supabase
-    .from("billing_periods")
-    .select("id, name, payment_status")
-    .eq("company_id", companyId)
-    .in("payment_status", statuses);
+  const {data: periods, error: fetchError} = await supabase
+    .from('billing_periods')
+    .select('id, name, payment_status')
+    .eq('company_id', companyId)
+    .in('payment_status', statuses);
 
   if (fetchError || !periods) {
-    throw new Error("Failed to fetch billing periods for deletion");
+    throw new Error('Failed to fetch billing periods for deletion');
   }
 
   if (periods.length === 0) {
     return {
-      message: "No billing periods found with the specified statuses",
+      message: 'No billing periods found with the specified statuses',
       deletedCount: 0,
     };
   }
@@ -1436,10 +1317,10 @@ export async function generateBillingPeriodWithCustomDates(
 
   // Validate dates
   if (start >= end) {
-    throw new Error("Start date must be before end date");
+    throw new Error('Start date must be before end date');
   }
 
-  const name = `Custom Period: ${format(start, "MMM dd")} - ${format(end, "MMM dd, yyyy")}`;
+  const name = `Custom Period: ${format(start, 'MMM dd')} - ${format(end, 'MMM dd, yyyy')}`;
 
   const billingPeriodData: NewBillingPeriod = {
     company_id: companyId,
@@ -1447,8 +1328,8 @@ export async function generateBillingPeriodWithCustomDates(
     start_date: start.toISOString(),
     end_date: end.toISOString(),
     frequency,
-    status: "active",
-    payment_status: "pending",
+    status: 'active',
+    payment_status: 'pending',
     created_by: userId || null,
   };
 
@@ -1465,23 +1346,16 @@ export async function generateBillingPeriodWithCustomDates(
 
     if (totalAmount > 0) {
       // Update the billing period with the calculated amount
-      const updatedPeriod = await updateBillingPeriod(
-        supabase,
-        createdPeriod.id,
-        {
-          payment_amount: totalAmount,
-        },
-      );
+      const updatedPeriod = await updateBillingPeriod(supabase, createdPeriod.id, {
+        payment_amount: totalAmount,
+      });
       console.log(
         `✅ Updated custom billing period ${createdPeriod.id} with payment amount: $${totalAmount}`,
       );
       return updatedPeriod;
     }
   } catch (error) {
-    console.error(
-      "❌ Failed to calculate payment amount for custom billing period:",
-      error,
-    );
+    console.error('❌ Failed to calculate payment amount for custom billing period:', error);
     // Continue without failing - the period is created but without payment amount
   }
 
@@ -1498,15 +1372,15 @@ export async function generateBillingPeriodForUserWithCustomDates(
   createdByUserId?: string,
 ) {
   // Validate that target user exists and belongs to the company
-  const { data: targetUser, error: userError } = await supabase
-    .from("users")
-    .select("id, first_name, last_name, company_id")
-    .eq("id", targetUserId)
-    .eq("company_id", companyId)
+  const {data: targetUser, error: userError} = await supabase
+    .from('users')
+    .select('id, first_name, last_name, company_id')
+    .eq('id', targetUserId)
+    .eq('company_id', companyId)
     .single();
 
   if (userError || !targetUser) {
-    throw new Error("Target user not found or does not belong to this company");
+    throw new Error('Target user not found or does not belong to this company');
   }
 
   const start = new Date(customStartDate);
@@ -1514,10 +1388,10 @@ export async function generateBillingPeriodForUserWithCustomDates(
 
   // Validate dates
   if (start >= end) {
-    throw new Error("Start date must be before end date");
+    throw new Error('Start date must be before end date');
   }
 
-  const name = `${targetUser.first_name} ${targetUser.last_name} - Custom: ${format(start, "MMM dd")} - ${format(end, "MMM dd, yyyy")}`;
+  const name = `${targetUser.first_name} ${targetUser.last_name} - Custom: ${format(start, 'MMM dd')} - ${format(end, 'MMM dd, yyyy')}`;
 
   const billingPeriodData: NewBillingPeriod = {
     company_id: companyId,
@@ -1525,8 +1399,8 @@ export async function generateBillingPeriodForUserWithCustomDates(
     start_date: start.toISOString(),
     end_date: end.toISOString(),
     frequency,
-    status: "active",
-    payment_status: "pending",
+    status: 'active',
+    payment_status: 'pending',
     created_by: createdByUserId || null,
     notes: `Generated for user: ${targetUser.first_name} ${targetUser.last_name} (${targetUser.id})`,
   };
@@ -1545,23 +1419,16 @@ export async function generateBillingPeriodForUserWithCustomDates(
 
     if (totalAmount > 0) {
       // Update the billing period with the calculated amount
-      const updatedPeriod = await updateBillingPeriod(
-        supabase,
-        createdPeriod.id,
-        {
-          payment_amount: totalAmount,
-        },
-      );
+      const updatedPeriod = await updateBillingPeriod(supabase, createdPeriod.id, {
+        payment_amount: totalAmount,
+      });
       console.log(
         `✅ Updated custom user billing period ${createdPeriod.id} with payment amount: $${totalAmount}`,
       );
       return updatedPeriod;
     }
   } catch (error) {
-    console.error(
-      "❌ Failed to calculate payment amount for custom user billing period:",
-      error,
-    );
+    console.error('❌ Failed to calculate payment amount for custom user billing period:', error);
     // Continue without failing - the period is created but without payment amount
   }
 

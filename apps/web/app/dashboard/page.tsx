@@ -1,16 +1,16 @@
-"use client";
+'use client';
 
-import { useAuthStore } from "@/lib/stores/auth";
-import { useDashboardStatistics } from "@/lib/hooks/useDashboard";
-import type { DashboardStatistics } from "@/lib/db/dashboard-service";
+import {useAuthStore} from '@/lib/stores/auth';
+import {useDashboardStatistics} from '@/lib/hooks/useDashboard';
+import type {DashboardStatistics} from '@/lib/db/dashboard-service';
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
   CardDescription,
-} from "@workspace/ui/components/card";
-import { Button } from "@workspace/ui/components/button";
+} from '@workspace/ui/components/card';
+import {Button} from '@workspace/ui/components/button';
 import {
   Plus,
   Users,
@@ -24,18 +24,18 @@ import {
   Clock,
   Target,
   Zap,
-} from "lucide-react";
-import Link from "next/link";
-import { ActivityFeed } from "@/components/activity/activity-feed";
-import { SmartProgressTracker } from "@/components/dashboard/smart-progress-tracker";
-import { ContextualActionCenter } from "@/components/dashboard/contextual-action-center";
-import { PriorityInsights } from "@/components/dashboard/priority-insights";
-import { PerformanceMetrics } from "@/components/dashboard/performance-metrics";
-import { QuickTicketCreator } from "@/components/dashboard/quick-ticket-creator";
-import { ProjectHealthDashboard } from "@/components/dashboard/project-health-dashboard";
+} from 'lucide-react';
+import Link from 'next/link';
+import {ActivityFeed} from '@/components/activity/activity-feed';
+import {SmartProgressTracker} from '@/components/dashboard/smart-progress-tracker';
+import {ContextualActionCenter} from '@/components/dashboard/contextual-action-center';
+import {PriorityInsights} from '@/components/dashboard/priority-insights';
+import {PerformanceMetrics} from '@/components/dashboard/performance-metrics';
+import {QuickTicketCreator} from '@/components/dashboard/quick-ticket-creator';
+import {ProjectHealthDashboard} from '@/components/dashboard/project-health-dashboard';
 
 export default function DashboardPage() {
-  const { user } = useAuthStore();
+  const {user} = useAuthStore();
 
   // Get dashboard statistics
   const {
@@ -46,11 +46,7 @@ export default function DashboardPage() {
     data: DashboardStatistics | undefined;
     isLoading: boolean;
     isError: boolean;
-  } = useDashboardStatistics(
-    user?.id || "",
-    user?.company_id || "",
-    user?.role || "user",
-  );
+  } = useDashboardStatistics(user?.id || '', user?.company_id || '', user?.role || 'user');
 
   // Helper function to format hours to HH:MM
   const formatHours = (hours: number) => {
@@ -81,14 +77,14 @@ export default function DashboardPage() {
       <div className="flex justify-between items-start">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">
-            Welcome back, {user?.first_name || "User"}!
+            Welcome back, {user?.first_name || 'User'}!
           </h1>
           <p className="text-muted-foreground mt-2">
-            {new Date().toLocaleDateString("en-US", {
-              weekday: "long",
-              year: "numeric",
-              month: "long",
-              day: "numeric",
+            {new Date().toLocaleDateString('en-US', {
+              weekday: 'long',
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric',
             })}
           </p>
         </div>
@@ -103,9 +99,8 @@ export default function DashboardPage() {
       {/* Key Metrics - Enhanced with trends */}
       <div
         className={`grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 ${
-          stats?.billing ? "xl:grid-cols-5" : ""
-        }`}
-      >
+          stats?.billing ? 'xl:grid-cols-5' : ''
+        }`}>
         <Link href="/projects" className="group">
           <Card className="hover:shadow-md transition-all duration-200 group-hover:border-primary/20">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -120,9 +115,7 @@ export default function DashboardPage() {
                 </div>
               ) : (
                 <div className="space-y-1">
-                  <div className="text-2xl font-bold">
-                    {stats?.projects.total || 0}
-                  </div>
+                  <div className="text-2xl font-bold">{stats?.projects.total || 0}</div>
                   <div className="flex items-center space-x-1">
                     <TrendingUp className="h-3 w-3 text-green-600" />
                     <p className="text-xs text-muted-foreground">
@@ -138,9 +131,7 @@ export default function DashboardPage() {
         <Link href="/tickets" className="group">
           <Card className="hover:shadow-md transition-all duration-200 group-hover:border-primary/20">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                Active Tasks
-              </CardTitle>
+              <CardTitle className="text-sm font-medium">Active Tasks</CardTitle>
               <AlertCircle className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
             </CardHeader>
             <CardContent>
@@ -152,8 +143,7 @@ export default function DashboardPage() {
               ) : (
                 <div className="space-y-1">
                   <div className="text-2xl font-bold">
-                    {(stats?.tickets.in_progress || 0) +
-                      (stats?.tickets.new || 0)}
+                    {(stats?.tickets.in_progress || 0) + (stats?.tickets.new || 0)}
                   </div>
                   <div className="flex items-center space-x-1">
                     <Target className="h-3 w-3 text-blue-600" />
@@ -170,9 +160,7 @@ export default function DashboardPage() {
         <Link href="/time-tracking" className="group">
           <Card className="hover:shadow-md transition-all duration-200 group-hover:border-primary/20">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                Today's Time
-              </CardTitle>
+              <CardTitle className="text-sm font-medium">Today's Time</CardTitle>
               <Timer className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
             </CardHeader>
             <CardContent>
@@ -212,9 +200,7 @@ export default function DashboardPage() {
                 </div>
               ) : (
                 <div className="space-y-1">
-                  <div className="text-2xl font-bold">
-                    {stats?.team.totalMembers || 1}
-                  </div>
+                  <div className="text-2xl font-bold">{stats?.team.totalMembers || 1}</div>
                   <div className="flex items-center space-x-1">
                     <Zap className="h-3 w-3 text-green-600" />
                     <p className="text-xs text-muted-foreground">
@@ -232,9 +218,7 @@ export default function DashboardPage() {
           <Link href="/billing" className="group">
             <Card className="hover:shadow-md transition-all duration-200 group-hover:border-primary/20">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Monthly Revenue
-                </CardTitle>
+                <CardTitle className="text-sm font-medium">Monthly Revenue</CardTitle>
                 <DollarSign className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
               </CardHeader>
               <CardContent>
@@ -268,33 +252,33 @@ export default function DashboardPage() {
         <div className="lg:col-span-2 space-y-6">
           {/* Smart Progress Tracker */}
           <SmartProgressTracker
-            userId={user?.id || ""}
-            companyId={user?.company_id || ""}
-            userRole={user?.role || "user"}
+            userId={user?.id || ''}
+            companyId={user?.company_id || ''}
+            userRole={user?.role || 'user'}
             stats={stats}
           />
 
           {/* Priority Insights */}
           <PriorityInsights
-            userId={user?.id || ""}
-            companyId={user?.company_id || ""}
-            userRole={user?.role || "user"}
+            userId={user?.id || ''}
+            companyId={user?.company_id || ''}
+            userRole={user?.role || 'user'}
           />
 
           {/* Performance Metrics */}
           <PerformanceMetrics
-            userId={user?.id || ""}
-            companyId={user?.company_id || ""}
-            userRole={user?.role || "user"}
+            userId={user?.id || ''}
+            companyId={user?.company_id || ''}
+            userRole={user?.role || 'user'}
             stats={stats}
             isLoading={statsLoading}
           />
 
           {/* Project Health Dashboard */}
           <ProjectHealthDashboard
-            userId={user?.id || ""}
-            companyId={user?.company_id || ""}
-            userRole={user?.role || "user"}
+            userId={user?.id || ''}
+            companyId={user?.company_id || ''}
+            userRole={user?.role || 'user'}
           />
         </div>
 
@@ -302,17 +286,14 @@ export default function DashboardPage() {
         <div className="space-y-6">
           {/* Contextual Action Center */}
           <ContextualActionCenter
-            userId={user?.id || ""}
-            companyId={user?.company_id || ""}
-            userRole={user?.role || "user"}
+            userId={user?.id || ''}
+            companyId={user?.company_id || ''}
+            userRole={user?.role || 'user'}
             stats={stats}
           />
 
           {/* Quick Ticket Creator */}
-          <QuickTicketCreator
-            userId={user?.id || ""}
-            companyId={user?.company_id || ""}
-          />
+          <QuickTicketCreator userId={user?.id || ''} companyId={user?.company_id || ''} />
 
           {/* Recent Activity */}
           <Card>

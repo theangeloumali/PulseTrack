@@ -1,17 +1,12 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { useActivityFeed } from "@/lib/hooks/useActivities";
-import { useAuth } from "@/lib/hooks/useAuth";
-import { formatDistanceToNow } from "date-fns";
-import { Badge } from "@workspace/ui/components/badge";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@workspace/ui/components/card";
-import { Button } from "@workspace/ui/components/button";
+import {useState} from 'react';
+import {useActivityFeed} from '@/lib/hooks/useActivities';
+import {useAuth} from '@/lib/hooks/useAuth';
+import {formatDistanceToNow} from 'date-fns';
+import {Badge} from '@workspace/ui/components/badge';
+import {Card, CardContent, CardHeader, CardTitle} from '@workspace/ui/components/card';
+import {Button} from '@workspace/ui/components/button';
 import {
   Filter,
   User2,
@@ -22,7 +17,7 @@ import {
   UserMinus,
   Settings,
   MoreHorizontal,
-} from "lucide-react";
+} from 'lucide-react';
 
 interface ActivityFeedProps {
   projectId?: string;
@@ -49,34 +44,30 @@ const activityIcons = {
 } as const;
 
 const activityColors = {
-  project_created: "bg-green-100 text-green-800",
-  project_updated: "bg-blue-100 text-blue-800",
-  project_archived: "bg-gray-100 text-gray-800",
-  ticket_created: "bg-purple-100 text-purple-800",
-  ticket_updated: "bg-yellow-100 text-yellow-800",
-  ticket_deleted: "bg-red-100 text-red-800",
-  ticket_assigned: "bg-indigo-100 text-indigo-800",
-  comment_created: "bg-orange-100 text-orange-800",
-  user_added_to_project: "bg-green-100 text-green-800",
-  user_removed_from_project: "bg-red-100 text-red-800",
-  time_entry_created: "bg-cyan-100 text-cyan-800",
-  time_entry_updated: "bg-cyan-100 text-cyan-800",
+  project_created: 'bg-green-100 text-green-800',
+  project_updated: 'bg-blue-100 text-blue-800',
+  project_archived: 'bg-gray-100 text-gray-800',
+  ticket_created: 'bg-purple-100 text-purple-800',
+  ticket_updated: 'bg-yellow-100 text-yellow-800',
+  ticket_deleted: 'bg-red-100 text-red-800',
+  ticket_assigned: 'bg-indigo-100 text-indigo-800',
+  comment_created: 'bg-orange-100 text-orange-800',
+  user_added_to_project: 'bg-green-100 text-green-800',
+  user_removed_from_project: 'bg-red-100 text-red-800',
+  time_entry_created: 'bg-cyan-100 text-cyan-800',
+  time_entry_updated: 'bg-cyan-100 text-cyan-800',
 } as const;
 
 function getActivityIcon(type: string) {
-  const Icon =
-    activityIcons[type as keyof typeof activityIcons] || MoreHorizontal;
+  const Icon = activityIcons[type as keyof typeof activityIcons] || MoreHorizontal;
   return <Icon className="h-4 w-4" />;
 }
 
 function getActivityColor(type: string) {
-  return (
-    activityColors[type as keyof typeof activityColors] ||
-    "bg-gray-100 text-gray-800"
-  );
+  return activityColors[type as keyof typeof activityColors] || 'bg-gray-100 text-gray-800';
 }
 
-function ActivityItem({ activity }: { activity: any }) {
+function ActivityItem({activity}: {activity: any}) {
   const user = activity.user;
   const targetUser = activity.target_user;
   const project = activity.project;
@@ -93,9 +84,7 @@ function ActivityItem({ activity }: { activity: any }) {
         <div className="flex items-center gap-2 mb-1">
           <Badge className={getActivityColor(activity.type)}>
             {getActivityIcon(activity.type)}
-            <span className="ml-1 capitalize">
-              {activity.type.replace(/_/g, " ")}
-            </span>
+            <span className="ml-1 capitalize">{activity.type.replace(/_/g, ' ')}</span>
           </Badge>
 
           <span className="text-sm text-gray-500">
@@ -165,10 +154,10 @@ export function ActivityFeed({
   companyId,
   limit = 20,
   showFilters = true,
-  title = "Recent Activity",
+  title = 'Recent Activity',
 }: ActivityFeedProps) {
-  const { user } = useAuth();
-  const [activityType, setActivityType] = useState<string>("all");
+  const {user} = useAuth();
+  const [activityType, setActivityType] = useState<string>('all');
 
   const {
     data: activities,
@@ -184,22 +173,17 @@ export function ActivityFeed({
 
   // Filter activities by type if selected
   const filteredActivities =
-    activities?.filter(
-      (activity) => activityType === "all" || activity.type === activityType,
-    ) || [];
+    activities?.filter((activity) => activityType === 'all' || activity.type === activityType) ||
+    [];
 
   // Get unique activity types for filter
-  const availableTypes = Array.from(
-    new Set(activities?.map((a) => a.type) || []),
-  );
+  const availableTypes = Array.from(new Set(activities?.map((a) => a.type) || []));
 
   if (error) {
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="text-red-600">
-            Error Loading Activities
-          </CardTitle>
+          <CardTitle className="text-red-600">Error Loading Activities</CardTitle>
         </CardHeader>
         <CardContent>
           <p className="text-sm text-gray-600 mb-4">
@@ -222,14 +206,11 @@ export function ActivityFeed({
               <select
                 value={activityType}
                 onChange={(e) => setActivityType(e.target.value)}
-                className="appearance-none bg-white border border-gray-300 rounded-md px-3 py-1 pr-8 text-sm"
-              >
+                className="appearance-none bg-white border border-gray-300 rounded-md px-3 py-1 pr-8 text-sm">
                 <option value="all">All Activities</option>
                 {availableTypes.map((type) => (
                   <option key={type} value={type}>
-                    {type
-                      .replace(/_/g, " ")
-                      .replace(/\b\w/g, (l: string) => l.toUpperCase())}
+                    {type.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())}
                   </option>
                 ))}
               </select>
@@ -242,7 +223,7 @@ export function ActivityFeed({
       <CardContent className="p-0">
         {isLoading ? (
           <div className="space-y-0">
-            {Array.from({ length: 5 }).map((_, i) => (
+            {Array.from({length: 5}).map((_, i) => (
               <ActivitySkeleton key={i} />
             ))}
           </div>
@@ -251,13 +232,11 @@ export function ActivityFeed({
             <div className="text-gray-400 mb-2">
               <MoreHorizontal className="h-12 w-12 mx-auto" />
             </div>
-            <h3 className="text-lg font-medium text-gray-900 mb-1">
-              No activities yet
-            </h3>
+            <h3 className="text-lg font-medium text-gray-900 mb-1">No activities yet</h3>
             <p className="text-gray-500">
-              {activityType === "all"
-                ? "Activities will appear here as team members work on projects."
-                : `No ${activityType.replace(/_/g, " ")} activities found.`}
+              {activityType === 'all'
+                ? 'Activities will appear here as team members work on projects.'
+                : `No ${activityType.replace(/_/g, ' ')} activities found.`}
             </p>
           </div>
         ) : (

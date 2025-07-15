@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import {
   Card,
@@ -6,16 +6,16 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@workspace/ui/components/card";
-import { Button } from "@workspace/ui/components/button";
-import { Badge } from "@workspace/ui/components/badge";
-import { Input } from "@workspace/ui/components/input";
-import { Label } from "@workspace/ui/components/label";
-import type { BillingPeriod } from "@/lib/db/schema";
-import { format } from "date-fns";
-import { AlertTriangle, Trash2, X, Loader2, Shield } from "lucide-react";
-import { useRoleAccess } from "@/lib/hooks/useRoleAccess";
-import { useState } from "react";
+} from '@workspace/ui/components/card';
+import {Button} from '@workspace/ui/components/button';
+import {Badge} from '@workspace/ui/components/badge';
+import {Input} from '@workspace/ui/components/input';
+import {Label} from '@workspace/ui/components/label';
+import type {BillingPeriod} from '@/lib/db/schema';
+import {format} from 'date-fns';
+import {AlertTriangle, Trash2, X, Loader2, Shield} from 'lucide-react';
+import {useRoleAccess} from '@/lib/hooks/useRoleAccess';
+import {useState} from 'react';
 
 interface DeleteConfirmationModalProps {
   billingPeriod: BillingPeriod | null;
@@ -32,23 +32,21 @@ export function DeleteConfirmationModal({
   onConfirm,
   isDeleting,
 }: DeleteConfirmationModalProps) {
-  const { isSuperAdmin } = useRoleAccess();
-  const [confirmationText, setConfirmationText] = useState("");
+  const {isSuperAdmin} = useRoleAccess();
+  const [confirmationText, setConfirmationText] = useState('');
 
   if (!isOpen || !billingPeriod) return null;
 
-  const isPaid = billingPeriod.payment_status === "paid";
+  const isPaid = billingPeriod.payment_status === 'paid';
   const canDelete = !isPaid || isSuperAdmin();
   const requiresConfirmation = isPaid && isSuperAdmin();
-  const confirmationRequired = requiresConfirmation ? billingPeriod.name : "";
-  const confirmationMatches =
-    !requiresConfirmation || confirmationText === confirmationRequired;
+  const confirmationRequired = requiresConfirmation ? billingPeriod.name : '';
+  const confirmationMatches = !requiresConfirmation || confirmationText === confirmationRequired;
 
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm"
-      onClick={onClose}
-    >
+      onClick={onClose}>
       <Card className="w-full max-w-lg" onClick={(e) => e.stopPropagation()}>
         <CardHeader className="flex flex-row items-center justify-between">
           <div>
@@ -60,12 +58,7 @@ export function DeleteConfirmationModal({
               This action cannot be undone and will affect related data
             </CardDescription>
           </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onClose}
-            className="h-8 w-8 p-0"
-          >
+          <Button variant="ghost" size="sm" onClick={onClose} className="h-8 w-8 p-0">
             <X className="h-4 w-4" />
           </Button>
         </CardHeader>
@@ -74,13 +67,12 @@ export function DeleteConfirmationModal({
             <h4 className="font-medium mb-2">{billingPeriod.name}</h4>
             <div className="text-sm text-muted-foreground space-y-1">
               <div>
-                <strong>Period:</strong>{" "}
-                {format(new Date(billingPeriod.start_date), "MMM dd")} -{" "}
-                {format(new Date(billingPeriod.end_date), "MMM dd, yyyy")}
+                <strong>Period:</strong> {format(new Date(billingPeriod.start_date), 'MMM dd')} -{' '}
+                {format(new Date(billingPeriod.end_date), 'MMM dd, yyyy')}
               </div>
               <div className="flex items-center gap-2">
                 <strong>Status:</strong>
-                <Badge variant={isPaid ? "default" : "secondary"}>
+                <Badge variant={isPaid ? 'default' : 'secondary'}>
                   {billingPeriod.payment_status}
                 </Badge>
               </div>
@@ -99,9 +91,9 @@ export function DeleteConfirmationModal({
                 <strong>Cannot Delete</strong>
               </div>
               <p className="text-sm text-destructive/80 mt-1">
-                This billing period cannot be deleted because it has been marked
-                as paid. Deleting paid periods would affect financial records.
-                Only super administrators can override this protection.
+                This billing period cannot be deleted because it has been marked as paid. Deleting
+                paid periods would affect financial records. Only super administrators can override
+                this protection.
               </p>
             </div>
           )}
@@ -113,15 +105,12 @@ export function DeleteConfirmationModal({
                 <strong>Super Admin Override Required</strong>
               </div>
               <p className="text-sm text-orange-700 dark:text-orange-400 mb-3">
-                You are attempting to delete a paid billing period. This action
-                is highly sensitive and affects financial records. To confirm,
-                please type the billing period name exactly:
+                You are attempting to delete a paid billing period. This action is highly sensitive
+                and affects financial records. To confirm, please type the billing period name
+                exactly:
               </p>
               <div className="space-y-2">
-                <Label
-                  htmlFor="confirmation-input"
-                  className="text-sm font-medium"
-                >
+                <Label htmlFor="confirmation-input" className="text-sm font-medium">
                   Type "{billingPeriod.name}" to confirm:
                 </Label>
                 <Input
@@ -166,8 +155,7 @@ export function DeleteConfirmationModal({
               variant="destructive"
               onClick={onConfirm}
               disabled={!canDelete || !confirmationMatches || isDeleting}
-              className="flex-1"
-            >
+              className="flex-1">
               {isDeleting ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />

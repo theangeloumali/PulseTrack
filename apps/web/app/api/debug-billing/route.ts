@@ -1,26 +1,23 @@
-import { NextRequest, NextResponse } from "next/server";
-import { getTimeEntriesForBilling } from "@/lib/db/service";
+import {NextRequest, NextResponse} from 'next/server';
+import {getTimeEntriesForBilling} from '@/lib/db/service';
 import {
   getBillingRatesByCompany,
   getCompanyBillingSettings,
   generateBillingReport,
-} from "@/lib/db/billing-service";
+} from '@/lib/db/billing-service';
 
 export async function GET(req: NextRequest) {
   try {
-    const { searchParams } = new URL(req.url);
-    const companyId = searchParams.get("companyId");
-    const startDate = searchParams.get("startDate");
-    const endDate = searchParams.get("endDate");
+    const {searchParams} = new URL(req.url);
+    const companyId = searchParams.get('companyId');
+    const startDate = searchParams.get('startDate');
+    const endDate = searchParams.get('endDate');
 
     if (!companyId || !startDate || !endDate) {
-      return NextResponse.json(
-        { error: "Missing companyId, startDate, or endDate" },
-        { status: 400 },
-      );
+      return NextResponse.json({error: 'Missing companyId, startDate, or endDate'}, {status: 400});
     }
 
-    console.log("🔍 DEBUG: Starting billing debug for:", {
+    console.log('🔍 DEBUG: Starting billing debug for:', {
       companyId,
       startDate,
       endDate,
@@ -29,25 +26,17 @@ export async function GET(req: NextRequest) {
     // Step 1: Test time entries fetching
     let timeEntries;
     try {
-      timeEntries = await getTimeEntriesForBilling(
-        companyId,
-        startDate,
-        endDate,
-      );
-      console.log(
-        "✅ Time entries fetched:",
-        timeEntries?.length || 0,
-        "entries",
-      );
+      timeEntries = await getTimeEntriesForBilling(companyId, startDate, endDate);
+      console.log('✅ Time entries fetched:', timeEntries?.length || 0, 'entries');
     } catch (error) {
-      console.error("❌ Error fetching time entries:", error);
+      console.error('❌ Error fetching time entries:', error);
       return NextResponse.json(
         {
-          error: "Failed to fetch time entries",
+          error: 'Failed to fetch time entries',
           details: (error as Error).message,
-          step: "time_entries",
+          step: 'time_entries',
         },
-        { status: 500 },
+        {status: 500},
       );
     }
 
@@ -55,20 +44,16 @@ export async function GET(req: NextRequest) {
     let billingRates;
     try {
       billingRates = await getBillingRatesByCompany(companyId);
-      console.log(
-        "✅ Billing rates fetched:",
-        billingRates?.length || 0,
-        "rates",
-      );
+      console.log('✅ Billing rates fetched:', billingRates?.length || 0, 'rates');
     } catch (error) {
-      console.error("❌ Error fetching billing rates:", error);
+      console.error('❌ Error fetching billing rates:', error);
       return NextResponse.json(
         {
-          error: "Failed to fetch billing rates",
+          error: 'Failed to fetch billing rates',
           details: (error as Error).message,
-          step: "billing_rates",
+          step: 'billing_rates',
         },
-        { status: 500 },
+        {status: 500},
       );
     }
 
@@ -76,19 +61,16 @@ export async function GET(req: NextRequest) {
     let companySettings;
     try {
       companySettings = await getCompanyBillingSettings(companyId);
-      console.log(
-        "✅ Company settings fetched:",
-        companySettings ? "Found" : "Not found",
-      );
+      console.log('✅ Company settings fetched:', companySettings ? 'Found' : 'Not found');
     } catch (error) {
-      console.error("❌ Error fetching company settings:", error);
+      console.error('❌ Error fetching company settings:', error);
       return NextResponse.json(
         {
-          error: "Failed to fetch company settings",
+          error: 'Failed to fetch company settings',
           details: (error as Error).message,
-          step: "company_settings",
+          step: 'company_settings',
         },
-        { status: 500 },
+        {status: 500},
       );
     }
 
@@ -96,20 +78,16 @@ export async function GET(req: NextRequest) {
     let report;
     try {
       report = await generateBillingReport(companyId, startDate, endDate);
-      console.log(
-        "✅ Report generated with",
-        Object.keys(report || {}).length,
-        "dates",
-      );
+      console.log('✅ Report generated with', Object.keys(report || {}).length, 'dates');
     } catch (error) {
-      console.error("❌ Error generating report:", error);
+      console.error('❌ Error generating report:', error);
       return NextResponse.json(
         {
-          error: "Failed to generate report",
+          error: 'Failed to generate report',
           details: (error as Error).message,
-          step: "report_generation",
+          step: 'report_generation',
         },
-        { status: 500 },
+        {status: 500},
       );
     }
 
@@ -132,19 +110,19 @@ export async function GET(req: NextRequest) {
       },
       report: report,
       apiInfo: {
-        basePath: process.env.NEXT_PUBLIC_BASE_PATH || "/pulse",
+        basePath: process.env.NEXT_PUBLIC_BASE_PATH || '/pulse',
         nodeEnv: process.env.NODE_ENV,
         requestUrl: req.url,
       },
     });
   } catch (error) {
-    console.error("❌ DEBUG: Unexpected error:", error);
+    console.error('❌ DEBUG: Unexpected error:', error);
     return NextResponse.json(
       {
-        error: "Unexpected error in billing debug",
+        error: 'Unexpected error in billing debug',
         details: (error as Error).message,
       },
-      { status: 500 },
+      {status: 500},
     );
   }
 }

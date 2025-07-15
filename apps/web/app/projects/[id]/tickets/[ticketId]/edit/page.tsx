@@ -1,26 +1,26 @@
-"use client";
+'use client';
 
-import { useEffect, useState, use, Suspense } from "react";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
-import { Button } from "@workspace/ui/components/button";
-import { Input } from "@workspace/ui/components/input";
-import { Label } from "@workspace/ui/components/label";
-import { RichTextEditor } from "@/components/ui/rich-text-editor";
+import {useEffect, useState, use, Suspense} from 'react';
+import {useRouter} from 'next/navigation';
+import Link from 'next/link';
+import {Button} from '@workspace/ui/components/button';
+import {Input} from '@workspace/ui/components/input';
+import {Label} from '@workspace/ui/components/label';
+import {RichTextEditor} from '@/components/ui/rich-text-editor';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@workspace/ui/components/card";
-import { useAuthStore } from "@/lib/stores/auth";
-import { useTicketStore } from "@/lib/stores/ticket";
-import { getTicketById, updateTicket } from "@/lib/db/service";
-import { Ticket, TicketStatus, TicketPriority } from "@/lib/db/schema";
-import { ArrowLeft, Loader2, Save } from "lucide-react";
+} from '@workspace/ui/components/card';
+import {useAuthStore} from '@/lib/stores/auth';
+import {useTicketStore} from '@/lib/stores/ticket';
+import {getTicketById, updateTicket} from '@/lib/db/service';
+import {Ticket, TicketStatus, TicketPriority} from '@/lib/db/schema';
+import {ArrowLeft, Loader2, Save} from 'lucide-react';
 
-export const dynamic = "force-dynamic";
+export const dynamic = 'force-dynamic';
 
 interface Props {
   params: Promise<{
@@ -29,21 +29,21 @@ interface Props {
   }>;
 }
 
-function EditTicketContent({ params }: Props) {
+function EditTicketContent({params}: Props) {
   const resolvedParams = use(params);
   const [ticket, setTicket] = useState<any>(null);
   const [formData, setFormData] = useState({
-    title: "",
-    description: "",
-    status: "new" as TicketStatus,
-    priority: "medium" as TicketPriority,
-    estimated_hours: "",
+    title: '',
+    description: '',
+    status: 'new' as TicketStatus,
+    priority: 'medium' as TicketPriority,
+    estimated_hours: '',
   });
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState('');
 
-  const { user } = useAuthStore();
+  const {user} = useAuthStore();
   const router = useRouter();
 
   useEffect(() => {
@@ -56,31 +56,30 @@ function EditTicketContent({ params }: Props) {
       const ticketData = await getTicketById(resolvedParams.ticketId);
 
       if (!ticketData) {
-        setError("Ticket not found");
+        setError('Ticket not found');
         return;
       }
 
       // Security check: ensure ticket's project belongs to user's company
       const projectData = ticketData.projects as any;
       const projectCompanyId =
-        projectData?.company_id ||
-        (Array.isArray(projectData) ? projectData[0]?.company_id : null);
+        projectData?.company_id || (Array.isArray(projectData) ? projectData[0]?.company_id : null);
 
       if (!projectCompanyId || projectCompanyId !== user?.company_id) {
-        setError("Ticket not found or access denied");
+        setError('Ticket not found or access denied');
         return;
       }
 
       setTicket(ticketData);
       setFormData({
-        title: ticketData.title || "",
-        description: ticketData.description || "",
-        status: ticketData.status || "new",
-        priority: ticketData.priority || "medium",
-        estimated_hours: ticketData.estimated_hours?.toString() || "",
+        title: ticketData.title || '',
+        description: ticketData.description || '',
+        status: ticketData.status || 'new',
+        priority: ticketData.priority || 'medium',
+        estimated_hours: ticketData.estimated_hours?.toString() || '',
       });
     } catch (err: any) {
-      setError(err.message || "Failed to load ticket");
+      setError(err.message || 'Failed to load ticket');
     } finally {
       setIsLoading(false);
     }
@@ -90,12 +89,12 @@ function EditTicketContent({ params }: Props) {
     e.preventDefault();
 
     if (!formData.title.trim()) {
-      setError("Title is required");
+      setError('Title is required');
       return;
     }
 
     setIsSubmitting(true);
-    setError("");
+    setError('');
 
     try {
       const updateData = {
@@ -103,19 +102,15 @@ function EditTicketContent({ params }: Props) {
         description: formData.description.trim(),
         status: formData.status,
         priority: formData.priority,
-        estimated_hours: formData.estimated_hours
-          ? parseFloat(formData.estimated_hours)
-          : null,
+        estimated_hours: formData.estimated_hours ? parseFloat(formData.estimated_hours) : null,
       };
 
       await updateTicket(resolvedParams.ticketId, updateData);
 
       // Redirect back to ticket detail page
-      router.push(
-        `/projects/${resolvedParams.id}/tickets/${resolvedParams.ticketId}`,
-      );
+      router.push(`/projects/${resolvedParams.id}/tickets/${resolvedParams.ticketId}`);
     } catch (err: any) {
-      setError(err.message || "Failed to update ticket");
+      setError(err.message || 'Failed to update ticket');
     } finally {
       setIsSubmitting(false);
     }
@@ -168,27 +163,19 @@ function EditTicketContent({ params }: Props) {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between py-6">
             <div className="flex items-center">
-              <Link
-                href={`/projects/${resolvedParams.id}/tickets/${resolvedParams.ticketId}`}
-              >
+              <Link href={`/projects/${resolvedParams.id}/tickets/${resolvedParams.ticketId}`}>
                 <Button variant="outline" size="sm" className="mr-4">
                   <ArrowLeft className="h-4 w-4 mr-2" />
                   Back to Ticket
                 </Button>
               </Link>
               <div>
-                <h1 className="text-3xl font-bold text-gray-900">
-                  Edit Ticket
-                </h1>
-                <p className="text-gray-600">
-                  Update ticket details and settings
-                </p>
+                <h1 className="text-3xl font-bold text-gray-900">Edit Ticket</h1>
+                <p className="text-gray-600">Update ticket details and settings</p>
               </div>
             </div>
             <div className="flex items-center space-x-4">
-              <Link
-                href={`/projects/${resolvedParams.id}/tickets/${resolvedParams.ticketId}`}
-              >
+              <Link href={`/projects/${resolvedParams.id}/tickets/${resolvedParams.ticketId}`}>
                 <Button variant="outline">Cancel</Button>
               </Link>
             </div>
@@ -218,9 +205,7 @@ function EditTicketContent({ params }: Props) {
                       id="title"
                       type="text"
                       value={formData.title}
-                      onChange={(e) =>
-                        handleInputChange("title", e.target.value)
-                      }
+                      onChange={(e) => handleInputChange('title', e.target.value)}
                       placeholder="Enter ticket title"
                       required
                       className="mt-1"
@@ -232,11 +217,8 @@ function EditTicketContent({ params }: Props) {
                     <select
                       id="status"
                       value={formData.status}
-                      onChange={(e) =>
-                        handleInputChange("status", e.target.value)
-                      }
-                      className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                    >
+                      onChange={(e) => handleInputChange('status', e.target.value)}
+                      className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
                       <option value="new">New</option>
                       <option value="in_progress">In Progress</option>
                       <option value="review">Review</option>
@@ -249,11 +231,8 @@ function EditTicketContent({ params }: Props) {
                     <select
                       id="priority"
                       value={formData.priority}
-                      onChange={(e) =>
-                        handleInputChange("priority", e.target.value)
-                      }
-                      className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                    >
+                      onChange={(e) => handleInputChange('priority', e.target.value)}
+                      className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
                       <option value="low">Low</option>
                       <option value="medium">Medium</option>
                       <option value="high">High</option>
@@ -269,9 +248,7 @@ function EditTicketContent({ params }: Props) {
                       step="0.5"
                       min="0"
                       value={formData.estimated_hours}
-                      onChange={(e) =>
-                        handleInputChange("estimated_hours", e.target.value)
-                      }
+                      onChange={(e) => handleInputChange('estimated_hours', e.target.value)}
                       placeholder="0"
                       className="mt-1"
                     />
@@ -290,16 +267,14 @@ function EditTicketContent({ params }: Props) {
                       />
                     </div>
                     <p className="text-xs text-muted-foreground mt-2">
-                      Supports markdown formatting: **bold**, *italic*, `code`,
-                      [links](url), lists, and more.
+                      Supports markdown formatting: **bold**, *italic*, `code`, [links](url), lists,
+                      and more.
                     </p>
                   </div>
                 </div>
 
                 <div className="flex justify-end space-x-4">
-                  <Link
-                    href={`/projects/${resolvedParams.id}/tickets/${resolvedParams.ticketId}`}
-                  >
+                  <Link href={`/projects/${resolvedParams.id}/tickets/${resolvedParams.ticketId}`}>
                     <Button type="button" variant="outline">
                       Cancel
                     </Button>
@@ -327,15 +302,14 @@ function EditTicketContent({ params }: Props) {
   );
 }
 
-export default function EditTicketPage({ params }: Props) {
+export default function EditTicketPage({params}: Props) {
   return (
     <Suspense
       fallback={
         <div className="min-h-screen flex items-center justify-center">
           <Loader2 className="h-8 w-8 animate-spin" />
         </div>
-      }
-    >
+      }>
       <EditTicketContent params={params} />
     </Suspense>
   );

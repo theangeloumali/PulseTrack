@@ -1,12 +1,12 @@
-"use client";
+'use client';
 
-import { useEffect } from "react";
-import { useTheme } from "next-themes";
-import { useThemeStore } from "@/lib/stores/theme";
+import {useEffect} from 'react';
+import {useTheme} from 'next-themes';
+import {useThemeStore} from '@/lib/stores/theme';
 
 export function ThemeProvider() {
-  const { setTheme } = useTheme();
-  const { mode, palette } = useThemeStore();
+  const {setTheme} = useTheme();
+  const {mode, palette} = useThemeStore();
 
   useEffect(() => {
     // Sync with next-themes
@@ -17,25 +17,25 @@ export function ThemeProvider() {
 
     // Remove existing palette classes
     root.classList.remove(
-      "theme-default",
-      "theme-blue",
-      "theme-green",
-      "theme-purple",
-      "theme-orange",
-      "theme-red",
+      'theme-default',
+      'theme-blue',
+      'theme-green',
+      'theme-purple',
+      'theme-orange',
+      'theme-red',
     );
 
     // Add current palette
     root.classList.add(`theme-${palette}`);
 
     // Set data attribute for easier debugging
-    root.setAttribute("data-palette", palette);
+    root.setAttribute('data-palette', palette);
   }, [mode, palette, setTheme]);
 
   useEffect(() => {
     // Listen for system theme changes when in system mode
-    if (mode === "system") {
-      const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+    if (mode === 'system') {
+      const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
 
       const handleChange = () => {
         // next-themes will handle the actual theme switching
@@ -48,8 +48,8 @@ export function ThemeProvider() {
         }, 0);
       };
 
-      mediaQuery.addEventListener("change", handleChange);
-      return () => mediaQuery.removeEventListener("change", handleChange);
+      mediaQuery.addEventListener('change', handleChange);
+      return () => mediaQuery.removeEventListener('change', handleChange);
     }
   }, [mode, palette]);
 
