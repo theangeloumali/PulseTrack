@@ -33,6 +33,7 @@ import {
 import {useQuery, useMutation, useQueryClient} from '@tanstack/react-query';
 import {useToast} from '@/hooks/use-toast';
 import {useProjectsQuery} from '@/lib/hooks/useProjects';
+import {useAssignableUsers} from '@/lib/hooks/useUsers';
 import {createTicket} from '@/lib/db/service';
 import type {NewTicket} from '@/lib/db/schema';
 
@@ -46,6 +47,7 @@ interface QuickTicketData {
   description: string;
   priority: 'low' | 'medium' | 'high';
   projectId: string;
+  assigneeId: string;
 }
 
 // Real API integration for creating tickets
@@ -58,7 +60,7 @@ const createQuickTicket = async (data: QuickTicketData & {userId: string; compan
     project_id: data.projectId,
     company_id: data.companyId,
     creator_id: data.userId,
-    assignee_id: data.userId, // Auto-assign to creator for quick tickets
+    assignee_id: data.assigneeId || data.userId, // Use selected assignee or auto-assign to creator
   };
 
   return await createTicket(newTicket);
@@ -71,13 +73,15 @@ export function QuickTicketCreator({userId, companyId}: QuickTicketCreatorProps)
     description: '',
     priority: 'medium',
     projectId: '',
+    assigneeId: userId, // Default to current user
   });
 
   const {toast} = useToast();
   const queryClient = useQueryClient();
 
-  // Get user's projects
+  // Get user's projects and assignable users
   const {data: projects, isLoading: projectsLoading} = useProjectsQuery();
+  const {data: assignableUsers = []} = useAssignableUsers();
 
   const createTicketMutation = useMutation({
     mutationFn: (data: QuickTicketData) => createQuickTicket({...data, userId, companyId}),
@@ -93,6 +97,7 @@ export function QuickTicketCreator({userId, companyId}: QuickTicketCreatorProps)
         description: '',
         priority: 'medium',
         projectId: '',
+        assigneeId: userId, // Reset to current user
       });
       setIsExpanded(false);
 
@@ -148,6 +153,7 @@ export function QuickTicketCreator({userId, companyId}: QuickTicketCreatorProps)
       description: '',
       priority: template.priority,
       projectId: projects[0].id, // Use first project as default
+      assigneeId: userId, // Default to current user
     });
     setIsExpanded(true);
   };
@@ -326,6 +332,33 @@ export function QuickTicketCreator({userId, companyId}: QuickTicketCreatorProps)
                   </Button>
                 ))}
               </div>
+            </div>
+
+            {/* Assignee Selection */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Assignee</label>
+              <Select
+                value={formData.assigneeId}
+                onValueChange={(value) => setFormData((prev) => ({...prev, assigneeId: value}))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select assignee..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {assignableUsers.map((assignUser) => (
+                    <SelectItem key={assignUser.id} value={assignUser.id}>
+                      <div className="flex items-center gap-2">
+                        <User className="h-4 w-4" />
+                        <span>
+                          {assignUser.first_name && assignUser.last_name
+                            ? `${assignUser.first_name} ${assignUser.last_name}`
+                            : assignUser.email}
+                        </span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             {/* Description */}
