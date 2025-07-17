@@ -8,9 +8,11 @@ import {RichTextEditor} from '@/components/ui/rich-text-editor';
 import {Modal} from '@/components/ui/modal';
 import {useCreateTicketMutation} from '@/lib/hooks/useTickets';
 import {useProjectsQuery} from '@/lib/hooks/useProjects';
+import {useAssignableUsers} from '@/lib/hooks/useUsers';
 import {useAuthStore} from '@/lib/stores/auth';
 import {TicketPriority, TicketStatus} from '@/lib/db/schema';
-import {Loader2, Save} from 'lucide-react';
+import {Loader2, Save, User, Calendar, Clock} from 'lucide-react';
+import {useToast} from '@/hooks/use-toast';
 
 interface CreateTicketModalProps {
   isOpen: boolean;
@@ -26,12 +28,17 @@ export function CreateTicketModal({isOpen, onClose, defaultProjectId}: CreateTic
     status: 'new' as TicketStatus,
     project_id: defaultProjectId || '',
     assignee_id: '', // Empty means unassigned
+    estimated_hours: '',
+    due_date: '',
   });
   const [error, setError] = useState('');
+  const [createMore, setCreateMore] = useState(false);
 
   const {user} = useAuthStore();
   const {data: projects = []} = useProjectsQuery();
+  const {data: assignableUsers = []} = useAssignableUsers();
   const createTicketMutation = useCreateTicketMutation();
+  const {toast} = useToast();
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const {name, value} = e.target;
@@ -82,23 +89,45 @@ export function CreateTicketModal({isOpen, onClose, defaultProjectId}: CreateTic
         project_id: formData.project_id,
         assignee_id: formData.assignee_id || null,
         reporter_id: user.id, // Current user is the reporter (PRD requirement)
-        estimated_hours: null,
+        estimated_hours: formData.estimated_hours ? parseFloat(formData.estimated_hours) : null,
         actual_hours: null,
-        due_date: null,
+        due_date: formData.due_date || null,
       };
 
-      await createTicketMutation.mutateAsync(ticketData);
+      const newTicket = await createTicketMutation.mutateAsync(ticketData);
 
-      // Reset form and close modal
-      setFormData({
-        title: '',
-        description: '',
-        priority: 'medium',
-        status: 'new',
-        project_id: defaultProjectId || '',
-        assignee_id: '',
+      // Show success toast
+      toast({
+        title: 'Ticket created successfully!',
+        description: `"${newTicket.title}" has been created.`,
       });
-      onClose();
+
+      // If "Create more" is checked, only reset form fields but keep project and assignee
+      if (createMore) {
+        setFormData((prev) => ({
+          ...prev,
+          title: '',
+          description: '',
+          priority: 'medium',
+          status: 'new',
+          estimated_hours: '',
+          due_date: '',
+          // Keep project_id and assignee_id as they were
+        }));
+      } else {
+        // If "Create more" is not checked, reset everything and close modal
+        setFormData({
+          title: '',
+          description: '',
+          priority: 'medium',
+          status: 'new',
+          project_id: defaultProjectId || '',
+          assignee_id: '',
+          estimated_hours: '',
+          due_date: '',
+        });
+        onClose();
+      }
     } catch (err: any) {
       setError(err.message || 'Failed to create ticket');
     }
@@ -114,7 +143,10 @@ export function CreateTicketModal({isOpen, onClose, defaultProjectId}: CreateTic
         status: 'new',
         project_id: defaultProjectId || '',
         assignee_id: '',
+        estimated_hours: '',
+        due_date: '',
       });
+      setCreateMore(false);
       onClose();
     }
   };
@@ -226,7 +258,73 @@ export function CreateTicketModal({isOpen, onClose, defaultProjectId}: CreateTic
           </div>
         </div>
 
-        {/* TODO: Add assignee selection - requires loading team members */}
+        {/* Assignee Selection */}
+        <div className="space-y-2">
+          <Label htmlFor="assignee_id">Assignee</Label>
+          <select
+            id="assignee_id"
+            name="assignee_id"
+            value={formData.assignee_id}
+            onChange={(e) => handleSelectChange('assignee_id', e.target.value)}
+            disabled={createTicketMutation.isPending}
+            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50">
+            <option value="">Unassigned</option>
+            {assignableUsers.map((assignUser) => (
+              <option key={assignUser.id} value={assignUser.id}>
+                {assignUser.first_name && assignUser.last_name
+                  ? `${assignUser.first_name} ${assignUser.last_name}`
+                  : assignUser.email}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Additional Fields */}
+        <div className="grid grid-cols-2 gap-4">
+          {/* Estimated Hours */}
+          <div className="space-y-2">
+            <Label htmlFor="estimated_hours">Estimated Hours</Label>
+            <Input
+              id="estimated_hours"
+              name="estimated_hours"
+              type="number"
+              step="0.5"
+              min="0"
+              placeholder="0"
+              value={formData.estimated_hours}
+              onChange={handleInputChange}
+              disabled={createTicketMutation.isPending}
+            />
+          </div>
+
+          {/* Due Date */}
+          <div className="space-y-2">
+            <Label htmlFor="due_date">Due Date</Label>
+            <Input
+              id="due_date"
+              name="due_date"
+              type="date"
+              value={formData.due_date}
+              onChange={handleInputChange}
+              disabled={createTicketMutation.isPending}
+            />
+          </div>
+        </div>
+
+        {/* Create More Option */}
+        <div className="flex items-center space-x-2">
+          <input
+            type="checkbox"
+            id="create_more"
+            checked={createMore}
+            onChange={(e) => setCreateMore(e.target.checked)}
+            disabled={createTicketMutation.isPending}
+            className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+          />
+          <Label htmlFor="create_more" className="text-sm text-muted-foreground">
+            Create more
+          </Label>
+        </div>
 
         {/* Form Actions */}
         <div className="flex items-center justify-end space-x-4 pt-6">
