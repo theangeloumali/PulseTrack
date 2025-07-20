@@ -7,6 +7,7 @@ import {QueryProvider} from './query-provider';
 import {SidebarLayout} from './sidebar-layout';
 import {ThemeProvider} from './theme-provider';
 import {SessionInitializer} from './session-initializer';
+import {PWAInstaller} from './pwa-installer';
 
 export function Providers({children}: {children: React.ReactNode}) {
   return (
@@ -19,6 +20,7 @@ export function Providers({children}: {children: React.ReactNode}) {
         enableColorScheme>
         <ThemeProvider />
         <SessionInitializer />
+        <PWAInstaller />
         <AuthGate>
           <SidebarLayout>{children}</SidebarLayout>
         </AuthGate>

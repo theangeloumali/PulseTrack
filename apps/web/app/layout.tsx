@@ -8,6 +8,19 @@ export const metadata: Metadata = {
   title: 'PulseTrack - Project Management & Time Tracking',
   description:
     'Comprehensive project management system with ticket tracking, time management, and billing features.',
+  manifest: '/pulse/manifest.json',
+  themeColor: '#1f2937',
+  viewport: {
+    width: 'device-width',
+    initialScale: 1,
+    maximumScale: 1,
+    userScalable: false,
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'PulseTrack',
+  },
   icons: {
     icon: [
       {url: '/pulse/icon.png', sizes: '32x32', type: 'image/png'},
