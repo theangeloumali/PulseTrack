@@ -71,7 +71,7 @@ export default function SignUpPage() {
         companyName: formData.companyName,
         companySlug: generateSlug(formData.companyName),
         email: formData.email, // Ensure email is included in user data
-        role: 'admin', // First user becomes admin
+        role: 'company_admin', // First user becomes company admin
       });
 
       if (error) {

@@ -1,7 +1,7 @@
 import {create} from 'zustand';
 import {User as SupabaseUser, Session} from '@supabase/supabase-js';
 import {supabase} from '@/lib/db';
-import {getUserById, createUser, createCompany} from '@/lib/db/service';
+import {getUserById, getUserWithCompany, createUser, createCompany, createCompanyAndUser} from '@/lib/db/service';
 import type {User, NewUser, NewCompany} from '@/lib/db/schema';
 import {clearAuthState, isRefreshTokenError} from '@/lib/auth-utils';
 
@@ -13,7 +13,7 @@ export interface CreateUserData {
   companyName: string;
   companySlug: string;
   email: string;
-  role: 'admin' | 'manager' | 'user';
+  role: 'company_admin' | 'manager' | 'user';
 }
 
 export interface AuthState {
@@ -107,7 +107,7 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
         // Get user from database - this is critical for the app to work
         // console.log('Fetching user profile from database...');
         try {
-          const dbUser = await getUserById(data.user.id);
+          const dbUser = await getUserWithCompany(data.user.id);
           if (dbUser) {
             // console.log('Database user found, setting user state...');
             set({user: dbUser, isLoading: false});
@@ -247,7 +247,7 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
       set({supabaseUser: authUser, session: session});
 
       // Check if user profile already exists in our public.users table
-      const existingUser = await getUserById(authUser.id);
+      const existingUser = await getUserWithCompany(authUser.id);
       if (existingUser) {
         // console.log('User profile already exists in DB. Setting user and finishing.');
         set({user: existingUser, isLoading: false});
@@ -264,31 +264,38 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
         return {error};
       }
 
-      const company = await createCompany({
-        name: userMetadata.companyName,
-        slug: userMetadata.companySlug,
-      });
-
-      const newUser = await createUser({
-        id: authUser.id,
-        email: authUser.email!,
-        first_name: userMetadata.firstName || '',
-        last_name: userMetadata.lastName || '',
-        role: userMetadata.role || 'admin',
-        company_id: company.id,
-      });
-
+      // Use atomic creation to ensure both company and user are created together
+      const {user: newUserWithCompany} = await createCompanyAndUser(
+        {
+          name: userMetadata.companyName,
+          slug: userMetadata.companySlug,
+        },
+        {
+          id: authUser.id,
+          email: authUser.email!,
+          first_name: userMetadata.firstName || '',
+          last_name: userMetadata.lastName || '',
+          role: userMetadata.role || 'company_admin',
+        }
+      );
+      
       // console.log('Successfully created new user profile.');
       set({
-        user: newUser,
+        user: newUserWithCompany,
         isLoading: false,
       });
 
       return {error: null};
-    } catch (error) {
+    } catch (error: any) {
       console.error('Unhandled error in verifyEmailAndCreateUser:', error);
       set({isLoading: false});
-      return {error};
+      
+      // Return more user-friendly error messages
+      if (error.message) {
+        return {error: {message: error.message}};
+      }
+      
+      return {error: {message: 'Failed to create your account. Please try again or contact support.'}};
     }
   },
 
@@ -347,7 +354,7 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
 
         // Fetch user from database
         try {
-          const dbUser = await getUserById(session.user.id);
+          const dbUser = await getUserWithCompany(session.user.id);
           if (dbUser) {
             console.log('✅ Auth Store: Database user found:', dbUser.email);
             set({user: dbUser, isLoading: false, isInitializing: false});
@@ -397,7 +404,7 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
             });
 
             try {
-              const dbUser = await getUserById(newSession.user.id);
+              const dbUser = await getUserWithCompany(newSession.user.id);
               if (dbUser) {
                 console.log('🔄 Auth Store: User updated from auth change:', dbUser.email);
                 set({user: dbUser, isLoading: false});
