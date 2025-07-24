@@ -86,6 +86,132 @@ export async function createUser(data: NewUser) {
   return result;
 }
 
+// Helper function for retrying operations
+async function retryOperation<T>(
+  operation: () => Promise<T>,
+  maxRetries: number = 3,
+  delayMs: number = 1000
+): Promise<T> {
+  let lastError: any;
+  
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      return await operation();
+    } catch (error: any) {
+      lastError = error;
+      
+      // Don't retry on validation errors or conflicts
+      if (error.code === '23505' || // unique constraint violation
+          error.code === '23503' || // foreign key violation
+          error.code === '23514' || // check constraint violation
+          error.code === '22P02') { // invalid input syntax
+        throw error;
+      }
+      
+      console.log(`Attempt ${attempt} failed:`, error.message);
+      
+      if (attempt < maxRetries) {
+        console.log(`Retrying in ${delayMs}ms...`);
+        await new Promise(resolve => setTimeout(resolve, delayMs));
+        delayMs *= 2; // Exponential backoff
+      }
+    }
+  }
+  
+  throw lastError;
+}
+
+// Atomic company and user creation with retry logic
+export async function createCompanyAndUser(companyData: NewCompany, userData: Omit<NewUser, 'company_id'>) {
+  let company = null;
+  
+  try {
+    // Check if company already exists
+    const existingCompany = await getCompanyBySlug(companyData.slug);
+    if (existingCompany) {
+      throw new Error(`Company with slug "${companyData.slug}" already exists`);
+    }
+    
+    // Create the company with retry logic
+    company = await retryOperation(async () => {
+      const {data: companyResult, error: companyError} = await supabase
+        .from('companies')
+        .insert(companyData)
+        .select()
+        .single();
+      
+      if (companyError) {
+        console.error('Error creating company:', companyError);
+        throw companyError;
+      }
+      
+      return companyResult;
+    });
+    
+    // Create the user with the company ID
+    const userDataWithCompany = {
+      ...userData,
+      company_id: company.id
+    };
+    
+    const user = await retryOperation(async () => {
+      const {data: userResult, error: userError} = await supabase
+        .from('users')
+        .insert(userDataWithCompany)
+        .select()
+        .single();
+      
+      if (userError) {
+        console.error('Error creating user:', userError);
+        throw userError;
+      }
+      
+      return userResult;
+    }).catch(async (userError) => {
+      // If user creation fails, attempt to clean up the company
+      console.log('User creation failed, attempting to clean up orphaned company...');
+      
+      try {
+        const {error: deleteError} = await supabase
+          .from('companies')
+          .delete()
+          .eq('id', company.id);
+          
+        if (deleteError) {
+          console.error('Failed to clean up orphaned company:', deleteError);
+        } else {
+          console.log('Successfully cleaned up orphaned company');
+        }
+      } catch (cleanupError) {
+        console.error('Error during cleanup:', cleanupError);
+      }
+      
+      throw userError;
+    });
+    
+    // Fetch the user with company data
+    const userWithCompany = await getUserWithCompany(user.id);
+    
+    return {
+      company,
+      user: userWithCompany || user
+    };
+  } catch (error: any) {
+    console.error('Failed to create company and user:', error);
+    
+    // Provide more specific error messages
+    if (error.message?.includes('already exists')) {
+      throw new Error('This company name is already taken. Please choose a different name.');
+    } else if (error.code === '23505') {
+      throw new Error('This email address is already registered.');
+    } else if (error.message?.includes('network')) {
+      throw new Error('Network error. Please check your connection and try again.');
+    }
+    
+    throw error;
+  }
+}
+
 // Project operations
 export async function getProjectById(id: string) {
   const {data, error} = await supabase.from('projects').select('*').eq('id', id).single();

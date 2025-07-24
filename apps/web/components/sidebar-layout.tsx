@@ -241,6 +241,9 @@ export function SidebarLayout({children}: SidebarLayoutProps) {
                   {user.first_name || 'User'} {user.last_name || ''}
                 </p>
                 <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+                {user.companies && (
+                  <p className="text-xs text-muted-foreground truncate">{user.companies.name}</p>
+                )}
                 <div className="flex items-center mt-1">
                   <span
                     className={cn(
