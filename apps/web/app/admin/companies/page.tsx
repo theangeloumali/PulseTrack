@@ -6,6 +6,23 @@ import {useSuperAdminCompanies, type SuperAdminCompany} from '@/lib/hooks/useSup
 import {useAuthStore} from '@/lib/stores/auth';
 import {Button} from '@workspace/ui/components/button';
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@workspace/ui/components/dropdown-menu';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@workspace/ui/components/alert-dialog';
+import {
   Search,
   Building2,
   Users,
@@ -15,14 +32,33 @@ import {
   Calendar,
   ExternalLink,
   BarChart3,
+  MoreVertical,
+  Archive,
+  ArchiveRestore,
+  Trash2,
 } from 'lucide-react';
+import {
+  useArchiveCompany,
+  useRestoreCompany,
+  useDeleteCompany,
+} from '@/lib/hooks/useCompanyActions';
+import {cn} from '@workspace/ui/lib/utils';
 
 export default function SuperAdminCompaniesPage() {
   const router = useRouter();
   const {user: currentUser} = useAuthStore();
   const [searchQuery, setSearchQuery] = useState('');
+  const [showArchived, setShowArchived] = useState(false);
+  const [actionDialog, setActionDialog] = useState<{
+    isOpen: boolean;
+    type: 'archive' | 'restore' | 'delete' | null;
+    company: SuperAdminCompany | null;
+  }>({isOpen: false, type: null, company: null});
 
   const {data: companies = [], isLoading, error} = useSuperAdminCompanies();
+  const archiveCompany = useArchiveCompany();
+  const restoreCompany = useRestoreCompany();
+  const deleteCompany = useDeleteCompany();
 
   // Check if current user is super admin
   if (currentUser?.role !== 'super_admin') {
@@ -39,12 +75,18 @@ export default function SuperAdminCompaniesPage() {
     );
   }
 
-  // Filter companies based on search
-  const filteredCompanies = companies.filter(
-    (company) =>
+  // Filter companies based on search and archive status
+  const filteredCompanies = companies.filter((company) => {
+    const matchesSearch =
       company.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      company.slug.toLowerCase().includes(searchQuery.toLowerCase()),
-  );
+      company.slug.toLowerCase().includes(searchQuery.toLowerCase());
+
+    const matchesArchiveFilter = showArchived
+      ? company.status === 'archived'
+      : !company.status || company.status === 'active';
+
+    return matchesSearch && matchesArchiveFilter;
+  });
 
   // Calculate overall statistics
   const totalStats = companies.reduce(
@@ -78,6 +120,27 @@ export default function SuperAdminCompaniesPage() {
       </div>
     );
   }
+
+  const handleAction = async () => {
+    if (!actionDialog.company || !actionDialog.type) return;
+
+    try {
+      switch (actionDialog.type) {
+        case 'archive':
+          await archiveCompany.mutateAsync({companyId: actionDialog.company.id});
+          break;
+        case 'restore':
+          await restoreCompany.mutateAsync({companyId: actionDialog.company.id});
+          break;
+        case 'delete':
+          await deleteCompany.mutateAsync({companyId: actionDialog.company.id});
+          break;
+      }
+      setActionDialog({isOpen: false, type: null, company: null});
+    } catch (error) {
+      // Error handling is done in the mutation hooks
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -149,17 +212,29 @@ export default function SuperAdminCompaniesPage() {
           </div>
         </div>
 
-        {/* Search */}
+        {/* Search and Filters */}
         <div className="bg-card rounded-lg shadow mb-8 p-6">
-          <div className="relative max-w-md">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-            <input
-              type="text"
-              placeholder="Search companies..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 pr-4 py-2 w-full border border-border bg-background text-foreground rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            />
+          <div className="flex items-center justify-between gap-4">
+            <div className="relative flex-1 max-w-md">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+              <input
+                type="text"
+                placeholder="Search companies..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10 pr-4 py-2 w-full border border-border bg-background text-foreground rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant={showArchived ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setShowArchived(!showArchived)}
+                className="flex items-center gap-2">
+                <Archive className="h-4 w-4" />
+                {showArchived ? 'Show Active' : 'Show Archived'}
+              </Button>
+            </div>
           </div>
         </div>
 
@@ -168,20 +243,70 @@ export default function SuperAdminCompaniesPage() {
           {filteredCompanies.map((company) => (
             <div
               key={company.id}
-              className="bg-card rounded-lg shadow hover:shadow-lg transition-shadow">
+              className={cn(
+                'bg-card rounded-lg shadow hover:shadow-lg transition-shadow',
+                company.status === 'archived' && 'opacity-75',
+              )}>
               {/* Company Header */}
               <div className="p-6 border-b border-border">
                 <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="text-lg font-semibold text-foreground">{company.name}</h3>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-lg font-semibold text-foreground">{company.name}</h3>
+                      {company.status === 'archived' && (
+                        <span className="text-xs bg-yellow-100 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-400 px-2 py-1 rounded">
+                          Archived
+                        </span>
+                      )}
+                    </div>
                     <p className="text-sm text-muted-foreground">/{company.slug}</p>
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => router.push(`/admin/companies/${company.id}`)}>
-                    <ExternalLink className="h-4 w-4" />
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => router.push(`/admin/companies/${company.id}`)}>
+                      <ExternalLink className="h-4 w-4" />
+                    </Button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="sm">
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem
+                          onClick={() => router.push(`/admin/companies/${company.id}`)}>
+                          <ExternalLink className="mr-2 h-4 w-4" />
+                          View Details
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        {company.status === 'archived' ? (
+                          <DropdownMenuItem
+                            onClick={() =>
+                              setActionDialog({isOpen: true, type: 'restore', company})
+                            }>
+                            <ArchiveRestore className="mr-2 h-4 w-4" />
+                            Restore Company
+                          </DropdownMenuItem>
+                        ) : (
+                          <DropdownMenuItem
+                            onClick={() =>
+                              setActionDialog({isOpen: true, type: 'archive', company})
+                            }>
+                            <Archive className="mr-2 h-4 w-4" />
+                            Archive Company
+                          </DropdownMenuItem>
+                        )}
+                        <DropdownMenuItem
+                          className="text-red-600 dark:text-red-400"
+                          onClick={() => setActionDialog({isOpen: true, type: 'delete', company})}>
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          Delete Company
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
                 </div>
               </div>
 
@@ -267,6 +392,56 @@ export default function SuperAdminCompaniesPage() {
           </div>
         )}
       </div>
+
+      {/* Confirmation Dialog */}
+      <AlertDialog
+        open={actionDialog.isOpen}
+        onOpenChange={(open) => {
+          if (!open) {
+            setActionDialog({isOpen: false, type: null, company: null});
+          }
+        }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {actionDialog.type === 'archive' && 'Archive Company'}
+              {actionDialog.type === 'restore' && 'Restore Company'}
+              {actionDialog.type === 'delete' && 'Delete Company'}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {actionDialog.type === 'archive' && (
+                <>
+                  Are you sure you want to archive <strong>{actionDialog.company?.name}</strong>?
+                  This will set all users in the company to inactive status.
+                </>
+              )}
+              {actionDialog.type === 'restore' && (
+                <>
+                  Are you sure you want to restore <strong>{actionDialog.company?.name}</strong>?
+                  This will restore all users to their previous status.
+                </>
+              )}
+              {actionDialog.type === 'delete' && (
+                <>
+                  Are you sure you want to permanently delete{' '}
+                  <strong>{actionDialog.company?.name}</strong>? This action cannot be undone and
+                  will delete all users and data associated with the company.
+                </>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleAction}
+              className={actionDialog.type === 'delete' ? 'bg-red-600 hover:bg-red-700' : ''}>
+              {actionDialog.type === 'archive' && 'Archive'}
+              {actionDialog.type === 'restore' && 'Restore'}
+              {actionDialog.type === 'delete' && 'Delete'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
