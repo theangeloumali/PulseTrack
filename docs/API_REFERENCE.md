@@ -22,7 +22,7 @@ const response = await fetch("/api/endpoint", {
 ## Base URL Structure
 
 ```
-Production: https://pulsetrack-zkidz-web.vercel.app/pulse/api
+Production: https://pulsetrack.zkidzdev.com/api
 Development: http://localhost:3000/api
 ```
 
@@ -674,7 +674,7 @@ While no official SDK exists yet, the API is designed for easy integration with 
 
 ```typescript
 const pulseTrack = {
-  baseURL: "https://pulsetrack-zkidz-web.vercel.app/pulse/api",
+  baseURL: "https://pulsetrack.zkidzdev.com/api",
 
   async request(endpoint: string, options: RequestInit = {}) {
     const response = await fetch(`${this.baseURL}${endpoint}`, {

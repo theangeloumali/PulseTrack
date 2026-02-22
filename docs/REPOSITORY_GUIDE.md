@@ -9,13 +9,11 @@ PulseTrack is a comprehensive project management and time tracking system built 
 ### Core Features
 
 1. **Project Management**
-
    - Create and manage projects
    - Organize work with structured ticket system
    - Track project progress and analytics
 
 2. **Ticket Management**
-
    - Create, assign, and track tickets
    - Kanban-style board with drag-and-drop functionality
    - Ticket status workflows (To Do, In Progress, Done, etc.)
@@ -23,14 +21,12 @@ PulseTrack is a comprehensive project management and time tracking system built 
    - Comments and collaboration
 
 3. **Time Tracking**
-
    - Start/stop timers for tickets
    - Manual time entry logging
    - Automatic time calculations
    - Detailed time entry reports
 
 4. **Billing System**
-
    - Automated billing period generation
    - Flexible billing rates (project-specific, user-specific, company defaults)
    - Invoice generation and payment tracking
@@ -39,7 +35,6 @@ PulseTrack is a comprehensive project management and time tracking system built 
    - PDF export capabilities
 
 5. **User Management**
-
    - Role-based access control (Super Admin, System Admin, Company Admin, Manager, User)
    - Company-based user isolation
    - User invitation system

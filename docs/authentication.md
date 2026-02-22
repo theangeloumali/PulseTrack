@@ -19,7 +19,6 @@ The system uses **Supabase Auth** for authentication with custom authorization l
    ```
 
 2. **Email Verification**:
-
    - User receives verification email from Supabase
    - Clicks verification link
    - Redirected to `/auth/callback` for session creation
@@ -205,7 +204,7 @@ Supabase handles JWT token lifecycle:
 // File: apps/web/lib/supabase/client.ts
 export const supabase = createClientComponentClient({
   supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  supabaseKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+  supabaseKey: process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY!,
 });
 
 // Automatic token refresh

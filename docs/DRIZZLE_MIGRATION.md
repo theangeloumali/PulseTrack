@@ -33,7 +33,7 @@ pnpm add -D drizzle-kit
 Add to your `.env.local`:
 
 ```bash
-DATABASE_URL=postgresql://postgres:[YOUR-PASSWORD]@db.tdpkueqdmnnzeqeunhia.supabase.co:5432/postgres
+DATABASE_URL=postgresql://postgres:[YOUR-PASSWORD]@db.<project-ref>.supabase.co:5432/postgres
 ```
 
 Get the DATABASE_URL from your Supabase project:
@@ -42,16 +42,22 @@ Get the DATABASE_URL from your Supabase project:
 2. Copy the Connection string for Nodejs
 3. Replace `[YOUR-PASSWORD]` with your database password
 
-### 3. Run the Migration
+### 3. Run Migrations with Drizzle
 
-Execute the SQL in `lib/db/migrations/0000_initial.sql` in your Supabase SQL editor.
+Use Drizzle as the canonical migration path from `apps/web`:
 
-This migration includes:
+```bash
+pnpm db:generate
+pnpm db:migrate
+```
 
-- All table definitions with proper constraints
-- RLS policies for multi-tenant security
-- Updated triggers for `updated_at` columns
-- **Removed** the problematic user creation trigger
+For provisioning a new Supabase database directly from schema state:
+
+```bash
+pnpm db:push
+```
+
+`db:push` now runs `drizzle-kit push` and then applies canonical RLS/storage policies from `lib/db/migrations/rls_policies.sql`.
 
 ### 4. Update Your Code
 
@@ -85,7 +91,10 @@ const project = await createProject({
 # Generate migrations from schema changes
 pnpm db:generate
 
-# Push schema changes to database
+# Run journaled migrations
+pnpm db:migrate
+
+# Push current schema and auto-apply RLS policies
 pnpm db:push
 
 # Open Drizzle Studio (GUI for database)
@@ -130,7 +139,7 @@ console.log(user.company.name); // Type-safe access
 - [x] Create database service functions
 - [x] Update auth helpers to use Drizzle
 - [x] Create migration SQL file
-- [x] Add npm scripts for Drizzle commands
+- [x] Add pnpm scripts for Drizzle commands
 - [x] Create test pages for validation
 - [ ] Run migration SQL in Supabase
 - [ ] Test signup flow end-to-end

@@ -25,17 +25,14 @@ Time Entry → Rate Calculation → Billing Amount → Billing Period → Invoic
 The system uses a priority-based rate selection system:
 
 1. **Project-Specific Rates** (Highest Priority)
-
    - Rates assigned to specific projects
    - Overrides all other rates for that project
 
 2. **User-Specific Rates** (Medium Priority)
-
    - Rates assigned to individual users
    - Applied when no project rate exists
 
 3. **Company Default Rate** (Low Priority)
-
    - Company-wide fallback rate
    - Used when no specific rates are defined
 
@@ -69,7 +66,6 @@ function calculateApplicableRate(timeEntry) {
 ### Types of Billing Periods
 
 1. **Company-Wide Periods**
-
    - Include all time entries for the company
    - Used for general invoicing
 
@@ -131,13 +127,11 @@ When time entries are created or updated:
 ### Invoice Components
 
 1. **Header Information**
-
    - Company details
    - Billing period dates
    - Invoice number and date
 
 2. **Time Entry Details**
-
    - Daily breakdown by user
    - Project and ticket information
    - Hours worked and amounts

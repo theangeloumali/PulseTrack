@@ -64,7 +64,7 @@ The foundation is now complete! You have:
 3. Update `.env.local` with your Supabase credentials:
    ```
    NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
-   NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+   NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY=your_supabase_anon_key
    ```
 4. Run the SQL commands from `database.sql` in your Supabase SQL editor
 
