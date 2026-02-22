@@ -25,6 +25,7 @@ export interface SuperAdminCompany {
   slug: string;
   created_at: string;
   updated_at: string;
+  status?: 'active' | 'archived' | 'deleted';
   stats: CompanyStats;
 }
 
