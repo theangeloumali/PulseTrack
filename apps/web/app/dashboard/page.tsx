@@ -42,10 +42,6 @@ export default function DashboardPage() {
     data: stats,
     isLoading: statsLoading,
     isError: statsError,
-  }: {
-    data: DashboardStatistics | undefined;
-    isLoading: boolean;
-    isError: boolean;
   } = useDashboardStatistics(user?.id || '', user?.company_id || '', user?.role || 'user');
 
   // Helper function to format hours to HH:MM

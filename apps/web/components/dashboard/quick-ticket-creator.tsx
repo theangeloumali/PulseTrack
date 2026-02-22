@@ -58,8 +58,7 @@ const createQuickTicket = async (data: QuickTicketData & {userId: string; compan
     priority: data.priority,
     status: 'new',
     project_id: data.projectId,
-    company_id: data.companyId,
-    creator_id: data.userId,
+    reporter_id: data.userId,
     assignee_id: data.assigneeId || data.userId, // Use selected assignee or auto-assign to creator
   };
 
@@ -152,7 +151,7 @@ export function QuickTicketCreator({userId, companyId}: QuickTicketCreatorProps)
       title: template.title,
       description: '',
       priority: template.priority,
-      projectId: projects[0].id, // Use first project as default
+      projectId: projects?.[0]?.id ?? '', // Use first project as default
       assigneeId: userId, // Default to current user
     });
     setIsExpanded(true);
@@ -339,8 +338,7 @@ export function QuickTicketCreator({userId, companyId}: QuickTicketCreatorProps)
               <label className="text-sm font-medium">Assignee</label>
               <Select
                 value={formData.assigneeId}
-                onValueChange={(value) => setFormData((prev) => ({...prev, assigneeId: value}))}
-              >
+                onValueChange={(value) => setFormData((prev) => ({...prev, assigneeId: value}))}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select assignee..." />
                 </SelectTrigger>

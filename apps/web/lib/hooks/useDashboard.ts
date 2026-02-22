@@ -20,6 +20,6 @@ export function useDashboardStatistics(userId: string, companyId: string, userRo
     queryFn: () => getDashboardStatistics(userId, companyId, userRole),
     enabled: !!userId && !!companyId && !!userRole,
     staleTime: 5 * 60 * 1000, // 5 minutes
-    cacheTime: 10 * 60 * 1000, // 10 minutes
+    gcTime: 10 * 60 * 1000, // 10 minutes
   });
 }

@@ -234,7 +234,9 @@ export function PriorityInsights({userId, companyId, userRole}: PriorityInsights
             <TabsContent key={key} value={key} className="mt-4">
               {(config?.items?.length || 0) > 0 ? (
                 <div className="space-y-2">
-                  {config?.items?.map((item) => <PriorityItemCard key={item.id} item={item} />)}
+                  {config?.items?.map((item: PriorityItem) => (
+                    <PriorityItemCard key={item.id} item={item} />
+                  ))}
                 </div>
               ) : (
                 <EmptyState type={key} />
