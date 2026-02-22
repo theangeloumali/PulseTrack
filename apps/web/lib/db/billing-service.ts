@@ -463,7 +463,7 @@ export async function getOutstandingPayments(companyId: string, filterUserId?: s
 
   const {data, error} = await query.order('payment_due_date', {
     ascending: true,
-    nullsLast: true,
+    nullsFirst: false,
   });
 
   if (error) throw error;
@@ -586,8 +586,8 @@ export async function generateBillingPeriodForCycle(
   try {
     const totalAmount = await calculateBillingPeriodAmount(
       companyId,
-      start.toISOString().split('T')[0], // Format as YYYY-MM-DD
-      end.toISOString().split('T')[0], // Format as YYYY-MM-DD
+      start.toISOString().split('T')[0]!, // Format as YYYY-MM-DD
+      end.toISOString().split('T')[0]!, // Format as YYYY-MM-DD
       undefined, // No user filter for company-wide periods
     );
 
@@ -723,8 +723,8 @@ export async function generateBillingPeriodForUser(
   try {
     const totalAmount = await calculateBillingPeriodAmount(
       companyId,
-      start.toISOString().split('T')[0], // Format as YYYY-MM-DD
-      end.toISOString().split('T')[0], // Format as YYYY-MM-DD
+      start.toISOString().split('T')[0]!, // Format as YYYY-MM-DD
+      end.toISOString().split('T')[0]!, // Format as YYYY-MM-DD
       targetUserId, // Filter for specific user
     );
 
@@ -880,22 +880,20 @@ export async function generateBillingReport(
     timeEntries.forEach((entry, index) => {
       try {
         // Debug log for problematic entries
-        if (index < 3 || (!entry.users && !entry.user) || (!entry.tickets && !entry.ticket)) {
+        if (index < 3 || !entry.users?.length || !entry.tickets?.length) {
           console.log(`🔍 Entry ${index} structure:`, {
             id: entry.id,
-            hasUsers: !!entry.users,
-            hasUser: !!entry.user,
-            hasTickets: !!entry.tickets,
-            hasTicket: !!entry.ticket,
+            hasUsers: !!entry.users?.length,
+            hasTickets: !!entry.tickets?.length,
             ticketsStructure: entry.tickets ? Object.keys(entry.tickets) : 'null',
             usersStructure: entry.users ? Object.keys(entry.users) : 'null',
           });
         }
 
-        // Fix the data structure access - Supabase returns 'users' and 'tickets', not 'user' and 'ticket'
-        const user = entry.users || entry.user;
-        const ticket = entry.tickets || entry.ticket;
-        const project = ticket?.projects || entry.project;
+        // Supabase returns joined tables as arrays - extract first element
+        const user = entry.users?.[0];
+        const ticket = entry.tickets?.[0];
+        const project = ticket?.projects?.[0];
 
         if (!user || !ticket || !project) {
           console.warn(`⚠️ Skipping entry ${index} due to missing data:`, {

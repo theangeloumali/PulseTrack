@@ -325,7 +325,7 @@ export function InvoiceGeneration({
                 ? `<img src="${companySettings.company_logo_url}" alt="Company Logo" class="company-logo">`
                 : ''
             }
-            <h1>${billingPeriod.company_name || 'Your Company Name'}</h1>
+            <h1>${(billingPeriod as any).company_name || 'Your Company Name'}</h1>
             ${
               companySettings?.company_address
                 ? `<p>${companySettings.company_address.replace(/\n/g, '<br>')}</p>`

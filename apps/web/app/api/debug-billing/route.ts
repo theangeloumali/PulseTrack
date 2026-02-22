@@ -110,7 +110,6 @@ export async function GET(req: NextRequest) {
       },
       report: report,
       apiInfo: {
-        basePath: process.env.NEXT_PUBLIC_BASE_PATH || '/pulse',
         nodeEnv: process.env.NODE_ENV,
         requestUrl: req.url,
       },

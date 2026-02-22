@@ -71,7 +71,10 @@ export async function DELETE(request: NextRequest) {
           .eq('id', paymentHistoryId)
           .single();
 
-        if (!paymentHistory || paymentHistory.billing_periods.company_id !== user.company_id) {
+        if (
+          !paymentHistory ||
+          (paymentHistory.billing_periods as any)?.company_id !== user.company_id
+        ) {
           return NextResponse.json(
             {error: 'Payment history not found or access denied'},
             {status: 404},
