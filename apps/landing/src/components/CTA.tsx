@@ -12,7 +12,7 @@ const CTA: React.FC = () => {
 
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <a
-            href="https://pulsetrack-zkidz-web.vercel.app/pulse/signup"
+            href="https://pulsetrack.zkidzdev.com/signup"
             className="bg-white text-primary-600 px-8 py-4 rounded-lg text-lg font-semibold hover:bg-gray-50 transition-colors"
           >
             Start Free Trial

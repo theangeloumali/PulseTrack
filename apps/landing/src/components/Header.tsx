@@ -41,13 +41,13 @@ const Header: React.FC = () => {
 
           <div className="flex items-center space-x-4">
             <a
-              href="https://zkidzdev.com/pulse/login"
+              href="https://pulsetrack.zkidzdev.com/login"
               className="text-gray-700 hover:text-primary-600 transition-colors"
             >
               Sign In
             </a>
             <a
-              href="https://zkidzdev.com/pulse/signup"
+              href="https://pulsetrack.zkidzdev.com/signup"
               className="bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition-colors"
             >
               Start Free Trial
