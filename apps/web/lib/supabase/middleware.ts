@@ -8,7 +8,7 @@ export async function updateSession(request: NextRequest) {
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY!,
     {
       cookies: {
         getAll() {
@@ -33,10 +33,6 @@ export async function updateSession(request: NextRequest) {
       error: userError,
     } = await supabase.auth.getUser();
 
-    console.log('Middleware - Path:', request.nextUrl.pathname, 'User:', user?.id || 'No user');
-    console.log('Middleware - Full URL:', request.url);
-    console.log('Middleware - Query params:', request.nextUrl.searchParams.toString());
-
     // If there's an error getting user, log it but don't immediately redirect
     // unless it's clearly an auth error
     if (userError) {
@@ -47,64 +43,21 @@ export async function updateSession(request: NextRequest) {
         userError.message?.includes('token') ||
         userError.message?.includes('expired');
       if (!isAuthError) {
-        console.log('Middleware - Non-auth error, allowing through');
         return supabaseResponse;
       }
     }
 
-    // Check each path condition individually for debugging
-    const isLogin = request.nextUrl.pathname.startsWith('/login');
-    const isSignup = request.nextUrl.pathname.startsWith('/signup');
-    const isVerifyEmail = request.nextUrl.pathname.startsWith('/verify-email');
-    const isAuthDiagnostic = request.nextUrl.pathname.startsWith('/auth-diagnostic');
-    const isAuthCallback = request.nextUrl.pathname.startsWith('/auth/callback');
-    const isRecoveryCallback = request.nextUrl.pathname.startsWith('/auth/callback/recovery');
-    const isAcceptInvitation = request.nextUrl.pathname.startsWith('/auth/accept-invitation');
-    const isAuthRoute = request.nextUrl.pathname.startsWith('/auth/');
-    const isForgotPassword = request.nextUrl.pathname.startsWith('/forgot-password');
-    const isResetPassword = request.nextUrl.pathname.startsWith('/reset-password');
-
-    console.log('Middleware - Path checks:', {
-      isLogin,
-      isSignup,
-      isVerifyEmail,
-      isAuthDiagnostic,
-      isAuthCallback,
-      isRecoveryCallback,
-      isAcceptInvitation,
-      isAuthRoute,
-      isForgotPassword,
-      isResetPassword,
-    });
-
     // Special handling for root path - always redirect appropriately
-    // Note: Due to basePath="/pulse", the root path here is actually /pulse
-    const isRootPath = request.nextUrl.pathname === '/' || request.nextUrl.pathname === '/pulse';
+    const isRootPath = request.nextUrl.pathname === '/';
     if (isRootPath) {
-      console.log('Middleware - Root path detected:', request.nextUrl.pathname);
       const url = request.nextUrl.clone();
-
-      // Check if we're being accessed through a proxy
-      const host = request.headers.get('x-forwarded-host') || request.headers.get('host');
-      const isProxiedRequest = host === 'zkidzdev.com' || host === 'www.zkidzdev.com';
-
-      if (user) {
-        // User is authenticated, redirect to dashboard
-        url.pathname = '/dashboard';
-        console.log('Middleware - Root path: Authenticated user, redirecting to dashboard');
-      } else {
-        // User is not authenticated, redirect to login
-        url.pathname = '/login';
-        console.log('Middleware - Root path: No user, redirecting to login');
-      }
+      url.pathname = user ? '/dashboard' : '/login';
       return NextResponse.redirect(url);
     }
 
     // For API routes, don't redirect to login - let them handle their own auth
     const isApiRoute = request.nextUrl.pathname.startsWith('/api/');
-
     if (isApiRoute) {
-      console.log('Middleware - API route detected, skipping auth redirect');
       return supabaseResponse;
     }
 
@@ -116,24 +69,8 @@ export async function updateSession(request: NextRequest) {
     );
 
     if (!user && needsProtection) {
-      console.log(
-        'Middleware - Redirecting to login for protected route:',
-        request.nextUrl.pathname,
-      );
-      // no user, redirect to login page
       const url = request.nextUrl.clone();
-
-      // Check if we're being accessed through a proxy (zkidzdev.com/pulse or www.zkidzdev.com/pulse)
-      const host = request.headers.get('x-forwarded-host') || request.headers.get('host');
-      const isProxiedRequest = host === 'zkidzdev.com' || host === 'www.zkidzdev.com';
-
-      if (isProxiedRequest) {
-        // Maintain the /pulse prefix for proxied requests
-        url.pathname = '/pulse/login';
-      } else {
-        url.pathname = '/login';
-      }
-
+      url.pathname = '/login';
       return NextResponse.redirect(url);
     }
   } catch (error) {
@@ -142,14 +79,12 @@ export async function updateSession(request: NextRequest) {
     // For API routes, don't redirect to login even on error
     const isApiRoute = request.nextUrl.pathname.startsWith('/api/');
     if (isApiRoute) {
-      console.log('Middleware - API route error, returning response without redirect');
       return supabaseResponse;
     }
 
     // For auth routes, allow them through even on error
     const isAuthRoute = request.nextUrl.pathname.startsWith('/auth/');
     if (isAuthRoute) {
-      console.log('Middleware - Auth route error, allowing through');
       return supabaseResponse;
     }
 

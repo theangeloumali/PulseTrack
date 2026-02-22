@@ -2,34 +2,53 @@ import {NextRequest, NextResponse} from 'next/server';
 import {createServerClient, type CookieOptions} from '@supabase/ssr';
 
 /**
+ * Derives the Supabase project ref from the public URL.
+ * e.g. "https://<project-ref>.supabase.co" -> "<project-ref>"
+ */
+const getSupabaseProjectRef = (): string | null => {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  if (!url) return null;
+  try {
+    const hostname = new URL(url).hostname; // "<project-ref>.supabase.co"
+    return hostname.split('.')[0] ?? null;
+  } catch {
+    return null;
+  }
+};
+
+/**
  * Auth cleanup utility to handle corrupted auth states
  */
 export const clearAuthState = () => {
   if (typeof window === 'undefined') return;
 
-  console.log('🧹 Clearing corrupted auth state...');
+  console.log('Clearing corrupted auth state...');
 
-  // Clear localStorage
-  const authKeys = ['sb-bqqosmjptqtivinrcfhn-auth-token', 'supabase.auth.token', 'currentUser'];
+  const projectRef = getSupabaseProjectRef();
+  const authKeys = [
+    ...(projectRef ? [`sb-${projectRef}-auth-token`] : []),
+    'supabase.auth.token',
+    'currentUser',
+  ];
 
   authKeys.forEach((key) => {
     try {
       localStorage.removeItem(key);
-      console.log('🧹 Cleared localStorage key:', key);
+      console.log('Cleared localStorage key:', key);
     } catch (error) {
-      console.warn('🧹 Failed to clear localStorage key:', key, error);
+      console.warn('Failed to clear localStorage key:', key, error);
     }
   });
 
   // Clear sessionStorage
   try {
     sessionStorage.clear();
-    console.log('🧹 Cleared sessionStorage');
+    console.log('Cleared sessionStorage');
   } catch (error) {
-    console.warn('🧹 Failed to clear sessionStorage:', error);
+    console.warn('Failed to clear sessionStorage:', error);
   }
 
-  console.log('🧹 Auth state cleanup complete');
+  console.log('Auth state cleanup complete');
 };
 
 export const isRefreshTokenError = (error: unknown): boolean => {
@@ -100,7 +119,7 @@ export const withAuth = (handler: AuthenticatedHandler, allowedRoles: Role[]) =>
 
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY!,
       {
         cookies: {
           getAll() {
