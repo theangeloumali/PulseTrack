@@ -16,7 +16,7 @@ export interface SuperAdminUser {
   invited_at?: string | null;
   created_at: string;
   updated_at: string;
-  companies: {
+  company: {
     id: string;
     name: string;
     slug: string;

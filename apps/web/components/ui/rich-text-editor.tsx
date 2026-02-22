@@ -80,7 +80,7 @@ export function RichTextEditor({
         preview={preview}
         height={height}
         data-color-mode={isDarkMode ? 'dark' : 'light'}
-        visibleDragBar={false}
+        visibleDragbar={false}
         textareaProps={{
           placeholder,
           disabled,

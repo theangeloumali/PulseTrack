@@ -62,7 +62,7 @@ function DropdownPortal({
   position = 'bottom-left',
 }: {
   isOpen: boolean;
-  triggerRef: React.RefObject<HTMLElement>;
+  triggerRef: React.RefObject<HTMLElement | null>;
   children: React.ReactNode;
   position?: 'bottom-left' | 'bottom-right';
 }) {
@@ -646,7 +646,7 @@ export function TicketBoard({tickets: serverTickets, isLoading}: TicketBoardProp
     // If we have ticket collisions, check if it's the same column for reordering
     if (ticketCollisions.length > 0) {
       const activeTicket = tickets.find((t) => t.id === args.active?.id);
-      const targetTicket = tickets.find((t) => t.id === ticketCollisions[0].id);
+      const targetTicket = tickets.find((t) => t.id === ticketCollisions[0]?.id);
 
       if (activeTicket && targetTicket && activeTicket.status === targetTicket.status) {
         console.log('🔄 Same-column reordering detected');
@@ -656,7 +656,7 @@ export function TicketBoard({tickets: serverTickets, isLoading}: TicketBoardProp
 
     // For cross-column moves, prioritize columns
     if (columnCollisions.length > 0) {
-      console.log('📂 Column move detected:', columnCollisions[0].id);
+      console.log('📂 Column move detected:', columnCollisions[0]?.id);
       return columnCollisions.slice(0, 1);
     }
 

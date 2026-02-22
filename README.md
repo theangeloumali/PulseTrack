@@ -91,7 +91,7 @@ Configure the following environment variables in `apps/web/.env.local`:
 ```env
 # Supabase Configuration
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY=your_supabase_anon_key
 SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
 NEXT_PUBLIC_SITE_URL=http://localhost:4649
 ```
@@ -233,15 +233,7 @@ For complete schema documentation, see [docs/database-schema.md](./docs/database
 
 ### Deployment Configuration
 
-The app supports both standalone and proxy deployments:
-
-```javascript
-// next.config.mjs
-const nextConfig = {
-  basePath: "/pulse", // For proxy deployment
-  assetPrefix: "/pulse", // Ensures assets load correctly
-};
-```
+The app is deployed as a standalone Next.js application at `pulsetrack.zkidzdev.com`. No `basePath` or `assetPrefix` is required.
 
 ### Theme Configuration
 
@@ -301,7 +293,7 @@ console.log("Database health:", issues);
 
 ```env
 NEXT_PUBLIC_SUPABASE_URL=your_production_supabase_url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_production_anon_key
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY=your_production_anon_key
 SUPABASE_SERVICE_ROLE_KEY=your_production_service_role_key
 NEXT_PUBLIC_SITE_URL=https://your-domain.com
 ```

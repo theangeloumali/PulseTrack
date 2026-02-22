@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import {useEffect, useState} from 'react';
 
 interface BeforeInstallPromptEvent extends Event {
   readonly platforms: string[];
@@ -20,17 +20,19 @@ export function PWAInstaller() {
     // Register service worker
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker
-        .register('/pulse/sw.js', { scope: '/pulse/' })
+        .register('/sw.js', {scope: '/'})
         .then((registration) => {
           console.log('✅ PWA: Service Worker registered successfully', registration);
-          
+
           // Listen for updates
           registration.addEventListener('updatefound', () => {
             const newWorker = registration.installing;
             if (newWorker) {
               newWorker.addEventListener('statechange', () => {
                 if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                  console.log('🔄 PWA: New content is available, will be used when all tabs are closed');
+                  console.log(
+                    '🔄 PWA: New content is available, will be used when all tabs are closed',
+                  );
                   // You could show a notification here about new content
                 }
               });
@@ -82,14 +84,14 @@ export function PWAInstaller() {
 
     try {
       await deferredPrompt.prompt();
-      const { outcome } = await deferredPrompt.userChoice;
-      
+      const {outcome} = await deferredPrompt.userChoice;
+
       if (outcome === 'accepted') {
         console.log('✅ PWA: User accepted the install prompt');
       } else {
         console.log('❌ PWA: User dismissed the install prompt');
       }
-      
+
       setDeferredPrompt(null);
       setIsInstallPromptVisible(false);
     } catch (error) {
@@ -125,18 +127,16 @@ export function PWAInstaller() {
             </p>
           </div>
         </div>
-        
+
         <div className="mt-4 flex space-x-2">
           <button
             onClick={handleInstallClick}
-            className="flex-1 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 text-sm font-medium py-2 px-3 rounded-md hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors"
-          >
+            className="flex-1 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 text-sm font-medium py-2 px-3 rounded-md hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors">
             Install
           </button>
           <button
             onClick={handleDismissInstall}
-            className="flex-1 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm font-medium py-2 px-3 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-          >
+            className="flex-1 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm font-medium py-2 px-3 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
             Not now
           </button>
         </div>

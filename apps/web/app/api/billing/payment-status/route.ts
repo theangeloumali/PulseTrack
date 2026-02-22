@@ -8,7 +8,6 @@ import {
   getBillingCycleStats,
 } from '@/lib/db/billing-service';
 import {createClient} from '@/lib/supabase/server';
-import {getApiPath} from '@/lib/utils';
 
 export async function GET(request: NextRequest) {
   try {

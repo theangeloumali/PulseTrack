@@ -19,7 +19,7 @@ const Hero: React.FC = () => {
 
             <div className="mt-8 flex flex-col sm:flex-row gap-4">
               <a
-                href="https://pulsetrack-zkidz-web.vercel.app/pulse/signup"
+                href="https://pulsetrack.zkidzdev.com/signup"
                 className="bg-primary-600 text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-primary-700 transition-colors text-center"
               >
                 Start Free Trial

@@ -67,6 +67,18 @@ export default function AuthDiagnosticPage() {
   const [performanceResults, setPerformanceResults] = useState<PerformanceResults | null>(null);
   const authStore = useAuthStore();
 
+  // Derive Supabase project ref from URL for localStorage key lookup
+  const supabaseProjectRef = (() => {
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    if (!url) return null;
+    try {
+      return new URL(url).hostname.split('.')[0] ?? null;
+    } catch {
+      return null;
+    }
+  })();
+  const authTokenKey = supabaseProjectRef ? `sb-${supabaseProjectRef}-auth-token` : 'sb-auth-token';
+
   // Auto-refresh current state
   useEffect(() => {
     const updateCurrentState = async () => {
@@ -82,7 +94,7 @@ export default function AuthDiagnosticPage() {
         localStorage:
           typeof window !== 'undefined'
             ? {
-                'sb-auth-token': localStorage.getItem('sb-bqqosmjptqtivinrcfhn-auth-token'),
+                'sb-auth-token': localStorage.getItem(authTokenKey),
                 currentUser: localStorage.getItem('currentUser'),
               }
             : {},
@@ -113,11 +125,12 @@ export default function AuthDiagnosticPage() {
       const envTest = {
         test: 'Environment Variables',
         success: !!(
-          process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+          process.env.NEXT_PUBLIC_SUPABASE_URL &&
+          process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY
         ),
         data: {
           hasSupabaseUrl: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
-          hasSupabaseKey: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+          hasSupabaseKey: !!process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY,
           supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL,
         },
         timestamp: new Date().toISOString(),
@@ -189,11 +202,7 @@ export default function AuthDiagnosticPage() {
       // LocalStorage test
       if (typeof window !== 'undefined') {
         addLog('Testing local storage...');
-        const authKeys = [
-          'sb-bqqosmjptqtivinrcfhn-auth-token',
-          'supabase.auth.token',
-          'currentUser',
-        ];
+        const authKeys = [authTokenKey, 'supabase.auth.token', 'currentUser'];
 
         const localStorageData: {[key: string]: string | null | undefined} = {};
         authKeys.forEach((key) => {
@@ -636,9 +645,9 @@ export default function AuthDiagnosticPage() {
                 {process.env.NEXT_PUBLIC_SUPABASE_URL ? '✓ Set' : '✗ Missing'}
               </div>
               <div
-                className={`p-2 rounded ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? 'bg-green-100' : 'bg-red-100'}`}>
-                NEXT_PUBLIC_SUPABASE_ANON_KEY:{' '}
-                {process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? '✓ Set' : '✗ Missing'}
+                className={`p-2 rounded ${process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY ? 'bg-green-100' : 'bg-red-100'}`}>
+                NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY:{' '}
+                {process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY ? '✓ Set' : '✗ Missing'}
               </div>
               {process.env.NEXT_PUBLIC_SUPABASE_URL && (
                 <div className="p-2 bg-gray-100 rounded">

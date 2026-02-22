@@ -4,6 +4,7 @@
 // Define enum types
 export type UserRole = 'super_admin' | 'system_admin' | 'company_admin' | 'manager' | 'user';
 export type UserStatus = 'active' | 'inactive';
+export type CompanyStatus = 'active' | 'archived' | 'deleted';
 export type ProjectStatus = 'active' | 'archived' | 'completed';
 export type TicketStatus = 'new' | 'in_progress' | 'review' | 'done';
 export type TicketPriority = 'low' | 'medium' | 'high' | 'critical';
@@ -22,7 +23,13 @@ export type ActivityType =
   | 'user_added_to_project'
   | 'user_removed_from_project'
   | 'time_entry_created'
-  | 'time_entry_updated';
+  | 'time_entry_updated'
+  | 'company_archived'
+  | 'company_restored'
+  | 'company_deleted'
+  | 'user_archived'
+  | 'user_restored'
+  | 'user_deleted';
 export type ProjectVisibility = 'public' | 'company' | 'private';
 
 // Base database types
@@ -55,6 +62,7 @@ export interface User extends BaseRecord {
   status?: 'active' | 'inactive'; // User status within company
   invited_by?: string | null; // ID of user who invited this user
   invited_at?: string | null; // When the invitation was sent
+  archived_at?: string | null; // When the user was archived
 }
 
 export interface NewUser {

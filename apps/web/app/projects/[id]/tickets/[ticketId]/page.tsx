@@ -192,7 +192,7 @@ export default function TicketDetailPage({params}: Props) {
                   </div>
                 </div>
                 <p className="text-muted-foreground mt-1">
-                  Project: {ticket.projects?.name || 'Unknown Project'}
+                  Project: {(ticket as any).projects?.name || 'Unknown Project'}
                 </p>
               </div>
             </div>
@@ -281,7 +281,7 @@ export default function TicketDetailPage({params}: Props) {
                       <User className="h-4 w-4 mr-2" />
                       {ticket.assignee ? (
                         <span>
-                          {ticket.assignee.first_name} {ticket.assignee.last_name}
+                          {(ticket.assignee as any).first_name} {(ticket.assignee as any).last_name}
                         </span>
                       ) : (
                         <span className="text-muted-foreground">Unassigned</span>
@@ -294,7 +294,7 @@ export default function TicketDetailPage({params}: Props) {
                       <User className="h-4 w-4 mr-2" />
                       {ticket.reporter ? (
                         <span>
-                          {ticket.reporter.first_name} {ticket.reporter.last_name}
+                          {(ticket.reporter as any).first_name} {(ticket.reporter as any).last_name}
                         </span>
                       ) : (
                         <span>Unknown</span>

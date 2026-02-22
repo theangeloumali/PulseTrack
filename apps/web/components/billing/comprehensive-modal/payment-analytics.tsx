@@ -83,8 +83,8 @@ export function PaymentAnalytics({billingPeriod, companyId}: PaymentAnalyticsPro
 
     // Previous period for comparison
     const previousPeriod = mockHistoricalPeriods[mockHistoricalPeriods.length - 1];
-    const previousAmount = previousPeriod.total_amount;
-    const previousHours = previousPeriod.total_hours;
+    const previousAmount = previousPeriod?.total_amount ?? 0;
+    const previousHours = previousPeriod?.total_hours ?? 0;
     const previousRate = previousHours > 0 ? previousAmount / previousHours : 0;
 
     // Calculate changes

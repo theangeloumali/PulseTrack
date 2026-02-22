@@ -489,11 +489,7 @@ export function PaymentManagement({billingPeriod, companyId, onClose}: PaymentMa
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <Button
                   variant="outline"
-                  onClick={() =>
-                    resetPaymentStatusMutation.mutate({
-                      billing_period_id: billingPeriod.id,
-                    })
-                  }
+                  onClick={() => resetPaymentStatusMutation.mutate(billingPeriod.id)}
                   disabled={isLoading}
                   className="flex items-center gap-2">
                   <RefreshCw className="h-4 w-4" />
@@ -502,11 +498,7 @@ export function PaymentManagement({billingPeriod, companyId, onClose}: PaymentMa
 
                 <Button
                   variant="destructive"
-                  onClick={() =>
-                    deletePaymentHistoryMutation.mutate({
-                      billing_period_id: billingPeriod.id,
-                    })
-                  }
+                  onClick={() => deletePaymentHistoryMutation.mutate(billingPeriod.id)}
                   disabled={isLoading}
                   className="flex items-center gap-2">
                   <Trash2 className="h-4 w-4" />

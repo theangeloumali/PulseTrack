@@ -50,7 +50,7 @@ export default function CompanyDetailsPage() {
   const company = companies.find((c) => c.id === companyId);
 
   // Filter users for this company
-  const companyUsers = users.filter((user) => user.companies?.id === companyId);
+  const companyUsers = users.filter((user) => user.company?.id === companyId);
 
   if (companiesLoading || usersLoading) {
     return (

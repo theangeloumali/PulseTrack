@@ -2,7 +2,17 @@
 
 import {useState, useEffect} from 'react';
 import {useRouter} from 'next/navigation';
-import {Users, UserPlus, Search, Edit, Shield} from 'lucide-react';
+import {
+  Users,
+  UserPlus,
+  Search,
+  Edit,
+  Shield,
+  MoreVertical,
+  Archive,
+  ArchiveRestore,
+  Trash2,
+} from 'lucide-react';
 import {Button} from '@workspace/ui/components/button';
 import {
   Card,
@@ -13,17 +23,42 @@ import {
 } from '@workspace/ui/components/card';
 import {Badge} from '@workspace/ui/components/badge';
 import {Input} from '@workspace/ui/components/input';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@workspace/ui/components/dropdown-menu';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@workspace/ui/components/alert-dialog';
 import {useCompanyUsers} from '@/lib/hooks/useUsers';
 import {useCompanyStore, CompanyUser} from '@/lib/stores/company';
 import {useAuthStore} from '@/lib/stores/auth';
 import {useRoleAccess} from '@/lib/hooks/useRoleAccess';
 import {InviteUserModal} from '@/components/modals/invite-user-modal';
 import {EditUserModal} from '@/components/modals/edit-user-modal';
+import {useArchiveUser, useRestoreUser, useDeleteUser} from '@/lib/hooks/useUserActions';
+import {cn} from '@workspace/ui/lib/utils';
 import type {UserRole, UserStatus} from '@/lib/db/schema';
 
 export default function CompanyUsersPage() {
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [editingUser, setEditingUser] = useState<CompanyUser | null>(null);
+  const [showArchived, setShowArchived] = useState(false);
+  const [actionDialog, setActionDialog] = useState<{
+    isOpen: boolean;
+    type: 'archive' | 'restore' | 'delete' | null;
+    user: CompanyUser | null;
+  }>({isOpen: false, type: null, user: null});
   const router = useRouter();
 
   const {user: currentUser} = useAuthStore();
@@ -40,6 +75,9 @@ export default function CompanyUsersPage() {
   } = useCompanyStore();
 
   const {isLoading, error} = useCompanyUsers();
+  const archiveUser = useArchiveUser();
+  const restoreUser = useRestoreUser();
+  const deleteUser = useDeleteUser();
 
   // Redirect users without company access
   useEffect(() => {
@@ -53,7 +91,15 @@ export default function CompanyUsersPage() {
     return <div></div>;
   }
 
-  const filteredUsers = getFilteredUsers();
+  // Filter users based on archive status
+  const baseFilteredUsers = getFilteredUsers();
+  const filteredUsers = baseFilteredUsers.filter((user) => {
+    if (showArchived) {
+      return user.archived_at !== null && user.archived_at !== undefined;
+    } else {
+      return user.archived_at === null || user.archived_at === undefined;
+    }
+  });
   const stats = getUserStats();
 
   const getRoleColor = (role: string) => {
@@ -83,6 +129,27 @@ export default function CompanyUsersPage() {
   const formatHourlyRate = (rate: number | null | undefined) => {
     if (!rate) return 'Not set';
     return `$${rate}/hr`;
+  };
+
+  const handleAction = async () => {
+    if (!actionDialog.user || !actionDialog.type) return;
+
+    try {
+      switch (actionDialog.type) {
+        case 'archive':
+          await archiveUser.mutateAsync({userId: actionDialog.user.id});
+          break;
+        case 'restore':
+          await restoreUser.mutateAsync({userId: actionDialog.user.id});
+          break;
+        case 'delete':
+          await deleteUser.mutateAsync({userId: actionDialog.user.id});
+          break;
+      }
+      setActionDialog({isOpen: false, type: null, user: null});
+    } catch (error) {
+      // Error handling is done in the mutation hooks
+    }
   };
 
   if (error) {
@@ -225,6 +292,16 @@ export default function CompanyUsersPage() {
                   <option value="active">Active</option>
                   <option value="inactive">Inactive</option>
                 </select>
+
+                {/* Archive Toggle */}
+                <Button
+                  variant={showArchived ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setShowArchived(!showArchived)}
+                  className="flex items-center gap-2">
+                  <Archive className="h-4 w-4" />
+                  {showArchived ? 'Show Active' : 'Show Archived'}
+                </Button>
               </div>
             </CardContent>
           </Card>
@@ -277,7 +354,9 @@ export default function CompanyUsersPage() {
                     </thead>
                     <tbody className="bg-card divide-y divide-border">
                       {filteredUsers.map((user) => (
-                        <tr key={user.id} className="hover:bg-muted/50">
+                        <tr
+                          key={user.id}
+                          className={cn('hover:bg-muted/50', user.archived_at && 'opacity-75')}>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="flex items-center">
                               <div className="flex-shrink-0 h-10 w-10">
@@ -288,10 +367,17 @@ export default function CompanyUsersPage() {
                                 </div>
                               </div>
                               <div className="ml-4">
-                                <div className="text-sm font-medium text-foreground">
-                                  {user.first_name && user.last_name
-                                    ? `${user.first_name} ${user.last_name}`
-                                    : user.email}
+                                <div className="flex items-center gap-2">
+                                  <div className="text-sm font-medium text-foreground">
+                                    {user.first_name && user.last_name
+                                      ? `${user.first_name} ${user.last_name}`
+                                      : user.email}
+                                  </div>
+                                  {user.archived_at && (
+                                    <span className="text-xs bg-yellow-100 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-400 px-2 py-1 rounded">
+                                      Archived
+                                    </span>
+                                  )}
                                 </div>
                                 <div className="text-sm text-muted-foreground">{user.email}</div>
                               </div>
@@ -320,12 +406,49 @@ export default function CompanyUsersPage() {
                               currentUser?.role || '',
                             ) &&
                               currentUser?.id !== user.id && (
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => setEditingUser(user)}>
-                                  <Edit className="h-4 w-4" />
-                                </Button>
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="sm">
+                                      <MoreVertical className="h-4 w-4" />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end">
+                                    <DropdownMenuItem onClick={() => setEditingUser(user)}>
+                                      <Edit className="mr-2 h-4 w-4" />
+                                      Edit User
+                                    </DropdownMenuItem>
+                                    <DropdownMenuSeparator />
+                                    {user.archived_at ? (
+                                      <DropdownMenuItem
+                                        onClick={() =>
+                                          setActionDialog({isOpen: true, type: 'restore', user})
+                                        }>
+                                        <ArchiveRestore className="mr-2 h-4 w-4" />
+                                        Restore User
+                                      </DropdownMenuItem>
+                                    ) : (
+                                      <DropdownMenuItem
+                                        onClick={() =>
+                                          setActionDialog({isOpen: true, type: 'archive', user})
+                                        }>
+                                        <Archive className="mr-2 h-4 w-4" />
+                                        Archive User
+                                      </DropdownMenuItem>
+                                    )}
+                                    {['super_admin', 'system_admin'].includes(
+                                      currentUser?.role || '',
+                                    ) && (
+                                      <DropdownMenuItem
+                                        className="text-red-600 dark:text-red-400"
+                                        onClick={() =>
+                                          setActionDialog({isOpen: true, type: 'delete', user})
+                                        }>
+                                        <Trash2 className="mr-2 h-4 w-4" />
+                                        Delete User
+                                      </DropdownMenuItem>
+                                    )}
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
                               )}
                           </td>
                         </tr>
@@ -351,6 +474,67 @@ export default function CompanyUsersPage() {
           user={editingUser}
         />
       )}
+
+      {/* Confirmation Dialog */}
+      <AlertDialog
+        open={actionDialog.isOpen}
+        onOpenChange={(open) => {
+          if (!open) {
+            setActionDialog({isOpen: false, type: null, user: null});
+          }
+        }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {actionDialog.type === 'archive' && 'Archive User'}
+              {actionDialog.type === 'restore' && 'Restore User'}
+              {actionDialog.type === 'delete' && 'Delete User'}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {actionDialog.type === 'archive' && (
+                <>
+                  Are you sure you want to archive{' '}
+                  <strong>
+                    {actionDialog.user?.first_name}{' '}
+                    {actionDialog.user?.last_name || actionDialog.user?.email}
+                  </strong>
+                  ? This will set their status to inactive.
+                </>
+              )}
+              {actionDialog.type === 'restore' && (
+                <>
+                  Are you sure you want to restore{' '}
+                  <strong>
+                    {actionDialog.user?.first_name}{' '}
+                    {actionDialog.user?.last_name || actionDialog.user?.email}
+                  </strong>
+                  ? This will restore their previous status.
+                </>
+              )}
+              {actionDialog.type === 'delete' && (
+                <>
+                  Are you sure you want to permanently delete{' '}
+                  <strong>
+                    {actionDialog.user?.first_name}{' '}
+                    {actionDialog.user?.last_name || actionDialog.user?.email}
+                  </strong>
+                  ? This action cannot be undone.
+                </>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleAction}
+              className={actionDialog.type === 'delete' ? 'bg-red-600 hover:bg-red-700' : ''}>
+              {actionDialog.type === 'archive' && 'Archive'}
+              {actionDialog.type === 'restore' && 'Restore'}
+              {actionDialog.type === 'delete' && 'Delete'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

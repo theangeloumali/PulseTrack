@@ -113,7 +113,7 @@ export function TimeEntriesList({ticketId}: TimeEntriesListProps) {
     }
 
     // Show confirmation dialog
-    const confirmMessage = `Are you sure you want to delete this time entry?\n\nDuration: ${formatDuration(entry.duration)}\nDate: ${formatDate(entry.start_time)}\n\nThis action cannot be undone.`;
+    const confirmMessage = `Are you sure you want to delete this time entry?\n\nDuration: ${formatDuration(entry.duration ?? null)}\nDate: ${formatDate(entry.start_time)}\n\nThis action cannot be undone.`;
     if (!confirm(confirmMessage)) return;
 
     try {

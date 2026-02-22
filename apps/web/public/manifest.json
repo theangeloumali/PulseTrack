@@ -2,8 +2,8 @@
   "name": "PulseTrack - Project Management & Time Tracking",
   "short_name": "PulseTrack",
   "description": "Comprehensive project management system with ticket tracking, time management, and billing features.",
-  "start_url": "/pulse/",
-  "scope": "/pulse/",
+  "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#1f2937",
@@ -13,25 +13,25 @@
   "prefer_related_applications": false,
   "icons": [
     {
-      "src": "/pulse/icon.png",
+      "src": "/icon.png",
       "sizes": "1024x1024",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/pulse/app-logo.png",
+      "src": "/app-logo.png",
       "sizes": "1024x1024",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "/pulse/app-logo.png",
+      "src": "/app-logo.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/pulse/app-logo.png",
+      "src": "/app-logo.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
@@ -39,7 +39,7 @@
   ],
   "screenshots": [
     {
-      "src": "/pulse/app-logo.png",
+      "src": "/app-logo.png",
       "sizes": "512x512",
       "type": "image/png",
       "form_factor": "wide",
@@ -51,10 +51,10 @@
       "name": "Dashboard",
       "short_name": "Dashboard",
       "description": "View your project dashboard",
-      "url": "/pulse/dashboard",
+      "url": "/dashboard",
       "icons": [
         {
-          "src": "/pulse/icon.png",
+          "src": "/icon.png",
           "sizes": "32x32",
           "type": "image/png"
         }
@@ -64,10 +64,10 @@
       "name": "New Ticket",
       "short_name": "Ticket",
       "description": "Create a new ticket",
-      "url": "/pulse/tickets/new",
+      "url": "/tickets/new",
       "icons": [
         {
-          "src": "/pulse/icon.png",
+          "src": "/icon.png",
           "sizes": "32x32",
           "type": "image/png"
         }
@@ -75,9 +75,8 @@
     }
   ],
   "related_applications": [],
-  "prefer_related_applications": false,
   "share_target": {
-    "action": "/pulse/tickets/new",
+    "action": "/tickets/new",
     "method": "GET",
     "params": {
       "title": "title",

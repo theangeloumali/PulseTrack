@@ -8,32 +8,22 @@ const DYNAMIC_CACHE_NAME = 'pulsetrack-dynamic-v1';
 // Define cache strategies for different resource types
 const CACHE_STRATEGIES = {
   // Static assets - Cache first
-  static: [
-    '/pulse/',
-    '/pulse/manifest.json',
-    '/pulse/icon.png',
-    '/pulse/app-logo.png',
-  ],
-  
+  static: ['/', '/manifest.json', '/icon.png', '/app-logo.png'],
+
   // API routes - Network first with cache fallback
-  api: [
-    '/pulse/api/',
-  ],
-  
+  api: ['/api/'],
+
   // Pages - Network first with cache fallback
-  pages: [
-    '/pulse/dashboard',
-    '/pulse/tickets',
-    '/pulse/login',
-  ]
+  pages: ['/dashboard', '/tickets', '/login'],
 };
 
 // Install event - Cache static assets
 self.addEventListener('install', (event) => {
   console.log('🔧 Service Worker: Installing...');
-  
+
   event.waitUntil(
-    caches.open(STATIC_CACHE_NAME)
+    caches
+      .open(STATIC_CACHE_NAME)
       .then((cache) => {
         console.log('📦 Service Worker: Caching static assets');
         return cache.addAll(CACHE_STRATEGIES.static);
@@ -44,46 +34,46 @@ self.addEventListener('install', (event) => {
       })
       .catch((error) => {
         console.error('❌ Service Worker: Failed to cache static assets', error);
-      })
+      }),
   );
 });
 
 // Activate event - Clean up old caches
 self.addEventListener('activate', (event) => {
   console.log('🚀 Service Worker: Activating...');
-  
+
   event.waitUntil(
-    caches.keys()
+    caches
+      .keys()
       .then((cacheNames) => {
         return Promise.all(
           cacheNames
             .filter((cacheName) => {
-              return cacheName !== STATIC_CACHE_NAME && 
-                     cacheName !== DYNAMIC_CACHE_NAME;
+              return cacheName !== STATIC_CACHE_NAME && cacheName !== DYNAMIC_CACHE_NAME;
             })
             .map((cacheName) => {
               console.log('🗑️ Service Worker: Deleting old cache:', cacheName);
               return caches.delete(cacheName);
-            })
+            }),
         );
       })
       .then(() => {
         console.log('✅ Service Worker: Activated and old caches cleaned');
         return self.clients.claim();
-      })
+      }),
   );
 });
 
 // Fetch event - Implement caching strategies
 self.addEventListener('fetch', (event) => {
-  const { request } = event;
+  const {request} = event;
   const url = new URL(request.url);
-  
+
   // Skip non-GET requests
   if (request.method !== 'GET') {
     return;
   }
-  
+
   // Skip cross-origin requests
   if (url.origin !== location.origin) {
     return;
@@ -108,7 +98,7 @@ async function cacheFirst(request) {
     if (cachedResponse) {
       return cachedResponse;
     }
-    
+
     const networkResponse = await fetch(request);
     const cache = await caches.open(STATIC_CACHE_NAME);
     cache.put(request, networkResponse.clone());
@@ -147,22 +137,22 @@ async function networkFirstWithOfflineFallback(request) {
     if (cachedResponse) {
       return cachedResponse;
     }
-    
+
     // Return offline fallback for pages
     if (isPageRequest(new URL(request.url).pathname)) {
       return getOfflineFallback();
     }
-    
+
     // Return error response for API requests
     return new Response(
-      JSON.stringify({ 
-        error: 'Offline', 
-        message: 'No network connection available' 
+      JSON.stringify({
+        error: 'Offline',
+        message: 'No network connection available',
       }),
       {
         status: 503,
-        headers: { 'Content-Type': 'application/json' }
-      }
+        headers: {'Content-Type': 'application/json'},
+      },
     );
   }
 }
@@ -236,28 +226,28 @@ function getOfflineFallback() {
     </body>
     </html>
   `;
-  
+
   return new Response(offlineHtml, {
-    headers: { 'Content-Type': 'text/html' }
+    headers: {'Content-Type': 'text/html'},
   });
 }
 
 // Helper functions to determine request types
 function isStaticAsset(pathname) {
-  return pathname.match(/\.(css|js|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot)$/) ||
-         pathname.includes('/pulse/icon.png') ||
-         pathname.includes('/pulse/app-logo.png') ||
-         pathname.includes('/pulse/manifest.json');
+  return (
+    pathname.match(/\.(css|js|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot)$/) ||
+    pathname.includes('/icon.png') ||
+    pathname.includes('/app-logo.png') ||
+    pathname.includes('/manifest.json')
+  );
 }
 
 function isApiRequest(pathname) {
-  return pathname.startsWith('/pulse/api/');
+  return pathname.startsWith('/api/');
 }
 
 function isPageRequest(pathname) {
-  return pathname.startsWith('/pulse/') && 
-         !isStaticAsset(pathname) && 
-         !isApiRequest(pathname);
+  return pathname.startsWith('/') && !isStaticAsset(pathname) && !isApiRequest(pathname);
 }
 
 // Background sync for offline actions (if needed)

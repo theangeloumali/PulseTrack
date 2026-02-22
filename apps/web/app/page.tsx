@@ -3,15 +3,13 @@ import {cookies} from 'next/headers';
 import {createServerClient} from '@supabase/ssr';
 
 export default async function Page() {
-  // This handles the root /pulse path
-  // Always redirect to either login or dashboard based on auth status
-  // Note: Due to basePath="/pulse", this actually handles /pulse not /
+  // Handles the root / path — always redirect based on auth status
 
   const cookieStore = await cookies();
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY!,
     {
       cookies: {
         getAll() {

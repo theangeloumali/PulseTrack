@@ -24,7 +24,7 @@ export const userWithCompanyFields = `
   company_id,
   created_at,
   updated_at,
-  companies (
+  company:companies!users_company_id_companies_id_fk (
     id,
     name,
     slug,

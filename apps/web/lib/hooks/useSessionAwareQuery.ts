@@ -1,8 +1,12 @@
 import {useQuery, UseQueryOptions, QueryKey, QueryFunction} from '@tanstack/react-query';
 import {ensureValidSessionForQuery, handleQueryError} from '@/lib/session-manager';
 
-interface SessionAwareQueryOptions<TQueryFnData, TError, TData, TQueryKey extends QueryKey>
-  extends UseQueryOptions<TQueryFnData, TError, TData, TQueryKey> {
+interface SessionAwareQueryOptions<
+  TQueryFnData,
+  TError,
+  TData,
+  TQueryKey extends QueryKey,
+> extends UseQueryOptions<TQueryFnData, TError, TData, TQueryKey> {
   // Additional options can be added here if needed
 }
 

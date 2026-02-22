@@ -42,7 +42,7 @@ export default function SuperAdminUsersPage() {
   }
 
   // Get unique companies for filter
-  const companies = Array.from(new Set(users.map((user) => user.companies?.name).filter(Boolean)));
+  const companies = Array.from(new Set(users.map((user) => user.company?.name).filter(Boolean)));
 
   // Filter users
   const filteredUsers = users.filter((user) => {
@@ -51,11 +51,11 @@ export default function SuperAdminUsersPage() {
       user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
       user.first_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       user.last_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      user.companies?.name.toLowerCase().includes(searchQuery.toLowerCase());
+      user.company?.name.toLowerCase().includes(searchQuery.toLowerCase());
 
     const matchesRole = roleFilter === 'all' || user.role === roleFilter;
     const matchesStatus = statusFilter === 'all' || user.status === statusFilter;
-    const matchesCompany = companyFilter === 'all' || user.companies?.name === companyFilter;
+    const matchesCompany = companyFilter === 'all' || user.company?.name === companyFilter;
 
     return matchesSearch && matchesRole && matchesStatus && matchesCompany;
   });
@@ -331,7 +331,7 @@ export default function SuperAdminUsersPage() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-foreground">
-                        {user.companies?.name || 'No Company'}
+                        {user.company?.name || 'No Company'}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">

@@ -94,7 +94,7 @@ export default function SignUpPage() {
           <div className="flex justify-center mb-6">
             <div className="w-16 h-16 relative">
               <Image
-                src="/pulse/app-logo.png"
+                src="/app-logo.png"
                 alt="PulseTrack Logo"
                 width={64}
                 height={64}

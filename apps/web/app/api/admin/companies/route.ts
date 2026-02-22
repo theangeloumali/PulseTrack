@@ -7,7 +7,7 @@ async function handler(req: NextRequest) {
     try {
       const supabase = createServerClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY!,
         {
           cookies: {
             getAll() {
@@ -28,12 +28,14 @@ async function handler(req: NextRequest) {
           id,
           name,
           slug,
+          status,
           created_at,
           updated_at,
           users:users(count),
           projects:projects(count)
         `,
         )
+        .is('deleted_at', null) // Only show non-deleted companies
         .order('created_at', {ascending: false});
 
       if (error) {
@@ -48,7 +50,8 @@ async function handler(req: NextRequest) {
           const {data: userStats} = await supabase
             .from('users')
             .select('role, status')
-            .eq('company_id', company.id);
+            .eq('company_id', company.id)
+            .is('deleted_at', null);
 
           // Get project statistics
           const {data: projectStats} = await supabase

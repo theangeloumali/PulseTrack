@@ -114,7 +114,7 @@ function AuthLoadingScreen() {
     let index = 0;
     const interval = setInterval(() => {
       index = (index + 1) % messages.length;
-      setLoadingText(messages[index]);
+      setLoadingText(messages[index] ?? '');
       setProgress((prev) => Math.min(prev + 25, 90)); // Progress up to 90%
     }, 800);
 

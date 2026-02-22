@@ -10,7 +10,7 @@ async function handler(req: NextRequest, {params}: {params: {userId: string}}) {
     try {
       const supabase = createServerClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY!,
         {
           cookies: {
             getAll() {
@@ -77,7 +77,7 @@ async function handler(req: NextRequest, {params}: {params: {userId: string}}) {
           invited_at,
           created_at,
           updated_at,
-          companies:company_id (
+          company:companies!users_company_id_companies_id_fk (
             id,
             name,
             slug
@@ -102,7 +102,7 @@ async function handler(req: NextRequest, {params}: {params: {userId: string}}) {
     try {
       const supabase = createServerClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY!,
         {
           cookies: {
             getAll() {

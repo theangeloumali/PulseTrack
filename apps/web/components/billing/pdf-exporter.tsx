@@ -179,7 +179,7 @@ export function PDFExporter({billingPeriod, companyId, isOpen, onClose}: PDFExpo
         },
         didDrawPage: (data) => {
           // Add page numbers
-          const pageNumber = doc.internal.getCurrentPageInfo().pageNumber;
+          const pageNumber = (doc as any).internal.getCurrentPageInfo().pageNumber;
           doc.setFontSize(8);
           doc.text(`Page ${pageNumber}`, pageWidth - 20, doc.internal.pageSize.height - 10);
         },
@@ -188,13 +188,13 @@ export function PDFExporter({billingPeriod, companyId, isOpen, onClose}: PDFExpo
       // Add totals
       const finalY = (doc as any).lastAutoTable.finalY + 10;
       doc.setFontSize(12);
-      doc.setFont(undefined, 'bold');
+      doc.setFont('helvetica', 'bold');
       doc.text(`Total Hours: ${totalHours.toFixed(2)}`, pageWidth - 80, finalY);
       doc.text(`Total Amount: ${formatCurrency(totalAmount)}`, pageWidth - 80, finalY + 10);
 
       // Add footer
       doc.setFontSize(8);
-      doc.setFont(undefined, 'normal');
+      doc.setFont('helvetica', 'normal');
       doc.text(
         'This is a system-generated report.',
         pageWidth / 2,

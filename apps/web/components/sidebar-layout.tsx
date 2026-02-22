@@ -152,7 +152,7 @@ export function SidebarLayout({children}: SidebarLayoutProps) {
             <Link href="/dashboard" className="flex items-center space-x-3">
               <div className="w-8 h-8 relative">
                 <Image
-                  src="/pulse/app-logo.png"
+                  src="/app-logo.png"
                   alt="PulseTrack Logo"
                   width={32}
                   height={32}
@@ -241,8 +241,10 @@ export function SidebarLayout({children}: SidebarLayoutProps) {
                   {user.first_name || 'User'} {user.last_name || ''}
                 </p>
                 <p className="text-xs text-muted-foreground truncate">{user.email}</p>
-                {user.companies && (
-                  <p className="text-xs text-muted-foreground truncate">{user.companies.name}</p>
+                {(user as any).company && (
+                  <p className="text-xs text-muted-foreground truncate">
+                    {(user as any).company.name}
+                  </p>
                 )}
                 <div className="flex items-center mt-1">
                   <span
