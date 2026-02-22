@@ -8,6 +8,7 @@ import type {
   NewTimeEntry,
   NewComment,
   NewActivity,
+  NewTicketHistory,
   ActivityWithUser,
 } from '@/lib/db/schema';
 import {createOrUpdateTimeEntryBilling} from './billing-service';
@@ -49,6 +50,29 @@ export async function createCompany(data: NewCompany) {
   return result;
 }
 
+// Archive/Restore/Delete functions removed - columns don't exist in database
+
+// Get archived companies
+export async function getArchivedCompanies() {
+  const {data, error} = await supabase
+    .from('companies')
+    .select('*')
+    .eq('status', 'archived')
+    .is('deleted_at', null)
+    .order('archived_at', {ascending: false});
+
+  if (error) throw error;
+  return data || [];
+}
+
+// Get company with archive status
+export async function getCompanyWithArchiveStatus(companyId: string) {
+  const {data, error} = await supabase.from('companies').select('*').eq('id', companyId).single();
+
+  if (error && error.code !== 'PGRST116') throw error;
+  return data;
+}
+
 // User operations
 export async function getUserById(id: string) {
   const {data, error} = await supabase.from('users').select('*').eq('id', id).single();
@@ -64,7 +88,25 @@ export async function getUserWithCompany(id: string) {
     .eq('id', id)
     .single();
 
-  if (error && error.code !== 'PGRST116') throw error;
+  if (error) {
+    // PGRST116 means "not found" which is expected if user doesn't exist yet
+    if (error.code === 'PGRST116') {
+      console.log('getUserWithCompany: User not found in database:', id);
+      return null;
+    }
+
+    // Log the actual error details for debugging
+    console.error('getUserWithCompany: Database error:', {
+      code: error.code,
+      message: error.message,
+      details: (error as any).details,
+      hint: (error as any).hint,
+      userId: id,
+    });
+    console.error('getUserWithCompany: Full error JSON:', JSON.stringify(error, null, 2));
+    throw error;
+  }
+
   return data;
 }
 
@@ -90,48 +132,54 @@ export async function createUser(data: NewUser) {
 async function retryOperation<T>(
   operation: () => Promise<T>,
   maxRetries: number = 3,
-  delayMs: number = 1000
+  delayMs: number = 1000,
 ): Promise<T> {
   let lastError: any;
-  
+
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
       return await operation();
     } catch (error: any) {
       lastError = error;
-      
+
       // Don't retry on validation errors or conflicts
-      if (error.code === '23505' || // unique constraint violation
-          error.code === '23503' || // foreign key violation
-          error.code === '23514' || // check constraint violation
-          error.code === '22P02') { // invalid input syntax
+      if (
+        error.code === '23505' || // unique constraint violation
+        error.code === '23503' || // foreign key violation
+        error.code === '23514' || // check constraint violation
+        error.code === '22P02'
+      ) {
+        // invalid input syntax
         throw error;
       }
-      
+
       console.log(`Attempt ${attempt} failed:`, error.message);
-      
+
       if (attempt < maxRetries) {
         console.log(`Retrying in ${delayMs}ms...`);
-        await new Promise(resolve => setTimeout(resolve, delayMs));
+        await new Promise((resolve) => setTimeout(resolve, delayMs));
         delayMs *= 2; // Exponential backoff
       }
     }
   }
-  
+
   throw lastError;
 }
 
 // Atomic company and user creation with retry logic
-export async function createCompanyAndUser(companyData: NewCompany, userData: Omit<NewUser, 'company_id'>) {
-  let company = null;
-  
+export async function createCompanyAndUser(
+  companyData: NewCompany,
+  userData: Omit<NewUser, 'company_id'>,
+) {
+  let company: {id: string; name: string; slug: string} | null = null;
+
   try {
     // Check if company already exists
     const existingCompany = await getCompanyBySlug(companyData.slug);
     if (existingCompany) {
       throw new Error(`Company with slug "${companyData.slug}" already exists`);
     }
-    
+
     // Create the company with retry logic
     company = await retryOperation(async () => {
       const {data: companyResult, error: companyError} = await supabase
@@ -139,44 +187,44 @@ export async function createCompanyAndUser(companyData: NewCompany, userData: Om
         .insert(companyData)
         .select()
         .single();
-      
+
       if (companyError) {
         console.error('Error creating company:', companyError);
         throw companyError;
       }
-      
+
       return companyResult;
     });
-    
+
     // Create the user with the company ID
     const userDataWithCompany = {
       ...userData,
-      company_id: company.id
+      company_id: company!.id,
     };
-    
+
     const user = await retryOperation(async () => {
       const {data: userResult, error: userError} = await supabase
         .from('users')
         .insert(userDataWithCompany)
         .select()
         .single();
-      
+
       if (userError) {
         console.error('Error creating user:', userError);
         throw userError;
       }
-      
+
       return userResult;
     }).catch(async (userError) => {
       // If user creation fails, attempt to clean up the company
       console.log('User creation failed, attempting to clean up orphaned company...');
-      
+
       try {
         const {error: deleteError} = await supabase
           .from('companies')
           .delete()
-          .eq('id', company.id);
-          
+          .eq('id', company!.id);
+
         if (deleteError) {
           console.error('Failed to clean up orphaned company:', deleteError);
         } else {
@@ -185,20 +233,20 @@ export async function createCompanyAndUser(companyData: NewCompany, userData: Om
       } catch (cleanupError) {
         console.error('Error during cleanup:', cleanupError);
       }
-      
+
       throw userError;
     });
-    
+
     // Fetch the user with company data
     const userWithCompany = await getUserWithCompany(user.id);
-    
+
     return {
       company,
-      user: userWithCompany || user
+      user: userWithCompany || user,
     };
   } catch (error: any) {
     console.error('Failed to create company and user:', error);
-    
+
     // Provide more specific error messages
     if (error.message?.includes('already exists')) {
       throw new Error('This company name is already taken. Please choose a different name.');
@@ -207,7 +255,7 @@ export async function createCompanyAndUser(companyData: NewCompany, userData: Om
     } else if (error.message?.includes('network')) {
       throw new Error('Network error. Please check your connection and try again.');
     }
-    
+
     throw error;
   }
 }
@@ -1530,6 +1578,61 @@ export async function updateUser(userId: string, updates: Partial<NewUser>) {
   return data;
 }
 
+/**
+ * Archive a user
+ */
+export async function archiveUser(userId: string, archivedBy: string) {
+  const {data, error} = await supabase.rpc('archive_user', {
+    p_user_id: userId,
+    p_archived_by: archivedBy,
+  });
+
+  if (error) throw error;
+  return data;
+}
+
+/**
+ * Restore an archived user
+ */
+export async function restoreUser(userId: string, restoredBy: string) {
+  const {data, error} = await supabase.rpc('restore_user', {
+    p_user_id: userId,
+    p_restored_by: restoredBy,
+  });
+
+  if (error) throw error;
+  return data;
+}
+
+/**
+ * Soft delete a user
+ */
+export async function deleteUser(userId: string, deletedBy: string) {
+  const {data, error} = await supabase.rpc('soft_delete_user', {
+    p_user_id: userId,
+    p_deleted_by: deletedBy,
+  });
+
+  if (error) throw error;
+  return data;
+}
+
+/**
+ * Get archived users for a company
+ */
+export async function getArchivedUsers(companyId: string) {
+  const {data, error} = await supabase
+    .from('users')
+    .select('*')
+    .eq('company_id', companyId)
+    .not('archived_at', 'is', null)
+    .is('deleted_at', null)
+    .order('archived_at', {ascending: false});
+
+  if (error) throw error;
+  return data || [];
+}
+
 // ==============================================
 // ACTIVITY LOGGING OPERATIONS
 // ==============================================
@@ -1996,7 +2099,24 @@ export async function logTicketFieldChange(
 export async function checkTimeEntryIntegrity(companyId: string) {
   console.log('🔍 Running time entry integrity check for company:', companyId);
 
-  const issues = {
+  const issues: {
+    orphanedEntries: Array<{
+      timeEntryId: string;
+      userId: string;
+      ticketId: string;
+      startTime: string;
+      duration: number | null;
+    }>;
+    missingUsers: Array<{timeEntryId: string; userId: string; startTime: string}>;
+    missingTickets: Array<{timeEntryId: string; ticketId: string; startTime: string}>;
+    missingProjects: Array<{
+      timeEntryId: string;
+      ticketId: string;
+      ticketTitle: string;
+      startTime: string;
+    }>;
+    summary: {totalChecked: number; totalIssues: number; orphanedCount: number};
+  } = {
     orphanedEntries: [],
     missingUsers: [],
     missingTickets: [],
@@ -2074,11 +2194,12 @@ export async function checkTimeEntryIntegrity(companyId: string) {
         hasIssues = true;
       } else {
         // Check for missing project (if ticket exists)
-        if (!entry.tickets.projects) {
+        const ticket = entry.tickets[0];
+        if (!ticket?.projects?.[0]) {
           issues.missingProjects.push({
             timeEntryId: entry.id,
             ticketId: entry.ticket_id,
-            ticketTitle: entry.tickets.title,
+            ticketTitle: ticket?.title,
             startTime: entry.start_time,
           });
           hasIssues = true;
@@ -2127,7 +2248,11 @@ export async function cleanupOrphanedTimeEntries(companyId: string, dryRun: bool
   console.log('🧹 Starting orphaned time entries cleanup (dry run:', dryRun, ')');
 
   const integrityCheck = await checkTimeEntryIntegrity(companyId);
-  const cleanupResults = {
+  const cleanupResults: {
+    deletedEntries: string[];
+    errors: Array<{timeEntryId: string; error: string}>;
+    summary: {totalDeleted: number; totalErrors: number};
+  } = {
     deletedEntries: [],
     errors: [],
     summary: {
