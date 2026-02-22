@@ -6,8 +6,7 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 /**
- * Get the correct API path considering the basePath configuration
- * Explicitly handles basePath since automatic handling isn't working
+ * Get the correct API path for the given endpoint.
  */
 export function getApiPath(endpoint: string): string {
   // Ensure the endpoint starts with /api/
@@ -19,9 +18,7 @@ export function getApiPath(endpoint: string): string {
     }
   }
 
-  // Explicitly add basePath prefix since Next.js automatic handling isn't working as expected
-  const basePath = '/pulse';
-  return `${basePath}${endpoint}`;
+  return endpoint;
 }
 
 export function formatDuration(seconds: number): string {

@@ -106,7 +106,7 @@ async function getProjectStatistics(userId: string, companyId: string, userRole:
     // Regular users see only projects they're members of
     query = query
       .eq('company_id', companyId)
-      .in('id', supabase.from('project_members').select('project_id').eq('user_id', userId));
+      .in('id', supabase.from('project_members').select('project_id').eq('user_id', userId) as any);
   }
 
   const {data: projects, error} = await query;
@@ -138,7 +138,7 @@ async function getTicketStatistics(userId: string, companyId: string, userRole: 
       .eq('projects.company_id', companyId)
       .in(
         'project_id',
-        supabase.from('project_members').select('project_id').eq('user_id', userId),
+        supabase.from('project_members').select('project_id').eq('user_id', userId) as any,
       );
   } else {
     // Regular users see only tickets assigned to them or in their projects
