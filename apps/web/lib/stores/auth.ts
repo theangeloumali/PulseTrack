@@ -1,7 +1,13 @@
 import {create} from 'zustand';
 import {User as SupabaseUser, Session} from '@supabase/supabase-js';
 import {supabase} from '@/lib/db';
-import {getUserById, getUserWithCompany, createUser, createCompany, createCompanyAndUser} from '@/lib/db/service';
+import {
+  getUserById,
+  getUserWithCompany,
+  createUser,
+  createCompany,
+  createCompanyAndUser,
+} from '@/lib/db/service';
 import type {User, NewUser, NewCompany} from '@/lib/db/schema';
 import {clearAuthState, isRefreshTokenError} from '@/lib/auth-utils';
 
@@ -22,6 +28,7 @@ export interface AuthState {
   session: Session | null;
   isLoading: boolean;
   isInitializing: boolean;
+  lastSessionCheck: number;
 
   // Actions
   setUser: (user: User | null) => void;
@@ -37,6 +44,8 @@ export interface AuthState {
     tokenHash?: string;
   }) => Promise<{error?: any}>;
   initialize: () => Promise<void>;
+  recoverSession: () => Promise<boolean>;
+  validateSession: () => Promise<boolean>;
 }
 
 export const useAuthStore = create<AuthState>()((set, get) => ({
@@ -45,10 +54,11 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
   session: null,
   isLoading: true,
   isInitializing: false,
+  lastSessionCheck: 0,
 
   setUser: (user) => set({user}),
   setSupabaseUser: (user) => set({supabaseUser: user}),
-  setSession: (session) => set({session}),
+  setSession: (session) => set({session, lastSessionCheck: Date.now()}),
   setIsLoading: (loading) => set({isLoading: loading}),
 
   signUp: async (email: string, password: string, userData: CreateUserData) => {
@@ -122,6 +132,7 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
           }
         } catch (dbError) {
           console.error('Error fetching user from database:', dbError);
+          console.error('Full error JSON:', JSON.stringify(dbError, null, 2));
           // For database errors, don't clear the Supabase session
           // This allows for retry on network issues
           set({user: null, isLoading: false});
@@ -161,38 +172,51 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
     try {
       const {token, email, tokenHash} = params;
       set({isLoading: true});
-      // console.log('Starting email verification with params:', { token, email, tokenHash });
+      console.log('🔐 Starting email verification...');
+
       let authResponse: any;
+      let retryCount = 0;
+      const maxRetries = 2;
 
       // Flow 1: Email link verification (token_hash from URL)
       if (tokenHash) {
-        // console.log('Attempting verification with token_hash...');
-        authResponse = await supabase.auth.verifyOtp({
-          token_hash: tokenHash,
-          type: 'email', // This is the type for email link verification
-        });
+        console.log('🔗 Processing email link verification...');
+
+        // Simple retry loop for email link verification
+        while (retryCount <= maxRetries) {
+          authResponse = await supabase.auth.verifyOtp({
+            token_hash: tokenHash,
+            type: 'email',
+          });
+
+          if (!authResponse.error) break;
+
+          retryCount++;
+          if (retryCount <= maxRetries) {
+            console.log(`🔄 Retry ${retryCount}/${maxRetries} for email link verification...`);
+            await new Promise((resolve) => setTimeout(resolve, 1000 * retryCount)); // Exponential backoff
+          }
+        }
       }
-      // Flow 2: Manual OTP code verification
+      // Flow 2: Manual OTP code verification - Use only 'email' type
       else if (token && email) {
-        // console.log('Attempting verification with manual OTP code...');
+        console.log('📧 Processing manual OTP verification...');
 
-        // Attempt 2a: Try with 'signup' type
-        // console.log("Attempting with type: 'signup'");
-        authResponse = await supabase.auth.verifyOtp({
-          email: email,
-          token: token,
-          type: 'signup',
-        });
-
-        // Attempt 2b: If failed, try with 'email' type
-        if (authResponse.error) {
-          console.warn("Failed with type 'signup', trying 'email'", authResponse.error.message);
-          // console.log("Attempting with type: 'email'");
+        // Simple retry loop for manual OTP verification
+        while (retryCount <= maxRetries) {
           authResponse = await supabase.auth.verifyOtp({
             email: email,
             token: token,
-            type: 'email',
+            type: 'email', // Use only 'email' type for consistency
           });
+
+          if (!authResponse.error) break;
+
+          retryCount++;
+          if (retryCount <= maxRetries) {
+            console.log(`🔄 Retry ${retryCount}/${maxRetries} for OTP verification...`);
+            await new Promise((resolve) => setTimeout(resolve, 1000 * retryCount)); // Exponential backoff
+          }
         }
       } else {
         set({isLoading: false});
@@ -203,48 +227,83 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
         };
       }
 
-      // Fallback: Refresh session if direct verification failed
-      // This can happen if the cookie is set but the response has an error
+      // Enhanced session recovery with persistence check
       if (authResponse.error) {
         console.warn(
-          'Direct verification failed, attempting session refresh as a fallback.',
+          '⚠️ Verification failed, attempting session recovery...',
           authResponse.error.message,
         );
-        const {
-          data: {session: refreshedSession},
-          error: refreshError,
-        } = await supabase.auth.refreshSession();
 
-        if (refreshedSession && !refreshError) {
-          // console.log('Session refresh successful! Using refreshed session.');
+        // First, check if we have a valid session already
+        const {
+          data: {session: currentSession},
+        } = await supabase.auth.getSession();
+
+        if (currentSession?.user) {
+          console.log('✅ Found existing valid session');
           authResponse = {
             data: {
-              user: refreshedSession.user,
-              session: refreshedSession,
+              user: currentSession.user,
+              session: currentSession,
             },
             error: null,
           };
+        } else {
+          // Try to refresh the session as last resort
+          const {
+            data: {session: refreshedSession},
+            error: refreshError,
+          } = await supabase.auth.refreshSession();
+
+          if (refreshedSession && !refreshError) {
+            console.log('🔄 Session refresh successful!');
+            authResponse = {
+              data: {
+                user: refreshedSession.user,
+                session: refreshedSession,
+              },
+              error: null,
+            };
+          }
         }
       }
 
       // Final check for verification failure
       if (authResponse.error) {
-        console.error('All verification attempts failed:', authResponse.error);
+        console.error('❌ All verification attempts failed:', authResponse.error);
         set({isLoading: false});
-        return {error: authResponse.error};
+
+        // Provide user-friendly error messages
+        let userMessage = 'Verification failed. Please try again.';
+        if (authResponse.error.message?.includes('expired')) {
+          userMessage = 'Your verification code has expired. Please request a new one.';
+        } else if (
+          authResponse.error.message?.includes('Invalid') ||
+          authResponse.error.message?.includes('invalid')
+        ) {
+          userMessage = 'Invalid verification code. Please check and try again.';
+        } else if (authResponse.error.message?.includes('network')) {
+          userMessage = 'Network error. Please check your connection and try again.';
+        }
+
+        return {error: {message: userMessage, originalError: authResponse.error}};
       }
 
-      // console.log('Verification successful.');
+      console.log('✅ Verification successful!');
       const {user: authUser, session} = authResponse.data;
 
       if (!authUser || !session) {
-        const error = new Error('Verification succeeded but no user/session was returned.');
+        console.error('⚠️ Verification succeeded but no user/session was returned');
         set({isLoading: false});
-        return {error};
+        return {error: {message: 'Session creation failed. Please try logging in again.'}};
       }
 
-      // Update store with session info immediately
+      // Update store with session info immediately to prevent session loss
+      console.log('💾 Persisting session...');
       set({supabaseUser: authUser, session: session});
+
+      // Force a session refresh to ensure it's properly stored
+      await supabase.auth.setSession(session);
 
       // Check if user profile already exists in our public.users table
       const existingUser = await getUserWithCompany(authUser.id);
@@ -276,9 +335,9 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
           first_name: userMetadata.firstName || '',
           last_name: userMetadata.lastName || '',
           role: userMetadata.role || 'company_admin',
-        }
+        },
       );
-      
+
       // console.log('Successfully created new user profile.');
       set({
         user: newUserWithCompany,
@@ -289,13 +348,19 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
     } catch (error: any) {
       console.error('Unhandled error in verifyEmailAndCreateUser:', error);
       set({isLoading: false});
-      
+
       // Return more user-friendly error messages
-      if (error.message) {
-        return {error: {message: error.message}};
+      let userMessage = 'Failed to create your account. Please try again.';
+
+      if (error.message?.includes('already exists')) {
+        userMessage = 'An account with this email already exists.';
+      } else if (error.message?.includes('network')) {
+        userMessage = 'Network error. Please check your connection.';
+      } else if (error.message?.includes('metadata')) {
+        userMessage = 'Account setup incomplete. Please try signing up again.';
       }
-      
-      return {error: {message: 'Failed to create your account. Please try again or contact support.'}};
+
+      return {error: {message: userMessage, originalError: error}};
     }
   },
 
@@ -362,8 +427,15 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
             console.log('❌ Auth Store: No database user found for:', session.user.id);
             set({user: null, isLoading: false, isInitializing: false});
           }
-        } catch (dbError) {
-          console.error('❌ Auth Store: Error fetching user from database:', dbError);
+        } catch (dbError: any) {
+          console.error('❌ Auth Store: Error fetching user from database:', {
+            message: dbError?.message || 'Unknown error',
+            code: dbError?.code,
+            details: dbError?.details,
+            hint: dbError?.hint,
+            stack: dbError?.stack,
+          });
+          console.error('❌ Auth Store: Full error JSON:', JSON.stringify(dbError, null, 2));
           set({user: null, isLoading: false, isInitializing: false});
         }
       } else {
@@ -453,6 +525,108 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
         isLoading: false,
         isInitializing: false,
       });
+    }
+  },
+
+  // Session recovery mechanism
+  recoverSession: async () => {
+    try {
+      console.log('🔄 Attempting session recovery...');
+      const {session} = get();
+
+      // If we already have a valid session, just validate it
+      if (session?.access_token) {
+        const isValid = await get().validateSession();
+        if (isValid) return true;
+      }
+
+      // Try to get a fresh session
+      const {
+        data: {session: freshSession},
+        error,
+      } = await supabase.auth.getSession();
+
+      if (error || !freshSession) {
+        console.error('❌ Session recovery failed:', error);
+        return false;
+      }
+
+      // Update the store with recovered session
+      set({
+        session: freshSession,
+        supabaseUser: freshSession.user,
+        lastSessionCheck: Date.now(),
+      });
+
+      // Try to load the user data
+      if (freshSession.user) {
+        try {
+          const dbUser = await getUserWithCompany(freshSession.user.id);
+          if (dbUser) {
+            set({user: dbUser});
+            console.log('✅ Session recovery successful!');
+            return true;
+          }
+        } catch (error) {
+          console.error('⚠️ Session recovered but user data load failed:', error);
+        }
+      }
+
+      return true;
+    } catch (error) {
+      console.error('💥 Unexpected error during session recovery:', error);
+      return false;
+    }
+  },
+
+  // Validate current session
+  validateSession: async () => {
+    try {
+      const {session, lastSessionCheck} = get();
+
+      // Skip validation if we checked recently (within 5 minutes)
+      const now = Date.now();
+      if (now - lastSessionCheck < 5 * 60 * 1000) {
+        return !!session;
+      }
+
+      if (!session) return false;
+
+      // Check if the session is still valid
+      const {
+        data: {user},
+        error,
+      } = await supabase.auth.getUser();
+
+      if (error || !user) {
+        console.warn('⚠️ Session validation failed:', error);
+
+        // Try to refresh the session
+        const {
+          data: {session: refreshedSession},
+          error: refreshError,
+        } = await supabase.auth.refreshSession();
+
+        if (refreshError || !refreshedSession) {
+          console.error('❌ Session refresh failed:', refreshError);
+          return false;
+        }
+
+        // Update with refreshed session
+        set({
+          session: refreshedSession,
+          supabaseUser: refreshedSession.user,
+          lastSessionCheck: Date.now(),
+        });
+
+        return true;
+      }
+
+      set({lastSessionCheck: Date.now()});
+      return true;
+    } catch (error) {
+      console.error('💥 Unexpected error during session validation:', error);
+      return false;
     }
   },
 }));
