@@ -47,11 +47,12 @@ export async function updateSession(request: NextRequest) {
       }
     }
 
-    // Special handling for root path - always redirect appropriately
+    // Special handling for root path — authenticated users go to dashboard,
+    // unauthenticated users see the landing page (no redirect to /login)
     const isRootPath = request.nextUrl.pathname === '/';
-    if (isRootPath) {
+    if (isRootPath && user) {
       const url = request.nextUrl.clone();
-      url.pathname = user ? '/dashboard' : '/login';
+      url.pathname = '/dashboard';
       return NextResponse.redirect(url);
     }
 

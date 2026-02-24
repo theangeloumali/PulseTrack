@@ -1,10 +1,9 @@
 import {redirect} from 'next/navigation';
 import {cookies} from 'next/headers';
 import {createServerClient} from '@supabase/ssr';
+import {LandingScreen} from '@/screens/landing';
 
 export default async function Page() {
-  // Handles the root / path — always redirect based on auth status
-
   const cookieStore = await cookies();
 
   const supabase = createServerClient(
@@ -19,7 +18,7 @@ export default async function Page() {
           try {
             cookiesToSet.forEach(({name, value, options}) => cookieStore.set(name, value, options));
           } catch {
-            // Handle cookie errors gracefully
+            // Handle cookie errors gracefully in Server Components
           }
         },
       },
@@ -27,24 +26,17 @@ export default async function Page() {
   );
 
   try {
-    // Check if user is authenticated
     const {
       data: {user},
-      error,
     } = await supabase.auth.getUser();
 
-    // If there's an auth error or no user, redirect to login
-    if (error || !user) {
-      console.log('Root page: No authenticated user, redirecting to login');
-      redirect('/login');
+    // Authenticated users go straight to dashboard
+    if (user) {
+      redirect('/dashboard');
     }
-
-    // User is authenticated, redirect to dashboard
-    console.log('Root page: User authenticated, redirecting to dashboard');
-    redirect('/dashboard');
-  } catch (error) {
-    // On any error, default to login
-    console.error('Root page: Error checking auth status:', error);
-    redirect('/login');
+  } catch {
+    // On error, fall through and show the landing page
   }
+
+  return <LandingScreen />;
 }
