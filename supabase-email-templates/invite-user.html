@@ -1,0 +1,93 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>You're invited to PulseTrack</title>
+  </head>
+  <body
+    style="
+      margin: 0;
+      padding: 0;
+      background: #f8fafc;
+      font-family:
+        Inter,
+        -apple-system,
+        BlinkMacSystemFont,
+        &quot;Segoe UI&quot;,
+        Roboto,
+        sans-serif;
+      color: #0f172a;
+    "
+  >
+    <div style="margin: 0 auto; max-width: 600px; padding: 32px 20px 28px">
+      <div style="margin-bottom: 16px">
+        <span style="font-size: 22px; font-weight: 800; color: #0f172a"
+          >PulseTrack</span
+        >
+      </div>
+
+      <div
+        style="
+          border: 1px solid #e2e8f0;
+          border-radius: 16px;
+          background: #ffffff;
+          padding: 28px;
+          box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+        "
+      >
+        <h1
+          style="
+            margin: 0;
+            font-size: 26px;
+            line-height: 1.2;
+            letter-spacing: -0.02em;
+          "
+        >
+          You've been invited
+        </h1>
+        <p
+          style="
+            margin: 12px 0 0;
+            font-size: 15px;
+            line-height: 1.7;
+            color: #334155;
+          "
+        >
+          You were invited to join a PulseTrack workspace. Accept the invitation
+          below to set up your account.
+        </p>
+
+        <div style="margin-top: 22px">
+          <a
+            href="{{ .SiteURL }}/api/auth/callback?code={{ .Token }}&type=invite"
+            style="
+              display: inline-block;
+              border-radius: 10px;
+              background: #0f172a;
+              color: #ffffff;
+              text-decoration: none;
+              font-size: 15px;
+              font-weight: 700;
+              padding: 12px 18px;
+            "
+          >
+            Accept Invitation
+          </a>
+        </div>
+
+        <p
+          style="
+            margin: 18px 0 0;
+            font-size: 13px;
+            line-height: 1.6;
+            color: #64748b;
+          "
+        >
+          This invitation expires in 24 hours. If you were not expecting this
+          email, you can safely ignore it.
+        </p>
+      </div>
+    </div>
+  </body>
+</html>
