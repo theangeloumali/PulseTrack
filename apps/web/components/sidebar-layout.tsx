@@ -115,8 +115,9 @@ export function SidebarLayout({children}: SidebarLayoutProps) {
     router.push('/login');
   };
 
-  // Don't show sidebar on auth pages
+  // Don't show sidebar on auth pages or the public landing page
   const authPages = [
+    '/', // Landing page — no sidebar chrome
     '/login',
     '/signup',
     '/forgot-password',
@@ -124,7 +125,9 @@ export function SidebarLayout({children}: SidebarLayoutProps) {
     '/reset-password',
     '/auth/accept-invitation',
   ];
-  const isAuthPage = authPages.some((page) => pathname.startsWith(page));
+  const isAuthPage = authPages.some(
+    (page) => pathname === page || (page !== '/' && pathname.startsWith(page)),
+  );
 
   if (!user || isAuthPage) {
     return <>{children}</>;

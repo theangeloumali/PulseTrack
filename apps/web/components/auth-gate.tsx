@@ -7,6 +7,7 @@ import {useAuthStore} from '@/lib/stores/auth';
 
 // Public routes that don't require authentication
 const PUBLIC_ROUTES = [
+  '/', // Landing page — publicly accessible
   '/login',
   '/signup',
   '/verify-email',
@@ -73,9 +74,9 @@ export function AuthGate({children}: {children: React.ReactNode}) {
       return;
     }
 
-    // If user is authenticated and trying to access auth pages, redirect to dashboard
-    if (user && isAuthRoute) {
-      console.log('🔄 AuthGate: Authenticated user on auth page, redirecting to dashboard');
+    // If user is authenticated and on auth pages or the landing page, redirect to dashboard
+    if (user && (isAuthRoute || pathname === '/')) {
+      console.log('🔄 AuthGate: Authenticated user on auth/landing page, redirecting to dashboard');
       router.replace('/dashboard');
       return;
     }
