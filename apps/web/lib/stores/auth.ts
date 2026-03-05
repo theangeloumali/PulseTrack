@@ -188,8 +188,11 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
     const {token, email, tokenHash, correlationId, signupData} = params;
     const cid = correlationId || `verify-${Date.now()}`;
 
-    // Step 1: Set flags to prevent interference from initialize() and onAuthStateChange
-    set({signupInProgress: true, signupStartedAt: Date.now(), isLoading: true});
+    // Step 1: Set flags to prevent interference from initialize() and onAuthStateChange.
+    // NOTE: Do NOT set isLoading:true here — that triggers AuthGate to show the full-screen
+    // loading overlay which UNMOUNTS VerifyEmailContent mid-flow, losing local state.
+    // The verify-email screen manages its own local loading state independently.
+    set({signupInProgress: true, signupStartedAt: Date.now()});
     console.log(`[signup-verify:${cid}] Starting email verification`);
 
     try {
@@ -224,7 +227,7 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
               console.error(
                 `[signup-verify:${cid}] Cannot validate recovered session: email param not provided`,
               );
-              set({signupInProgress: false, isLoading: false});
+              set({signupInProgress: false});
               return {
                 error: {
                   message: 'Verification failed. Please try signing up again.',
@@ -235,7 +238,7 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
               console.error(
                 `[signup-verify:${cid}] Recovered session email mismatch: ${recoveredSession.user.email} !== ${email}`,
               );
-              set({signupInProgress: false, isLoading: false});
+              set({signupInProgress: false});
               return {
                 error: {
                   message: 'Session mismatch. Please try signing up again.',
@@ -271,7 +274,7 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
           }
         }
       } else {
-        set({signupInProgress: false, isLoading: false});
+        set({signupInProgress: false});
         return {
           error: new Error(
             'Invalid verification parameters. Provide tokenHash or token and email.',
@@ -282,7 +285,7 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
       // Step 5: Final check — do we have a valid auth user and session?
       if (!authUser || !session) {
         console.error(`[signup-verify:${cid}] All verification attempts failed`);
-        set({signupInProgress: false, isLoading: false});
+        set({signupInProgress: false});
         return {
           error: {message: 'Verification failed. Please try again.'},
         };
@@ -297,7 +300,7 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
         const existingUser = await getUserWithCompany(authUser.id);
         if (existingUser) {
           console.log(`[signup-verify:${cid}] Existing user profile found, skipping provisioning`);
-          set({user: existingUser, signupInProgress: false, isLoading: false});
+          set({user: existingUser, signupInProgress: false});
           return {error: null};
         }
       } catch (lookupError) {
@@ -321,7 +324,7 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
             metadata: meta,
           },
         );
-        set({signupInProgress: false, isLoading: false});
+        set({signupInProgress: false});
         return {
           error: {
             message:
@@ -333,7 +336,7 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
       // Step 9: POST to /api/auth/signup-complete
       if (!authUser.email) {
         console.error(`[signup-verify:${cid}] Auth user has no email address`);
-        set({signupInProgress: false, isLoading: false});
+        set({signupInProgress: false});
         return {
           error: {message: 'Account setup failed. No email address found. Please try again.'},
         };
@@ -370,7 +373,7 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
       // Step 10: Handle API error
       if (!response.ok) {
         console.error(`[signup-verify:${cid}] Signup complete API error:`, result.error);
-        set({signupInProgress: false, isLoading: false});
+        set({signupInProgress: false});
         return {error: {message: result.error || 'Failed to create account'}};
       }
 
@@ -380,7 +383,6 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
         set({
           user: userData as UserWithCompany,
           signupInProgress: false,
-          isLoading: false,
         });
         return {error: null};
       }
@@ -397,7 +399,7 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
       }
 
       if (!hydratedUser) {
-        set({signupInProgress: false, isLoading: false});
+        set({signupInProgress: false});
         return {
           error: {
             message: 'Account created but profile could not be loaded. Please sign in.',
@@ -406,11 +408,11 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
       }
 
       // Step 12: Success
-      set({user: hydratedUser, signupInProgress: false, isLoading: false});
+      set({user: hydratedUser, signupInProgress: false});
       return {error: null};
     } catch (error: any) {
       console.error(`[signup-verify:${cid}] Unhandled error:`, error);
-      set({signupInProgress: false, isLoading: false});
+      set({signupInProgress: false});
 
       let userMessage = 'Failed to create your account. Please try again.';
       if (error.message?.includes('already exists')) {

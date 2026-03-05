@@ -24,7 +24,7 @@ function VerifyEmailContent() {
   const isSubmittingRef = useRef(false);
   const lastSubmitTimeRef = useRef(0);
 
-  const {verifyEmailAndCreateUser, recoverSession} = useAuth();
+  const {verifyEmailAndCreateUser} = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
   const {supabaseUser} = useAuth();
@@ -42,15 +42,10 @@ function VerifyEmailContent() {
 
   const redirectToDashboard = useCallback(() => {
     setVerificationStep('redirecting');
-    router.replace('/dashboard');
-
-    // Fallback hard redirect if client router transition is blocked.
-    setTimeout(() => {
-      if (window.location.pathname === '/verify-email') {
-        window.location.assign('/dashboard');
-      }
-    }, 1200);
-  }, [router]);
+    // Hard redirect avoids the React re-mount cycle during soft navigation
+    // that causes the verification form to briefly flash before dashboard loads.
+    window.location.replace('/dashboard');
+  }, []);
 
   const handleVerification = useCallback(
     async (e: React.FormEvent) => {
@@ -102,9 +97,6 @@ function VerifyEmailContent() {
           setVerificationStep('creating');
           setIsVerified(true);
 
-          // Do not block navigation on session recovery; it can be delayed by network.
-          void recoverSession();
-
           setTimeout(() => {
             redirectToDashboard();
           }, 1500);
@@ -117,7 +109,7 @@ function VerifyEmailContent() {
         isSubmittingRef.current = false;
       }
     },
-    [token, email, retryCount, verifyEmailAndCreateUser, recoverSession, router],
+    [token, email, retryCount, verifyEmailAndCreateUser, redirectToDashboard],
   );
 
   const handleTokenChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -152,9 +144,6 @@ function VerifyEmailContent() {
             setVerificationStep('creating');
             setIsVerified(true);
 
-            // Do not block navigation on session recovery; it can be delayed by network.
-            void recoverSession();
-
             setTimeout(() => {
               redirectToDashboard();
             }, 1500);
@@ -169,7 +158,7 @@ function VerifyEmailContent() {
           isSubmittingRef.current = false;
         });
     }
-  }, [searchParams, verifyEmailAndCreateUser, redirectToDashboard, recoverSession]);
+  }, [searchParams, verifyEmailAndCreateUser, redirectToDashboard, email]);
 
   // Framer Motion Variants
   const cardVariants: Variants = {
