@@ -65,6 +65,11 @@ export interface User extends BaseRecord {
   archived_at?: string | null; // When the user was archived
 }
 
+/** User with eagerly-loaded company relation (returned by getUserWithCompany). */
+export interface UserWithCompany extends User {
+  company: Company;
+}
+
 export interface NewUser {
   id?: string; // Can be provided from auth.users
   email: string;

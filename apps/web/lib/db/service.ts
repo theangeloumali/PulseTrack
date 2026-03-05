@@ -10,6 +10,7 @@ import type {
   NewActivity,
   NewTicketHistory,
   ActivityWithUser,
+  UserWithCompany,
 } from '@/lib/db/schema';
 import {createOrUpdateTimeEntryBilling} from './billing-service';
 import {getApiPath} from '@/lib/utils';
@@ -81,21 +82,14 @@ export async function getUserById(id: string) {
   return data;
 }
 
-export async function getUserWithCompany(id: string) {
+export async function getUserWithCompany(id: string): Promise<UserWithCompany | null> {
   const {data, error} = await supabase
     .from('users')
     .select(userWithCompanyFields)
     .eq('id', id)
-    .single();
+    .maybeSingle();
 
   if (error) {
-    // PGRST116 means "not found" which is expected if user doesn't exist yet
-    if (error.code === 'PGRST116') {
-      console.log('getUserWithCompany: User not found in database:', id);
-      return null;
-    }
-
-    // Log the actual error details for debugging
     console.error('getUserWithCompany: Database error:', {
       code: error.code,
       message: error.message,
@@ -107,7 +101,9 @@ export async function getUserWithCompany(id: string) {
     throw error;
   }
 
-  return data;
+  // Supabase TS types infer the FK join `company` as an array, but PostgREST
+  // returns a single object for many-to-one FK joins. Cast to the correct shape.
+  return data as UserWithCompany | null;
 }
 
 export async function getUsersByCompany(companyId: string) {

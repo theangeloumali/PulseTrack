@@ -181,6 +181,7 @@ ALTER TABLE public.payment_history FORCE ROW LEVEL SECURITY;
 -- ============================================================================
 
 DROP POLICY IF EXISTS "service_role_bypass" ON public.companies;
+DROP POLICY IF EXISTS "companies_select_own" ON public.companies;
 DROP POLICY IF EXISTS "companies_select" ON public.companies;
 DROP POLICY IF EXISTS "companies_insert" ON public.companies;
 DROP POLICY IF EXISTS "companies_update" ON public.companies;
@@ -188,6 +189,7 @@ DROP POLICY IF EXISTS "companies_delete" ON public.companies;
 DROP POLICY IF EXISTS "hide_deleted_companies" ON public.companies;
 
 DROP POLICY IF EXISTS "service_role_bypass" ON public.users;
+DROP POLICY IF EXISTS "users_select_self" ON public.users;
 DROP POLICY IF EXISTS "users_select" ON public.users;
 DROP POLICY IF EXISTS "users_insert" ON public.users;
 DROP POLICY IF EXISTS "users_update" ON public.users;
@@ -302,6 +304,16 @@ CREATE POLICY "service_role_bypass" ON public.payment_history FOR ALL USING (pub
 -- ============================================================================
 
 -- companies
+
+-- Allow users to read their own company via subquery (independent of current_company_id()).
+-- Required so the company FK join in getUserWithCompany succeeds for newly-created users
+-- before current_company_id() is resolvable.
+CREATE POLICY "companies_select_own" ON public.companies
+  FOR SELECT TO authenticated
+  USING (
+    EXISTS (SELECT 1 FROM public.users WHERE users.id = auth.uid() AND users.company_id = companies.id)
+  );
+
 CREATE POLICY "companies_select" ON public.companies
   FOR SELECT TO authenticated
   USING (public.can_access_company(id));
@@ -320,6 +332,13 @@ CREATE POLICY "companies_delete" ON public.companies
   USING (public.is_system_admin());
 
 -- users
+
+-- Allow users to always read their own row.
+-- Breaks the RLS bootstrap deadlock for new users where current_company_id() returns NULL.
+CREATE POLICY "users_select_self" ON public.users
+  FOR SELECT TO authenticated
+  USING (id = auth.uid());
+
 CREATE POLICY "users_select" ON public.users
   FOR SELECT TO authenticated
   USING (public.can_access_company(company_id));

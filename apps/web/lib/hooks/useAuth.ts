@@ -7,4 +7,4 @@ export function useAuth(): AuthState {
   return useAuthStore();
 }
 
-export type {CreateUserData} from '@/lib/stores/auth';
+export type {CreateUserData, SignupData} from '@/lib/stores/auth';
