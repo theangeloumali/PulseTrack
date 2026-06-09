@@ -22,6 +22,7 @@ export function useBillingSettings(companyId: string) {
     queryKey: ['billing-settings', companyId],
     queryFn: () => getCompanyBillingSettings(companyId),
     enabled: !!companyId, // Only run if companyId is available
+    staleTime: 1000 * 60 * 30, // 30 minutes (billing settings rarely change)
   });
 }
 
@@ -78,6 +79,7 @@ export function useBillingReport(
       return response.json();
     },
     enabled: !!companyId && !!startDate && !!endDate,
+    staleTime: 1000 * 60 * 30, // 30 minutes (billing period data is stable)
   });
 }
 
@@ -86,6 +88,7 @@ export function useBillingRates(companyId: string) {
     queryKey: ['billing-rates', companyId],
     queryFn: () => getBillingRatesByCompany(companyId),
     enabled: !!companyId,
+    staleTime: 1000 * 60 * 30, // 30 minutes (billing rates rarely change)
   });
 }
 

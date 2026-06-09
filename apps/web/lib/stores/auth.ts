@@ -33,6 +33,7 @@ export interface AuthState {
   signupInProgress: boolean;
   signupStartedAt: number;
   lastSessionCheck: number;
+  unsubscribeAuthListener: (() => void) | null;
 
   // Actions
   setUser: (user: UserWithCompany | null) => void;
@@ -69,6 +70,7 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
   signupInProgress: false,
   signupStartedAt: 0,
   lastSessionCheck: 0,
+  unsubscribeAuthListener: null,
 
   setUser: (user) => set({user}),
   setSupabaseUser: (user) => set({supabaseUser: user}),
@@ -166,13 +168,38 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
 
   signOut: async () => {
     try {
+      // Unsubscribe auth listener before signing out
+      const {unsubscribeAuthListener} = get();
+      if (unsubscribeAuthListener) {
+        unsubscribeAuthListener();
+      }
+      authListenerRegistered = false;
+
       const {error} = await supabase.auth.signOut();
 
       if (error) {
         console.error('Sign out error:', error);
       }
 
-      set({user: null, supabaseUser: null, session: null});
+      // Clear localStorage auth keys
+      if (typeof window !== 'undefined') {
+        const keysToRemove: string[] = [];
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key && (key.startsWith('sb-') || key.startsWith('supabase'))) {
+            keysToRemove.push(key);
+          }
+        }
+        keysToRemove.forEach((key) => localStorage.removeItem(key));
+      }
+
+      set({
+        user: null,
+        supabaseUser: null,
+        session: null,
+        lastSessionCheck: 0,
+        unsubscribeAuthListener: null,
+      });
     } catch (error) {
       console.error('Sign out error:', error);
     }
@@ -456,11 +483,18 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
       set({isInitializing: true});
       console.log('Auth Store: Starting initialization...');
 
-      // Get current session
+      // Get current session with a 10-second timeout
+      const sessionResult = await Promise.race([
+        supabase.auth.getSession(),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error('Auth initialization timed out after 10s')), 10_000),
+        ),
+      ]);
+
       const {
         data: {session},
         error: sessionError,
-      } = await supabase.auth.getSession();
+      } = sessionResult;
 
       if (sessionError) {
         console.error('Auth Store: Error getting session:', sessionError);
@@ -582,7 +616,9 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
       if (!authListenerRegistered) {
         authListenerRegistered = true;
         console.log('Auth Store: Setting up auth state change listener...');
-        supabase.auth.onAuthStateChange(async (event, newSession) => {
+        const {
+          data: {subscription},
+        } = supabase.auth.onAuthStateChange(async (event, newSession) => {
           console.log('Auth Store: Auth state changed:', event, newSession?.user?.id);
 
           // Guard: if signup is in progress, only update session/supabaseUser — don't fetch DB user
@@ -646,6 +682,7 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
             });
           }
         });
+        set({unsubscribeAuthListener: () => subscription.unsubscribe()});
       }
 
       console.log('Auth Store: Initialization complete');
@@ -718,9 +755,9 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
     try {
       const {session, lastSessionCheck} = get();
 
-      // Skip validation if we checked recently (within 5 minutes)
+      // Skip validation if we checked recently (within 30 seconds)
       const now = Date.now();
-      if (now - lastSessionCheck < 5 * 60 * 1000) {
+      if (now - lastSessionCheck < 30 * 1000) {
         return !!session;
       }
 

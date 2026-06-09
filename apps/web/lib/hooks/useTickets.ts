@@ -100,38 +100,24 @@ export function useCreateTicketMutation() {
   const {user} = useAuthStore();
 
   return useMutation({
-    mutationFn: createTicket,
+    mutationFn: (data: Parameters<typeof createTicket>[0]) => createTicket(data),
     onSuccess: (newTicket) => {
-      // Invalidate all ticket-related queries
-      queryClient.invalidateQueries({
-        queryKey: ticketKeys.list(newTicket.project_id),
-      });
-
-      // Invalidate company tickets query
-      queryClient.invalidateQueries({
-        queryKey: [...ticketKeys.all, 'company'],
-      });
-
-      // Invalidate project ticket count query
-      queryClient.invalidateQueries({
-        queryKey: [...ticketKeys.all, 'count', newTicket.project_id],
-      });
-
-      // Invalidate recent tickets query
-      queryClient.invalidateQueries({
-        queryKey: [...ticketKeys.all, 'recent', newTicket.project_id],
-      });
-
-      // Invalidate projects with ticket counts (used in projects page)
-      queryClient.invalidateQueries({
-        queryKey: ['projects', 'withTicketCounts'],
-      });
-
-      // Optimistically add to cache
+      // Optimistically add to the project list cache
       queryClient.setQueryData(ticketKeys.list(newTicket.project_id), (old: Ticket[] = []) => [
         newTicket,
         ...old,
       ]);
+
+      // Only invalidate the essential queries — count/recent will pick up changes via staleTime
+      queryClient.invalidateQueries({
+        queryKey: ticketKeys.list(newTicket.project_id),
+      });
+      queryClient.invalidateQueries({
+        queryKey: [...ticketKeys.all, 'company'],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ['projects', 'withTicketCounts'],
+      });
     },
   });
 }
@@ -144,36 +130,21 @@ export function useUpdateTicket() {
   return useMutation({
     mutationFn: ({id, data}: {id: string; data: Partial<NewTicket>}) => updateTicket(id, data),
     onSuccess: (updatedTicket: Ticket) => {
-      // Invalidate all ticket-related queries
-      queryClient.invalidateQueries({
-        queryKey: ticketKeys.list(updatedTicket.project_id),
-      });
-      queryClient.invalidateQueries({
-        queryKey: ticketKeys.detail(updatedTicket.id),
-      });
+      // Update caches directly with the new data
+      queryClient.setQueryData(ticketKeys.detail(updatedTicket.id), updatedTicket);
+      queryClient.setQueryData(
+        ticketKeys.list(updatedTicket.project_id),
+        (old: Ticket[] | undefined) =>
+          old?.map((t) => (t.id === updatedTicket.id ? updatedTicket : t)),
+      );
 
-      // Invalidate company tickets query
+      // Only invalidate the essential queries — count/recent will pick up changes via staleTime
       queryClient.invalidateQueries({
         queryKey: [...ticketKeys.all, 'company'],
       });
-
-      // Invalidate project ticket count query
-      queryClient.invalidateQueries({
-        queryKey: [...ticketKeys.all, 'count', updatedTicket.project_id],
-      });
-
-      // Invalidate recent tickets query
-      queryClient.invalidateQueries({
-        queryKey: [...ticketKeys.all, 'recent', updatedTicket.project_id],
-      });
-
-      // Invalidate projects with ticket counts
       queryClient.invalidateQueries({
         queryKey: ['projects', 'withTicketCounts'],
       });
-
-      // Update the single ticket cache
-      queryClient.setQueryData(ticketKeys.detail(updatedTicket.id), updatedTicket);
     },
   });
 }
@@ -234,24 +205,19 @@ export function useDeleteTicketMutation() {
   return useMutation({
     mutationFn: deleteTicket,
     onSuccess: (_, deletedTicketId) => {
-      // Invalidate all ticket-related queries
-      queryClient.invalidateQueries({
-        queryKey: ticketKeys.all,
+      // Remove the detail cache entry
+      queryClient.removeQueries({
+        queryKey: ticketKeys.detail(deletedTicketId),
       });
 
-      // Invalidate company tickets query
+      // Invalidate all ticket queries (covers lists and company queries)
       queryClient.invalidateQueries({
-        queryKey: [...ticketKeys.all, 'company'],
+        queryKey: ticketKeys.all,
       });
 
       // Invalidate projects with ticket counts
       queryClient.invalidateQueries({
         queryKey: ['projects', 'withTicketCounts'],
-      });
-
-      // Remove from cache optimistically
-      queryClient.removeQueries({
-        queryKey: ticketKeys.detail(deletedTicketId),
       });
     },
   });

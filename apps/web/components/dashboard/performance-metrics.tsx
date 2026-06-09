@@ -20,6 +20,7 @@ import {
   BarChart3,
   Timer,
   CheckCircle2,
+  AlertTriangle,
 } from 'lucide-react';
 import {useQuery} from '@tanstack/react-query';
 import {getPerformanceMetrics} from '@/lib/db/performance-metrics-service';
@@ -222,6 +223,26 @@ export function PerformanceMetrics({
                 <div key={i} className="h-16 bg-muted rounded-lg" />
               ))}
             </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (metricsError) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <BarChart3 className="h-5 w-5" />
+            Performance Metrics
+          </CardTitle>
+          <CardDescription>Track your productivity trends and achievements</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center py-8 text-muted-foreground">
+            <AlertTriangle className="h-8 w-8 mx-auto mb-2" />
+            <p>Failed to load performance metrics</p>
           </div>
         </CardContent>
       </Card>

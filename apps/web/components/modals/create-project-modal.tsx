@@ -1,30 +1,42 @@
 'use client';
 
-import {useState} from 'react';
+import {useEffect, useState} from 'react';
 import {Button} from '@workspace/ui/components/button';
 import {Input} from '@workspace/ui/components/input';
 import {Label} from '@workspace/ui/components/label';
 import {RichTextEditor} from '@/components/ui/rich-text-editor';
 import {Modal} from '@/components/ui/modal';
 import {useCreateProjectMutation} from '@/lib/hooks/useProjects';
+import {useClients} from '@/lib/hooks/useClients';
 import {useAuthStore} from '@/lib/stores/auth';
 import {Loader2, Save} from 'lucide-react';
 
 interface CreateProjectModalProps {
   isOpen: boolean;
   onClose: () => void;
+  // Pre-select a client (e.g. when creating a project from a client page)
+  defaultClientId?: string;
 }
 
-export function CreateProjectModal({isOpen, onClose}: CreateProjectModalProps) {
+export function CreateProjectModal({isOpen, onClose, defaultClientId}: CreateProjectModalProps) {
   const [formData, setFormData] = useState({
     name: '',
     description: '',
     status: 'active' as 'active' | 'archived' | 'completed',
+    client_id: defaultClientId ?? '',
   });
   const [error, setError] = useState('');
 
   const {user} = useAuthStore();
+  const {data: clients = []} = useClients();
   const createProjectMutation = useCreateProjectMutation();
+
+  // Sync the pre-selected client whenever the modal opens from a client context
+  useEffect(() => {
+    if (isOpen) {
+      setFormData((prev) => ({...prev, client_id: defaultClientId ?? ''}));
+    }
+  }, [isOpen, defaultClientId]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const {name, value} = e.target;
@@ -68,6 +80,7 @@ export function CreateProjectModal({isOpen, onClose}: CreateProjectModalProps) {
         status: formData.status,
         company_id: user.company_id,
         owner_id: user.id,
+        client_id: formData.client_id || null,
       };
 
       await createProjectMutation.mutateAsync(projectData);
@@ -77,6 +90,7 @@ export function CreateProjectModal({isOpen, onClose}: CreateProjectModalProps) {
         name: '',
         description: '',
         status: 'active',
+        client_id: defaultClientId ?? '',
       });
       onClose();
     } catch (err: any) {
@@ -90,6 +104,7 @@ export function CreateProjectModal({isOpen, onClose}: CreateProjectModalProps) {
         name: '',
         description: '',
         status: 'active',
+        client_id: defaultClientId ?? '',
       });
       setError('');
       onClose();
@@ -159,6 +174,28 @@ export function CreateProjectModal({isOpen, onClose}: CreateProjectModalProps) {
             <option value="completed">Completed</option>
           </select>
           <p className="text-xs text-muted-foreground">Set the initial status for this project</p>
+        </div>
+
+        {/* Client */}
+        <div className="space-y-2">
+          <Label htmlFor="client_id">Client</Label>
+          <select
+            id="client_id"
+            name="client_id"
+            value={formData.client_id}
+            onChange={(e) => handleSelectChange('client_id', e.target.value)}
+            disabled={createProjectMutation.isPending}
+            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50">
+            <option value="">No client (internal)</option>
+            {clients.map((client) => (
+              <option key={client.id} value={client.id}>
+                {client.name}
+              </option>
+            ))}
+          </select>
+          <p className="text-xs text-muted-foreground">
+            Optionally assign this project to a client
+          </p>
         </div>
 
         {/* Form Actions */}

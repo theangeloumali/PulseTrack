@@ -83,6 +83,7 @@ export const projects = pgTable(
       .references(() => users.id, {onDelete: 'cascade'}),
     visibility: text('visibility').default('company'), // 'public' | 'company' | 'private'
     allow_external_activities: boolean('allow_external_activities').default(false),
+    client_id: uuid('client_id').references(() => clients.id, {onDelete: 'set null'}),
     created_at: timestamp('created_at', {withTimezone: true}).defaultNow().notNull(),
     updated_at: timestamp('updated_at', {withTimezone: true}).defaultNow().notNull(),
   },
@@ -94,6 +95,56 @@ export const projects = pgTable(
     statusIdx: index('projects_status_idx').on(table.status),
     nameIdx: index('projects_name_idx').on(table.name),
     visibilityIdx: index('projects_visibility_idx').on(table.visibility),
+    clientIdIdx: index('projects_client_id_idx').on(table.client_id),
+  }),
+).enableRLS();
+
+// Clients table (top-level, company-scoped)
+export const clients = pgTable(
+  'clients',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    company_id: uuid('company_id')
+      .notNull()
+      .references(() => companies.id, {onDelete: 'cascade'}),
+    name: text('name').notNull(),
+    status: text('status').default('active'), // 'active' | 'inactive'
+    owner_id: uuid('owner_id').references(() => users.id, {
+      onDelete: 'set null',
+    }),
+    contact_email: text('contact_email'),
+    contact_phone: text('contact_phone'),
+    website: text('website'),
+    notes: text('notes'),
+    created_at: timestamp('created_at', {withTimezone: true}).defaultNow().notNull(),
+    updated_at: timestamp('updated_at', {withTimezone: true}).defaultNow().notNull(),
+  },
+  (table) => ({
+    // Performance indexes
+    companyIdIdx: index('clients_company_id_idx').on(table.company_id),
+    ownerIdIdx: index('clients_owner_id_idx').on(table.owner_id),
+  }),
+).enableRLS();
+
+// Client contacts table (child of clients)
+export const clientContacts = pgTable(
+  'client_contacts',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    client_id: uuid('client_id')
+      .notNull()
+      .references(() => clients.id, {onDelete: 'cascade'}),
+    name: text('name').notNull(),
+    email: text('email'),
+    phone: text('phone'),
+    title: text('title'),
+    is_primary: boolean('is_primary').default(false),
+    created_at: timestamp('created_at', {withTimezone: true}).defaultNow().notNull(),
+    updated_at: timestamp('updated_at', {withTimezone: true}).defaultNow().notNull(),
+  },
+  (table) => ({
+    // Performance indexes
+    clientIdIdx: index('client_contacts_client_id_idx').on(table.client_id),
   }),
 ).enableRLS();
 
@@ -426,5 +477,103 @@ export const paymentHistory = pgTable(
     userIdIdx: index('payment_history_user_id_idx').on(table.user_id),
     actionIdx: index('payment_history_action_idx').on(table.action),
     createdAtIdx: index('payment_history_created_at_idx').on(table.created_at),
+  }),
+).enableRLS();
+
+// Client Invoices table (company + client scoped; additive to billing_periods)
+export const clientInvoices = pgTable(
+  'client_invoices',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    company_id: uuid('company_id')
+      .notNull()
+      .references(() => companies.id, {onDelete: 'cascade'}),
+    client_id: uuid('client_id')
+      .notNull()
+      .references(() => clients.id, {onDelete: 'cascade'}),
+    invoice_number: text('invoice_number').notNull(),
+    status: text('status').notNull().default('draft'), // 'draft' | 'sent' | 'paid' | 'overdue' | 'void'
+    issue_date: date('issue_date'),
+    due_date: date('due_date'),
+    period_start: date('period_start'),
+    period_end: date('period_end'),
+    subtotal: decimal('subtotal', {precision: 12, scale: 2}).default('0'),
+    tax_rate: decimal('tax_rate', {precision: 5, scale: 2}).default('0'),
+    tax_amount: decimal('tax_amount', {precision: 12, scale: 2}).default('0'),
+    total: decimal('total', {precision: 12, scale: 2}).default('0'),
+    currency: text('currency').default('USD'),
+    notes: text('notes'),
+    sent_at: timestamp('sent_at', {withTimezone: true}),
+    paid_at: timestamp('paid_at', {withTimezone: true}),
+    payment_reference: text('payment_reference'),
+    created_by: uuid('created_by').references(() => users.id, {
+      onDelete: 'set null',
+    }),
+    created_at: timestamp('created_at', {withTimezone: true}).defaultNow().notNull(),
+    updated_at: timestamp('updated_at', {withTimezone: true}).defaultNow().notNull(),
+  },
+  (table) => ({
+    companyInvoiceNumberUnique: unique().on(table.company_id, table.invoice_number),
+    // Performance indexes
+    companyIdIdx: index('client_invoices_company_id_idx').on(table.company_id),
+    clientIdIdx: index('client_invoices_client_id_idx').on(table.client_id),
+    createdByIdx: index('client_invoices_created_by_idx').on(table.created_by),
+    statusIdx: index('client_invoices_status_idx').on(table.status),
+  }),
+).enableRLS();
+
+// Client Invoice Line Items table (child of client_invoices)
+export const clientInvoiceLineItems = pgTable(
+  'client_invoice_line_items',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    invoice_id: uuid('invoice_id')
+      .notNull()
+      .references(() => clientInvoices.id, {onDelete: 'cascade'}),
+    project_id: uuid('project_id').references(() => projects.id, {
+      onDelete: 'set null',
+    }),
+    description: text('description').notNull(),
+    quantity: decimal('quantity', {precision: 10, scale: 2}).notNull().default('0'),
+    unit_rate: decimal('unit_rate', {precision: 12, scale: 2}).notNull().default('0'),
+    amount: decimal('amount', {precision: 12, scale: 2}).notNull().default('0'),
+    sort_order: integer('sort_order').default(0),
+    created_at: timestamp('created_at', {withTimezone: true}).defaultNow().notNull(),
+  },
+  (table) => ({
+    // Performance indexes
+    invoiceIdIdx: index('client_invoice_line_items_invoice_id_idx').on(table.invoice_id),
+    projectIdIdx: index('client_invoice_line_items_project_id_idx').on(table.project_id),
+  }),
+).enableRLS();
+
+// Client Invoice Schedules table (recurring auto-generation, company + client scoped)
+export const clientInvoiceSchedules = pgTable(
+  'client_invoice_schedules',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    company_id: uuid('company_id')
+      .notNull()
+      .references(() => companies.id, {onDelete: 'cascade'}),
+    client_id: uuid('client_id')
+      .notNull()
+      .references(() => clients.id, {onDelete: 'cascade'}),
+    frequency: text('frequency').notNull().default('monthly'), // 'weekly' | 'bi_monthly' | 'monthly'
+    day_of_month: integer('day_of_month').default(1),
+    next_run_date: date('next_run_date').notNull(),
+    active: boolean('active').default(true),
+    auto_send: boolean('auto_send').default(false),
+    created_by: uuid('created_by').references(() => users.id, {
+      onDelete: 'set null',
+    }),
+    created_at: timestamp('created_at', {withTimezone: true}).defaultNow().notNull(),
+    updated_at: timestamp('updated_at', {withTimezone: true}).defaultNow().notNull(),
+  },
+  (table) => ({
+    // Performance indexes
+    companyIdIdx: index('client_invoice_schedules_company_id_idx').on(table.company_id),
+    clientIdIdx: index('client_invoice_schedules_client_id_idx').on(table.client_id),
+    createdByIdx: index('client_invoice_schedules_created_by_idx').on(table.created_by),
+    nextRunDateIdx: index('client_invoice_schedules_next_run_date_idx').on(table.next_run_date),
   }),
 ).enableRLS();

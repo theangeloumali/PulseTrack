@@ -29,7 +29,8 @@ export type ActivityType =
   | 'company_deleted'
   | 'user_archived'
   | 'user_restored'
-  | 'user_deleted';
+  | 'user_deleted'
+  | 'ai_action';
 export type ProjectVisibility = 'public' | 'company' | 'private';
 
 // Base database types
@@ -81,6 +82,13 @@ export interface NewUser {
 }
 
 // Project types
+
+// Lightweight client reference embedded on project rows via the projects.client_id FK
+export interface ProjectClientRef {
+  id: string;
+  name: string;
+}
+
 export interface Project extends BaseRecord {
   name: string;
   description?: string | null;
@@ -89,6 +97,9 @@ export interface Project extends BaseRecord {
   owner_id: string;
   visibility: ProjectVisibility;
   allow_external_activities: boolean;
+  client_id?: string | null;
+  // Present when the query embeds the client relation (id, name)
+  client?: ProjectClientRef | null;
 }
 
 export interface NewProject {
@@ -99,6 +110,148 @@ export interface NewProject {
   owner_id: string;
   visibility?: ProjectVisibility;
   allow_external_activities?: boolean;
+  client_id?: string | null;
+}
+
+// Client types
+export type ClientStatus = 'active' | 'inactive';
+
+export interface Client extends BaseRecord {
+  company_id: string;
+  name: string;
+  status: ClientStatus;
+  owner_id?: string | null;
+  contact_email?: string | null;
+  contact_phone?: string | null;
+  website?: string | null;
+  notes?: string | null;
+}
+
+export interface NewClient {
+  company_id: string;
+  name: string;
+  status?: ClientStatus;
+  owner_id?: string | null;
+  contact_email?: string | null;
+  contact_phone?: string | null;
+  website?: string | null;
+  notes?: string | null;
+}
+
+// Client contact types
+export interface ClientContact extends BaseRecord {
+  client_id: string;
+  name: string;
+  email?: string | null;
+  phone?: string | null;
+  title?: string | null;
+  is_primary: boolean;
+}
+
+export interface NewClientContact {
+  client_id: string;
+  name: string;
+  email?: string | null;
+  phone?: string | null;
+  title?: string | null;
+  is_primary?: boolean;
+}
+
+// Client invoicing types
+export type ClientInvoiceStatus = 'draft' | 'sent' | 'paid' | 'overdue' | 'void';
+export type ClientInvoiceScheduleFrequency = 'weekly' | 'bi_monthly' | 'monthly';
+
+export interface ClientInvoice extends BaseRecord {
+  company_id: string;
+  client_id: string;
+  invoice_number: string;
+  status: ClientInvoiceStatus;
+  issue_date?: string | null;
+  due_date?: string | null;
+  period_start?: string | null;
+  period_end?: string | null;
+  // numeric columns are returned as strings by supabase-js — coerce with Number() when computing
+  subtotal?: string | null;
+  tax_rate?: string | null;
+  tax_amount?: string | null;
+  total?: string | null;
+  currency?: string | null;
+  notes?: string | null;
+  sent_at?: string | null;
+  paid_at?: string | null;
+  payment_reference?: string | null;
+  created_by?: string | null;
+}
+
+export interface NewClientInvoice {
+  company_id: string;
+  client_id: string;
+  invoice_number: string;
+  status?: ClientInvoiceStatus;
+  issue_date?: string | null;
+  due_date?: string | null;
+  period_start?: string | null;
+  period_end?: string | null;
+  subtotal?: string | number | null;
+  tax_rate?: string | number | null;
+  tax_amount?: string | number | null;
+  total?: string | number | null;
+  currency?: string | null;
+  notes?: string | null;
+  sent_at?: string | null;
+  paid_at?: string | null;
+  payment_reference?: string | null;
+  created_by?: string | null;
+}
+
+export interface ClientInvoiceLineItem {
+  id: string;
+  invoice_id: string;
+  project_id?: string | null;
+  description: string;
+  // numeric columns are returned as strings by supabase-js — coerce with Number() when computing
+  quantity: string;
+  unit_rate: string;
+  amount: string;
+  sort_order?: number | null;
+  created_at: string;
+}
+
+export interface NewClientInvoiceLineItem {
+  invoice_id: string;
+  project_id?: string | null;
+  description: string;
+  quantity?: string | number;
+  unit_rate?: string | number;
+  amount?: string | number;
+  sort_order?: number | null;
+}
+
+export interface ClientInvoiceSchedule extends BaseRecord {
+  company_id: string;
+  client_id: string;
+  frequency: ClientInvoiceScheduleFrequency;
+  day_of_month?: number | null;
+  next_run_date: string;
+  active: boolean;
+  auto_send: boolean;
+  created_by?: string | null;
+}
+
+export interface NewClientInvoiceSchedule {
+  company_id: string;
+  client_id: string;
+  frequency?: ClientInvoiceScheduleFrequency;
+  day_of_month?: number | null;
+  next_run_date: string;
+  active?: boolean;
+  auto_send?: boolean;
+  created_by?: string | null;
+}
+
+// Invoice with eagerly-loaded line items (returned by getClientInvoiceDetail)
+export interface ClientInvoiceWithLineItems extends ClientInvoice {
+  line_items: ClientInvoiceLineItem[];
 }
 
 // Project member types (many-to-many relationship)
@@ -132,6 +285,7 @@ export interface Ticket extends BaseRecord {
   actual_hours?: number | null;
   due_date?: string | null;
   sort_order?: number | null;
+  deleted_at?: string | null;
 }
 
 export interface NewTicket {
@@ -270,7 +424,7 @@ export interface CompanyBillingSettings extends BaseRecord {
 }
 
 export interface NewCompanyBillingSettings {
-  company_id?: string;
+  company_id: string;
   currency?: string | null;
   billing_frequency?: BillingFrequency | null;
   invoice_prefix?: string | null;
@@ -391,6 +545,11 @@ export const TABLE_NAMES = {
   users: 'users',
   projects: 'projects',
   project_members: 'project_members',
+  clients: 'clients',
+  client_contacts: 'client_contacts',
+  client_invoices: 'client_invoices',
+  client_invoice_line_items: 'client_invoice_line_items',
+  client_invoice_schedules: 'client_invoice_schedules',
   tickets: 'tickets',
   time_entries: 'time_entries',
   comments: 'comments',

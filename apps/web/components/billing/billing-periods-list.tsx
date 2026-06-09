@@ -1,6 +1,7 @@
 'use client';
 
 import {useState} from 'react';
+import dynamic from 'next/dynamic';
 import {
   Card,
   CardContent,
@@ -16,8 +17,6 @@ import {PaymentStatusBadge} from '@/components/payments/payment-status-badge';
 import {InvoiceGenerator} from './invoice-generator';
 import {UserSelector} from './user-selector';
 import {DeleteConfirmationModal} from './delete-confirmation-modal';
-import {PDFExporter} from './pdf-exporter';
-import {ComprehensiveBillingModal} from './comprehensive-billing-modal';
 import {
   useBillingPeriods,
   useGenerateBillingPeriod,
@@ -46,6 +45,20 @@ import {
   RefreshCw,
   X,
 } from 'lucide-react';
+
+// Lazy-load heavy modals (jsPDF-backed exporter + comprehensive modal) so they
+// stay out of the initial billing bundle; they render behind state flags only.
+const PDFExporter = dynamic(
+  () => import('./pdf-exporter').then((mod) => ({default: mod.PDFExporter})),
+  {ssr: false},
+);
+const ComprehensiveBillingModal = dynamic(
+  () =>
+    import('./comprehensive-billing-modal').then((mod) => ({
+      default: mod.ComprehensiveBillingModal,
+    })),
+  {ssr: false},
+);
 
 interface BillingPeriodsListProps {
   companyId: string;

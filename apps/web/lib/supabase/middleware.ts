@@ -1,7 +1,15 @@
 import {createServerClient} from '@supabase/ssr';
 import {NextRequest, NextResponse} from 'next/server';
+import {csrfProtection} from '@/lib/csrf';
 
 export async function updateSession(request: NextRequest) {
+  // CSRF protection for state-changing API requests
+  const isApiRoute = request.nextUrl.pathname.startsWith('/api/');
+  if (isApiRoute) {
+    const csrfError = csrfProtection(request);
+    if (csrfError) return csrfError;
+  }
+
   let supabaseResponse = NextResponse.next({
     request,
   });
@@ -56,9 +64,12 @@ export async function updateSession(request: NextRequest) {
       return NextResponse.redirect(url);
     }
 
-    // For API routes, don't redirect to login - let them handle their own auth
-    const isApiRoute = request.nextUrl.pathname.startsWith('/api/');
+    // For API routes, validate auth token (except public auth endpoints)
     if (isApiRoute) {
+      const isPublicAuthRoute = request.nextUrl.pathname.startsWith('/api/auth/');
+      if (!isPublicAuthRoute && !user) {
+        return NextResponse.json({error: 'Unauthorized'}, {status: 401});
+      }
       return supabaseResponse;
     }
 
@@ -78,7 +89,6 @@ export async function updateSession(request: NextRequest) {
     console.error('Middleware - Unexpected error:', error);
 
     // For API routes, don't redirect to login even on error
-    const isApiRoute = request.nextUrl.pathname.startsWith('/api/');
     if (isApiRoute) {
       return supabaseResponse;
     }

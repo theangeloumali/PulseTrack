@@ -1,20 +1,22 @@
 import {supabase} from '@/lib/db';
 import {useAuthStore} from '@/lib/stores/auth';
 
-const SESSION_REFRESH_INTERVAL = 15 * 60 * 1000; // 15 minutes
+const SESSION_REFRESH_INTERVAL = 4 * 60 * 1000; // 4 minutes
 const SESSION_EXPIRE_WARNING = 5 * 60 * 1000; // 5 minutes before expiry
+
+const SESSION_VALIDATION_CACHE_MS = 30 * 1000; // 30 seconds
 
 class SessionManager {
   private refreshTimer: NodeJS.Timeout | null = null;
   private isRefreshing = false;
+  private lastValidationTime = 0;
+  private lastValidationResult = false;
+  private validationPromise: Promise<boolean> | null = null;
 
   constructor() {
-    // Disabled to prevent conflicts with auth store session management
-    // Auth store now handles all session management through Supabase's built-in mechanisms
     if (typeof window !== 'undefined') {
-      console.log('SessionManager: Disabled to prevent conflicts with auth store');
-      // this.startPeriodicRefresh();
-      // this.setupVisibilityListener();
+      this.startPeriodicRefresh();
+      this.setupVisibilityListener();
     }
   }
 
@@ -235,11 +237,33 @@ class SessionManager {
    * Check if session is valid before making API calls
    */
   async ensureValidSession(): Promise<boolean> {
+    // Return cached result if validation succeeded within the cache window
+    const now = Date.now();
+    if (this.lastValidationResult && now - this.lastValidationTime < SESSION_VALIDATION_CACHE_MS) {
+      return true;
+    }
+
+    // Deduplicate concurrent calls using a shared promise
+    if (this.validationPromise) {
+      return this.validationPromise;
+    }
+
+    this.validationPromise = this._performValidation();
+    try {
+      const result = await this.validationPromise;
+      return result;
+    } finally {
+      this.validationPromise = null;
+    }
+  }
+
+  private async _performValidation(): Promise<boolean> {
     const {
       data: {session},
     } = await supabase.auth.getSession();
 
     if (!session) {
+      this.lastValidationResult = false;
       this.handleSessionExpired();
       return false;
     }
@@ -249,9 +273,14 @@ class SessionManager {
     const now = new Date();
 
     if (expiresAt && expiresAt.getTime() - now.getTime() < SESSION_EXPIRE_WARNING) {
-      return await this.forceRefresh();
+      const refreshed = await this.forceRefresh();
+      this.lastValidationResult = refreshed;
+      this.lastValidationTime = Date.now();
+      return refreshed;
     }
 
+    this.lastValidationResult = true;
+    this.lastValidationTime = Date.now();
     return true;
   }
 }

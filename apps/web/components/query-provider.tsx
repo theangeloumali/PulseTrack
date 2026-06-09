@@ -13,7 +13,7 @@ export function QueryProvider({children}: {children: React.ReactNode}): ReactEle
           queries: {
             staleTime: 1000 * 60 * 2, // 2 minutes (reduced from 5)
             gcTime: 1000 * 60 * 10, // 10 minutes (renamed from cacheTime)
-            refetchOnWindowFocus: true, // Enable refetch on window focus/tab switch
+            refetchOnWindowFocus: false, // Disabled: avoid redundant refetches on tab switch
             refetchOnMount: true, // Always refetch when component mounts
             refetchOnReconnect: true, // Refetch when internet reconnects
             retry: (failureCount, error: any) => {

@@ -30,13 +30,19 @@ function VerifyEmailContent() {
   const {supabaseUser} = useAuth();
   const email = searchParams.get('email') || supabaseUser?.email || '';
 
-  // Belt-and-suspenders: read signup data from URL params (set by signup.tsx)
+  // Read signup data from URL params (backwards compat) or sessionStorage (preferred)
+  const storedData =
+    typeof window !== 'undefined' ? sessionStorage.getItem('pendingSignupData') : null;
+  const parsedStoredData = storedData ? JSON.parse(storedData) : null;
   const signupData = {
-    firstName: searchParams.get('firstName') || '',
-    lastName: searchParams.get('lastName') || '',
-    companyName: searchParams.get('companyName') || '',
-    companySlug: searchParams.get('companySlug') || '',
-    role: (searchParams.get('role') || 'company_admin') as 'company_admin' | 'manager' | 'user',
+    firstName: searchParams.get('firstName') || parsedStoredData?.firstName || '',
+    lastName: searchParams.get('lastName') || parsedStoredData?.lastName || '',
+    companyName: searchParams.get('companyName') || parsedStoredData?.companyName || '',
+    companySlug: searchParams.get('companySlug') || parsedStoredData?.companySlug || '',
+    role: (searchParams.get('role') || parsedStoredData?.role || 'company_admin') as
+      | 'company_admin'
+      | 'manager'
+      | 'user',
   };
   const hasSignupData = !!(signupData.companyName && signupData.companySlug);
 
@@ -96,6 +102,7 @@ function VerifyEmailContent() {
         } else {
           setVerificationStep('creating');
           setIsVerified(true);
+          sessionStorage.removeItem('pendingSignupData');
 
           setTimeout(() => {
             redirectToDashboard();
@@ -143,6 +150,7 @@ function VerifyEmailContent() {
           } else {
             setVerificationStep('creating');
             setIsVerified(true);
+            sessionStorage.removeItem('pendingSignupData');
 
             setTimeout(() => {
               redirectToDashboard();

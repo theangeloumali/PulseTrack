@@ -11,6 +11,7 @@ import type {
   NewTicketHistory,
   ActivityWithUser,
   UserWithCompany,
+  ProjectClientRef,
 } from '@/lib/db/schema';
 import {createOrUpdateTimeEntryBilling} from './billing-service';
 import {getApiPath} from '@/lib/utils';
@@ -20,6 +21,7 @@ import {
   companyBasicFields,
   projectBasicFields,
   projectWithRelationsFields,
+  projectClientField,
   ticketBasicFields,
   ticketWithUsersFields,
   ticketWithProjectFields,
@@ -49,29 +51,6 @@ export async function createCompany(data: NewCompany) {
 
   if (error) throw error;
   return result;
-}
-
-// Archive/Restore/Delete functions removed - columns don't exist in database
-
-// Get archived companies
-export async function getArchivedCompanies() {
-  const {data, error} = await supabase
-    .from('companies')
-    .select('*')
-    .eq('status', 'archived')
-    .is('deleted_at', null)
-    .order('archived_at', {ascending: false});
-
-  if (error) throw error;
-  return data || [];
-}
-
-// Get company with archive status
-export async function getCompanyWithArchiveStatus(companyId: string) {
-  const {data, error} = await supabase.from('companies').select('*').eq('id', companyId).single();
-
-  if (error && error.code !== 'PGRST116') throw error;
-  return data;
 }
 
 // User operations
@@ -257,11 +236,25 @@ export async function createCompanyAndUser(
 }
 
 // Project operations
+
+// PostgREST types a to-one FK embed as an array even though it returns a single
+// object (or null) at runtime — normalize it to a single client ref. Mirrors the
+// `Array.isArray(project.companies) ? project.companies[0] : ...` pattern in screens/tickets.tsx.
+function normalizeClientEmbed(client: unknown): ProjectClientRef | null {
+  if (!client) return null;
+  const value = Array.isArray(client) ? client[0] : client;
+  return (value as ProjectClientRef | null) ?? null;
+}
+
 export async function getProjectById(id: string) {
-  const {data, error} = await supabase.from('projects').select('*').eq('id', id).single();
+  const {data, error} = await supabase
+    .from('projects')
+    .select(`*, ${projectClientField}`)
+    .eq('id', id)
+    .single();
 
   if (error && error.code !== 'PGRST116') throw error;
-  return data;
+  return data ? {...data, client: normalizeClientEmbed(data.client)} : data;
 }
 
 export async function getProjectsByCompany(companyId: string) {
@@ -274,7 +267,10 @@ export async function getProjectsByCompany(companyId: string) {
   if (error) {
     throw error;
   }
-  return data || [];
+  return (data || []).map((project) => ({
+    ...project,
+    client: normalizeClientEmbed(project.client),
+  }));
 }
 
 export async function createProject(data: NewProject) {
@@ -579,8 +575,8 @@ export async function getAccessibleTicketsByCompany(
   return data || [];
 }
 
-export async function createTicket(data: NewTicket) {
-  const {data: result, error} = await supabase.from('tickets').insert(data).select().single();
+export async function createTicket(data: NewTicket, db: typeof supabase = supabase) {
+  const {data: result, error} = await db.from('tickets').insert(data).select().single();
 
   if (error) throw error;
 
@@ -697,14 +693,10 @@ export async function updateTicketSortOrders(updates: Array<{id: string; sort_or
 }
 
 export async function deleteTicket(id: string) {
-  const {error} = await supabase
-    .from('tickets')
-    .update({
-      deleted_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    })
-    .eq('id', id)
-    .is('deleted_at', null);
+  // Soft-delete via a SECURITY DEFINER RPC (authorization checked in-function).
+  // A direct UPDATE that sets deleted_at is rejected by the tickets RLS WITH CHECK,
+  // so we mirror the soft_delete_company / soft_delete_user pattern.
+  const {error} = await supabase.rpc('soft_delete_ticket', {p_ticket_id: id});
 
   if (error) throw error;
 }
@@ -1056,6 +1048,7 @@ export async function getProjectsWithTicketCounts(companyId: string) {
     .select(
       `
       ${projectBasicFields},
+      ${projectClientField},
       companies (
         ${companyBasicFields}
       ),
@@ -1075,6 +1068,7 @@ export async function getProjectsWithTicketCounts(companyId: string) {
   // Transform the data to include ticket_count as a number
   const transformedData = (data || []).map((project) => ({
     ...project,
+    client: normalizeClientEmbed(project.client),
     ticket_count: project.ticket_count?.[0]?.count || 0,
   }));
 
@@ -1124,7 +1118,10 @@ export async function getAccessibleProjectsByCompany(
   if (error) {
     throw error;
   }
-  return data || [];
+  return (data || []).map((project) => ({
+    ...project,
+    client: normalizeClientEmbed(project.client),
+  }));
 }
 
 /**
@@ -1165,6 +1162,7 @@ export async function getAccessibleProjectsWithTicketCounts(
     .select(
       `
       ${projectBasicFields},
+      ${projectClientField},
       companies (
         ${companyBasicFields}
       ),
@@ -1185,6 +1183,7 @@ export async function getAccessibleProjectsWithTicketCounts(
   // Transform the data to include ticket_count as a number
   const transformedData = (data || []).map((project) => ({
     ...project,
+    client: normalizeClientEmbed(project.client),
     ticket_count: project.ticket_count?.[0]?.count || 0,
   }));
 

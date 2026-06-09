@@ -1,4 +1,5 @@
 import {NextRequest, NextResponse} from 'next/server';
+import {z} from 'zod/v4';
 import {
   deletePaymentHistory,
   resetBillingPeriodPaymentStatus,
@@ -7,6 +8,20 @@ import {
   deleteOutstandingPaymentsByStatus,
 } from '@/lib/db/billing-service';
 import {createClient} from '@/lib/supabase/server';
+
+const paymentDeleteSchema = z.object({
+  action: z.enum([
+    'delete_payment_history',
+    'reset_payment_status',
+    'delete_all_payment_history',
+    'delete_multiple_outstanding',
+    'delete_by_status',
+  ]),
+  payment_history_id: z.uuid().optional(),
+  billing_period_id: z.uuid().optional(),
+  billing_period_ids: z.string().optional(),
+  statuses: z.string().optional(),
+});
 
 export async function DELETE(request: NextRequest) {
   try {
@@ -41,13 +56,33 @@ export async function DELETE(request: NextRequest) {
     }
 
     const {searchParams} = new URL(request.url);
-    const action = searchParams.get('action');
-    const paymentHistoryId = searchParams.get('payment_history_id');
-    const billingPeriodId = searchParams.get('billing_period_id');
+    const rawParams = {
+      action: searchParams.get('action') ?? undefined,
+      payment_history_id: searchParams.get('payment_history_id') ?? undefined,
+      billing_period_id: searchParams.get('billing_period_id') ?? undefined,
+      billing_period_ids: searchParams.get('billing_period_ids') ?? undefined,
+      statuses: searchParams.get('statuses') ?? undefined,
+    };
 
-    if (!action) {
-      return NextResponse.json({error: 'Action parameter is required'}, {status: 400});
+    const parseResult = paymentDeleteSchema.safeParse(rawParams);
+    if (!parseResult.success) {
+      return NextResponse.json(
+        {
+          error: 'Invalid request parameters',
+          issues: parseResult.error.issues.map((i) => ({
+            path: i.path.join('.'),
+            message: i.message,
+          })),
+        },
+        {status: 400},
+      );
     }
+
+    const {
+      action,
+      payment_history_id: paymentHistoryId,
+      billing_period_id: billingPeriodId,
+    } = parseResult.data;
 
     let result;
 
@@ -131,7 +166,7 @@ export async function DELETE(request: NextRequest) {
         break;
 
       case 'delete_multiple_outstanding':
-        const billingPeriodIds = searchParams.get('billing_period_ids');
+        const billingPeriodIds = parseResult.data.billing_period_ids;
         if (!billingPeriodIds) {
           return NextResponse.json({error: 'Billing period IDs are required'}, {status: 400});
         }
@@ -162,7 +197,7 @@ export async function DELETE(request: NextRequest) {
         break;
 
       case 'delete_by_status':
-        const statuses = searchParams.get('statuses');
+        const statuses = parseResult.data.statuses;
         if (!statuses) {
           return NextResponse.json({error: 'Payment statuses are required'}, {status: 400});
         }

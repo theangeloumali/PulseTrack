@@ -1,6 +1,6 @@
 'use client';
 
-import {useEffect, useState, use, Suspense} from 'react';
+import {useEffect, useRef, useState, use, Suspense} from 'react';
 import {useRouter} from 'next/navigation';
 import Link from 'next/link';
 import {Button} from '@workspace/ui/components/button';
@@ -45,6 +45,7 @@ function EditTicketContent({params}: Props) {
 
   const {user} = useAuthStore();
   const router = useRouter();
+  const hydratedRef = useRef(false);
 
   useEffect(() => {
     loadTicket();
@@ -71,13 +72,18 @@ function EditTicketContent({params}: Props) {
       }
 
       setTicket(ticketData);
-      setFormData({
-        title: ticketData.title || '',
-        description: ticketData.description || '',
-        status: ticketData.status || 'new',
-        priority: ticketData.priority || 'medium',
-        estimated_hours: ticketData.estimated_hours?.toString() || '',
-      });
+      // Hydrate the form only once — guards against React strict-mode double-invoke
+      // (or a late re-fetch) clobbering edits the user has already made.
+      if (!hydratedRef.current) {
+        hydratedRef.current = true;
+        setFormData({
+          title: ticketData.title || '',
+          description: ticketData.description || '',
+          status: ticketData.status || 'new',
+          priority: ticketData.priority || 'medium',
+          estimated_hours: ticketData.estimated_hours?.toString() || '',
+        });
+      }
     } catch (err: any) {
       setError(err.message || 'Failed to load ticket');
     } finally {

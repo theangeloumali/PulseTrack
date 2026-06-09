@@ -1,6 +1,6 @@
 import {create} from 'zustand';
 import {devtools} from 'zustand/middleware';
-import {TimeEntry} from '@/lib/types/database';
+import {TimeEntry} from '@/lib/db/schema';
 
 interface TimeTrackingState {
   timeEntries: TimeEntry[];

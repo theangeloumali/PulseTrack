@@ -19,12 +19,12 @@ import {
   X,
   Plus,
   Search,
-  Bug,
   Users,
   CreditCard,
   Shield,
   Building2,
   Activity,
+  Flame,
 } from 'lucide-react';
 import {cn} from '@workspace/ui/lib/utils';
 import {ThemeToggle} from './theme-toggle';
@@ -65,6 +65,18 @@ const navigation = [
     roles: ['super_admin', 'system_admin', 'company_admin', 'manager', 'user'],
   },
   {
+    name: 'Clients',
+    href: '/clients',
+    icon: Building2,
+    roles: ['super_admin', 'system_admin', 'company_admin', 'manager'],
+  },
+  {
+    name: 'Heat Map',
+    href: '/clients/heatmap',
+    icon: Flame,
+    roles: ['super_admin', 'system_admin', 'company_admin', 'manager'],
+  },
+  {
     name: 'Company',
     href: '/company/users',
     icon: Users,
@@ -87,12 +99,6 @@ const navigation = [
     href: '/admin/users',
     icon: Shield,
     roles: ['super_admin'],
-  },
-  {
-    name: 'Diagnostics',
-    href: '/diagnostics',
-    icon: Bug,
-    roles: ['super_admin', 'system_admin', 'company_admin', 'manager'],
   },
   {
     name: 'Settings',
@@ -205,6 +211,10 @@ export function SidebarLayout({children}: SidebarLayoutProps) {
               .map((item) => {
                 const isActive =
                   pathname === item.href ||
+                  (item.href === '/clients' &&
+                    pathname.startsWith('/clients') &&
+                    !pathname.startsWith('/clients/heatmap')) ||
+                  (item.href === '/clients/heatmap' && pathname.startsWith('/clients/heatmap')) ||
                   (item.href === '/company/users' && pathname.startsWith('/company')) ||
                   (item.href === '/admin/users' && pathname === '/admin/users') ||
                   (item.href === '/admin/companies' && pathname === '/admin/companies');

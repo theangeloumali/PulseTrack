@@ -31,7 +31,7 @@ async function handler(req: NextRequest) {
           status,
           created_at,
           updated_at,
-          users:users(count),
+          users:users!users_company_id_companies_id_fk(count),
           projects:projects(count)
         `,
         )

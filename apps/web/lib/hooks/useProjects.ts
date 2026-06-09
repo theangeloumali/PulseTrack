@@ -16,6 +16,7 @@ import {
   updateProjectMemberRole,
 } from '@/lib/db/service';
 import {NewProject, Project} from '@/lib/db/schema';
+import {clientKeys} from './useClients';
 import {useAuthStore} from '@/lib/stores/auth';
 
 // Query keys for consistency and cache invalidation
@@ -43,7 +44,7 @@ export function useProjectsQuery() {
       return result;
     },
     enabled: !!user?.company_id && !!user?.id && !!user?.role,
-    staleTime: 1000 * 60 * 2, // 2 minutes
+    staleTime: 1000 * 60 * 30, // 30 minutes (projects rarely change)
   });
 }
 
@@ -88,6 +89,12 @@ export function useCreateProjectMutation() {
         queryKey: projectKeys.userProjects(user!.id),
       });
 
+      // Refresh client caches so a client's Projects list reflects the new project
+      queryClient.invalidateQueries({queryKey: clientKeys.lists()});
+      if (newProject?.client_id) {
+        queryClient.invalidateQueries({queryKey: clientKeys.detail(newProject.client_id)});
+      }
+
       // Optimistically add to cache
       queryClient.setQueryData(projectKeys.list(user!.company_id), (old: Project[] = []) => [
         newProject,
@@ -123,6 +130,9 @@ export function useUpdateProjectMutation() {
       queryClient.invalidateQueries({
         queryKey: projectKeys.userProjects(user!.id),
       });
+
+      // Refresh client caches (covers both old and new client when reassigned)
+      queryClient.invalidateQueries({queryKey: clientKeys.all});
     },
   });
 }
@@ -179,7 +189,7 @@ export function useProjectsWithTicketCountsQuery() {
       return result;
     },
     enabled: !!user?.company_id && !!user?.id && !!user?.role,
-    staleTime: 1000 * 60 * 2, // 2 minutes
+    staleTime: 1000 * 60 * 30, // 30 minutes (projects rarely change)
   });
 }
 
@@ -200,7 +210,7 @@ export function useAllCompanyProjectsQuery() {
       !!user?.company_id &&
       !!user?.role &&
       ['super_admin', 'system_admin', 'company_admin'].includes(user.role),
-    staleTime: 1000 * 60 * 2, // 2 minutes
+    staleTime: 1000 * 60 * 30, // 30 minutes (projects rarely change)
   });
 }
 
@@ -221,7 +231,7 @@ export function useAllCompanyProjectsWithTicketCountsQuery() {
       !!user?.company_id &&
       !!user?.role &&
       ['super_admin', 'system_admin', 'company_admin'].includes(user.role),
-    staleTime: 1000 * 60 * 2, // 2 minutes
+    staleTime: 1000 * 60 * 30, // 30 minutes (projects rarely change)
   });
 }
 
@@ -233,7 +243,7 @@ export function useProjectMembersQuery(projectId: string) {
     queryKey: projectKeys.members(projectId),
     queryFn: () => getProjectMembers(projectId),
     enabled: !!projectId,
-    staleTime: 1000 * 60 * 2, // 2 minutes
+    staleTime: 1000 * 60 * 30, // 30 minutes (projects rarely change)
   });
 }
 
@@ -264,7 +274,7 @@ export function useUserProjectsQuery(userId?: string) {
     queryKey: projectKeys.userProjects(targetUserId || ''),
     queryFn: () => getUserProjects(targetUserId!),
     enabled: !!targetUserId,
-    staleTime: 1000 * 60 * 2, // 2 minutes
+    staleTime: 1000 * 60 * 30, // 30 minutes (projects rarely change)
   });
 }
 

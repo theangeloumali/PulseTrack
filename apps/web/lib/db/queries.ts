@@ -60,8 +60,19 @@ export const projectBasicFields = `
   updated_at
 `;
 
+// Embedded client reference (to-one) via the projects.client_id FK column.
+// Embed by column name (robust regardless of the FK constraint's actual name,
+// which is projects_client_id_fkey from `ALTER TABLE ... REFERENCES`).
+export const projectClientField = `
+  client:client_id (
+    id,
+    name
+  )
+`;
+
 export const projectWithRelationsFields = `
   ${projectBasicFields},
+  ${projectClientField},
   companies (
     ${companyBasicFields}
   ),

@@ -56,4 +56,15 @@ node_modules/
 
 # Task files
 # tasks.json
-# tasks/ 
+# tasks/
+
+# E2E + demo artifacts (generated, not source)
+/demo-videos/
+/docs/demo-screens/
+apps/web/test-results/
+apps/web/playwright-report/
+apps/web/demo-output/
+apps/web/demo-videos/
+apps/web/heatmap-verify.png
+apps/web/tests/e2e/.deep-ids.json
+*.webm 

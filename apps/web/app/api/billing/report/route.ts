@@ -1,51 +1,51 @@
 import {NextRequest, NextResponse} from 'next/server';
+import {z} from 'zod/v4';
 import {generateBillingReport} from '@/lib/db/billing-service';
 import {withAuth} from '@/lib/auth-utils';
 
+const reportQuerySchema = z.object({
+  companyId: z.uuid(),
+  startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  targetUserId: z.uuid().optional(),
+});
+
 async function handler(req: NextRequest) {
   const requestId = Date.now().toString();
-  console.log(`🚀 [${requestId}] Billing report request started`);
+  console.log(`[${requestId}] Billing report request started`);
 
   try {
     const {searchParams} = new URL(req.url);
-    const companyId = searchParams.get('companyId');
-    const startDate = searchParams.get('startDate');
-    const endDate = searchParams.get('endDate');
-    const targetUserId = searchParams.get('targetUserId'); // Optional user-specific filter
+    const rawParams = {
+      companyId: searchParams.get('companyId') ?? undefined,
+      startDate: searchParams.get('startDate') ?? undefined,
+      endDate: searchParams.get('endDate') ?? undefined,
+      targetUserId: searchParams.get('targetUserId') ?? undefined,
+    };
 
-    console.log(`📋 [${requestId}] Request params:`, {
+    const parseResult = reportQuerySchema.safeParse(rawParams);
+    if (!parseResult.success) {
+      console.error(`[${requestId}] Validation failed:`, parseResult.error.issues);
+      return NextResponse.json(
+        {
+          error: 'Invalid request parameters',
+          issues: parseResult.error.issues.map((i) => ({
+            path: i.path.join('.'),
+            message: i.message,
+          })),
+        },
+        {status: 400},
+      );
+    }
+
+    const {companyId, startDate, endDate, targetUserId} = parseResult.data;
+
+    console.log(`[${requestId}] Request params:`, {
       companyId,
       startDate,
       endDate,
       targetUserId,
     });
-
-    if (!companyId || !startDate || !endDate) {
-      console.error(`❌ [${requestId}] Missing required parameters`);
-      return NextResponse.json(
-        {
-          error: 'Missing companyId, startDate, or endDate',
-          received: {
-            companyId: !!companyId,
-            startDate: !!startDate,
-            endDate: !!endDate,
-          },
-        },
-        {status: 400},
-      );
-    }
-
-    // Validate date format
-    if (isNaN(Date.parse(startDate)) || isNaN(Date.parse(endDate))) {
-      console.error(`❌ [${requestId}] Invalid date format`);
-      return NextResponse.json(
-        {
-          error: 'Invalid date format. Use YYYY-MM-DD format',
-          received: {startDate, endDate},
-        },
-        {status: 400},
-      );
-    }
 
     console.log(`⏳ [${requestId}] Generating billing report...`);
     const report = await generateBillingReport(
