@@ -1,7 +1,7 @@
 'use client';
 
 import {useState} from 'react';
-import {Edit, Trash2, Clock, Shield} from 'lucide-react';
+import {Edit, Trash2, Clock, Shield, Download} from 'lucide-react';
 import {Button} from '@workspace/ui/components/button';
 import {Card} from '@workspace/ui/components/card';
 import {Input} from '@workspace/ui/components/input';
@@ -13,7 +13,20 @@ import {
   useDeleteTimeEntry,
 } from '@/lib/hooks/useTimeTracking';
 import {useRoleAccess} from '@/lib/hooks/useRoleAccess';
+import {toCsv, downloadCsv} from '@/lib/utils/csv-export';
 import type {TimeEntryWithUser} from '@/lib/db/schema';
+
+/** Supabase returns the `users` relation as a single object at runtime, but the
+ * generated type models it as an array — narrow both shapes without `any`. */
+type EntryUser = {first_name?: string | null; last_name?: string | null; email?: string | null};
+
+function resolveUserName(entry: TimeEntryWithUser): string {
+  const relation = entry.users as unknown as EntryUser | EntryUser[] | null | undefined;
+  const user = Array.isArray(relation) ? relation[0] : relation;
+  if (!user) return 'Unknown';
+  const fullName = `${user.first_name ?? ''} ${user.last_name ?? ''}`.trim();
+  return fullName || user.email || 'Unknown';
+}
 
 interface TimeEntriesListProps {
   ticketId: string;
@@ -59,6 +72,17 @@ export function TimeEntriesList({ticketId}: TimeEntriesListProps) {
 
   const getTotalTime = () => {
     return timeEntries.reduce((total, entry) => total + (entry.duration || 0), 0);
+  };
+
+  const handleExportCsv = () => {
+    const csv = toCsv<TimeEntryWithUser>(timeEntries, [
+      {key: 'date', header: 'Date', map: (entry) => formatDate(entry.start_time)},
+      {key: 'user', header: 'User', map: (entry) => resolveUserName(entry)},
+      {key: 'ticket', header: 'Ticket', map: () => ticketId},
+      {key: 'hours', header: 'Hours', map: (entry) => (entry.duration ?? 0).toFixed(2)},
+      {key: 'description', header: 'Description', map: (entry) => entry.description ?? ''},
+    ]);
+    downloadCsv(`time-entries-${new Date().toISOString().slice(0, 10)}.csv`, csv);
   };
 
   const startEditing = (entry: TimeEntryWithUser) => {
@@ -151,9 +175,15 @@ export function TimeEntriesList({ticketId}: TimeEntriesListProps) {
         <div className="flex items-center justify-between">
           <h3 className="text-lg font-semibold">Time Entries</h3>
           {timeEntries.length > 0 && (
-            <div className="flex items-center gap-1 text-sm font-medium">
-              <Clock className="w-4 h-4" />
-              Total: {formatDuration(getTotalTime())}
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-1 text-sm font-medium">
+                <Clock className="w-4 h-4" />
+                Total: {formatDuration(getTotalTime())}
+              </div>
+              <Button variant="outline" size="sm" onClick={handleExportCsv}>
+                <Download className="w-3 h-3 mr-1" />
+                Export CSV
+              </Button>
             </div>
           )}
         </div>

@@ -57,63 +57,65 @@ export async function getPerformanceMetrics(
   const lastWeekEnd = new Date(weekStart);
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
 
-  // Build base query conditions
-  let timeQueryBuilder = supabase
-    .from('time_entries')
-    .select('hours, date')
-    .eq('user_id', userId)
-    .eq('company_id', companyId);
+  // Time entries have no company_id/project_id of their own — reach both through
+  // the ticket -> project join. A fresh builder is created per query because
+  // Supabase query builders are mutated (filters accumulate) when reused.
+  const buildTimeQuery = () => {
+    let q = supabase
+      .from('time_entries')
+      .select('duration, start_time, tickets!inner(project_id, projects!inner(company_id))')
+      .eq('user_id', userId)
+      .eq('tickets.projects.company_id', companyId);
 
-  if (accessibleProjectIds.length > 0) {
-    timeQueryBuilder = timeQueryBuilder.in('project_id', accessibleProjectIds);
-  }
+    if (accessibleProjectIds.length > 0) {
+      q = q.in('tickets.project_id', accessibleProjectIds);
+    }
 
-  // Time tracking queries
+    return q;
+  };
+
+  const sumDuration = (rows: ReadonlyArray<{duration?: number | null}> | null): number =>
+    (rows || []).reduce((sum, entry) => sum + (entry.duration || 0), 0);
+
+  // Time tracking queries (duration is decimal hours, filtered/sorted by start_time)
   const [todayTimeResult, thisWeekTimeResult, lastWeekTimeResult, thisMonthTimeResult] =
     await Promise.all([
       // Today's time
-      timeQueryBuilder.gte('date', todayStart.toISOString().split('T')[0]).then((result) => {
-        const totalHours = (result.data || []).reduce((sum, entry) => sum + (entry.hours || 0), 0);
-        return {data: [{totalHours}]};
-      }),
+      buildTimeQuery()
+        .gte('start_time', todayStart.toISOString())
+        .then((result) => ({data: [{totalHours: sumDuration(result.data)}]})),
 
       // This week's time
-      timeQueryBuilder.gte('date', weekStart.toISOString().split('T')[0]).then((result) => {
-        const totalHours = (result.data || []).reduce((sum, entry) => sum + (entry.hours || 0), 0);
-        return {data: [{totalHours}]};
-      }),
+      buildTimeQuery()
+        .gte('start_time', weekStart.toISOString())
+        .then((result) => ({data: [{totalHours: sumDuration(result.data)}]})),
 
       // Last week's time
-      timeQueryBuilder
-        .gte('date', lastWeekStart.toISOString().split('T')[0])
-        .lt('date', lastWeekEnd.toISOString().split('T')[0])
-        .then((result) => {
-          const totalHours = (result.data || []).reduce(
-            (sum, entry) => sum + (entry.hours || 0),
-            0,
-          );
-          return {data: [{totalHours}]};
-        }),
+      buildTimeQuery()
+        .gte('start_time', lastWeekStart.toISOString())
+        .lt('start_time', lastWeekEnd.toISOString())
+        .then((result) => ({data: [{totalHours: sumDuration(result.data)}]})),
 
       // This month's time
-      timeQueryBuilder.gte('date', monthStart.toISOString().split('T')[0]).then((result) => {
-        const totalHours = (result.data || []).reduce((sum, entry) => sum + (entry.hours || 0), 0);
-        return {data: [{totalHours}]};
-      }),
+      buildTimeQuery()
+        .gte('start_time', monthStart.toISOString())
+        .then((result) => ({data: [{totalHours: sumDuration(result.data)}]})),
     ]);
 
-  // Build base ticket query conditions
-  let ticketQueryBuilder = supabase
-    .from('tickets')
-    .select('id, status, created_at, updated_at')
-    .eq('company_id', companyId);
+  // Tickets have no company_id — reach company through the project join.
+  const buildTicketQuery = () => {
+    let q = supabase
+      .from('tickets')
+      .select('id, status, created_at, updated_at, projects!inner(company_id)')
+      .eq('projects.company_id', companyId);
 
-  if (accessibleProjectIds.length > 0) {
-    ticketQueryBuilder = ticketQueryBuilder.in('project_id', accessibleProjectIds);
-  }
+    if (accessibleProjectIds.length > 0) {
+      q = q.in('project_id', accessibleProjectIds);
+    }
 
-  // Add user filter for assigned or created tasks
-  ticketQueryBuilder = ticketQueryBuilder.or(`assignee_id.eq.${userId},creator_id.eq.${userId}`);
+    // Filter for tasks assigned to or reported by the user
+    return q.or(`assignee_id.eq.${userId},reporter_id.eq.${userId}`);
+  };
 
   // Task completion queries
   const [
@@ -123,24 +125,24 @@ export async function getPerformanceMetrics(
     lastWeekCompletedResult,
   ] = await Promise.all([
     // Tasks created this week
-    ticketQueryBuilder
+    buildTicketQuery()
       .gte('created_at', weekStart.toISOString())
       .then((result) => ({data: [{count: result.data?.length || 0}]})),
 
     // Tasks created last week
-    ticketQueryBuilder
+    buildTicketQuery()
       .gte('created_at', lastWeekStart.toISOString())
       .lt('created_at', lastWeekEnd.toISOString())
       .then((result) => ({data: [{count: result.data?.length || 0}]})),
 
     // Tasks completed this week
-    ticketQueryBuilder
+    buildTicketQuery()
       .eq('status', 'done')
       .gte('updated_at', weekStart.toISOString())
       .then((result) => ({data: [{count: result.data?.length || 0}]})),
 
     // Tasks completed last week
-    ticketQueryBuilder
+    buildTicketQuery()
       .eq('status', 'done')
       .gte('updated_at', lastWeekStart.toISOString())
       .lt('updated_at', lastWeekEnd.toISOString())
@@ -148,17 +150,20 @@ export async function getPerformanceMetrics(
   ]);
 
   // Daily time tracking for streak and consistency calculation
-  const {data: dailyTimeTrackingData} = await timeQueryBuilder
-    .gte('date', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0])
-    .order('date', {ascending: true});
+  const {data: dailyTimeTrackingData} = await buildTimeQuery()
+    .gte('start_time', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString())
+    .order('start_time', {ascending: true});
 
-  // Group by date and sum hours
-  const dailyTimeTracking = (dailyTimeTrackingData || []).reduce((acc: any[], entry) => {
-    const existing = acc.find((d) => d.date === entry.date);
+  // Group by calendar day (derived from start_time) and sum durations
+  const dailyTimeTracking = (dailyTimeTrackingData || []).reduce<
+    Array<{date: string; totalHours: number}>
+  >((acc, entry) => {
+    const date = (entry.start_time as string).slice(0, 10);
+    const existing = acc.find((d) => d.date === date);
     if (existing) {
-      existing.totalHours += entry.hours || 0;
+      existing.totalHours += entry.duration || 0;
     } else {
-      acc.push({date: entry.date, totalHours: entry.hours || 0});
+      acc.push({date, totalHours: entry.duration || 0});
     }
     return acc;
   }, []);

@@ -68,12 +68,11 @@ export async function getProjectHealthSimple(
     const projectHealthData: ProjectHealth[] = [];
 
     for (const project of projects) {
-      // Get tickets for this project
+      // Get tickets for this project (scoped by project_id; tickets has no company_id)
       const {data: tickets} = await supabase
         .from('tickets')
         .select('id, status')
-        .eq('project_id', project.id)
-        .eq('company_id', companyId);
+        .eq('project_id', project.id);
 
       // Get project members count
       const {count: memberCount} = await supabase
@@ -84,7 +83,8 @@ export async function getProjectHealthSimple(
       // Calculate basic metrics
       const totalTasks = tickets?.length || 0;
       const completedTasks = tickets?.filter((t) => t.status === 'done').length || 0;
-      const blockedTasks = tickets?.filter((t) => t.status === 'blocked').length || 0;
+      // 'blocked' is not a valid ticket status in the live schema; no blocker signal exists yet.
+      const blockedTasks = 0;
       const progress = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
 
       // Calculate health based on progress and blockers
@@ -100,15 +100,8 @@ export async function getProjectHealthSimple(
       else if (project.status === 'archived') status = 'on-hold';
       else if (health === 'critical') status = 'at-risk';
 
-      // Calculate days remaining
-      let daysRemaining: number | undefined;
-      if (project.end_date) {
-        const endDate = new Date(project.end_date);
-        const now = new Date();
-        const diffMs = endDate.getTime() - now.getTime();
-        const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
-        daysRemaining = diffDays > 0 ? diffDays : undefined;
-      }
+      // projects has no end_date column in the live schema, so days remaining is unavailable.
+      const daysRemaining: number | undefined = undefined;
 
       // Format last activity
       const lastActivityDate = new Date(project.updated_at);

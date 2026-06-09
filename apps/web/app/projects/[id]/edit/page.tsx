@@ -16,6 +16,7 @@ import {
 } from '@workspace/ui/components/card';
 import {useAuthStore} from '@/lib/stores/auth';
 import {useProjectStore} from '@/lib/stores/project';
+import {useClients} from '@/lib/hooks/useClients';
 import {getProjectById, updateProject, deleteProject} from '@/lib/db/service';
 import {Project} from '@/lib/db/schema';
 import {ArrowLeft, Loader2, Save, Trash2} from 'lucide-react';
@@ -35,6 +36,7 @@ export default function EditProjectPage({params}: Props) {
     name: '',
     description: '',
     status: 'active' as 'active' | 'archived' | 'completed',
+    client_id: '',
   });
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -43,6 +45,7 @@ export default function EditProjectPage({params}: Props) {
 
   const {user} = useAuthStore();
   const {updateProject: updateProjectInStore, deleteProjectById} = useProjectStore();
+  const {data: clients = []} = useClients();
   const router = useRouter();
 
   useEffect(() => {
@@ -65,6 +68,7 @@ export default function EditProjectPage({params}: Props) {
         name: projectData.name,
         description: projectData.description || '',
         status: projectData.status,
+        client_id: projectData.client_id ?? '',
       });
     } catch (err: any) {
       setError(err.message || 'Failed to load project');
@@ -108,6 +112,7 @@ export default function EditProjectPage({params}: Props) {
         name: formData.name.trim(),
         description: formData.description.trim() || null,
         status: formData.status,
+        client_id: formData.client_id || null,
       };
 
       const updatedProject = await updateProject(project.id, updates);
@@ -250,6 +255,28 @@ export default function EditProjectPage({params}: Props) {
                   </select>
                   <p className="text-xs text-muted-foreground">
                     Change the project status to reflect its current state
+                  </p>
+                </div>
+
+                {/* Client */}
+                <div className="space-y-2">
+                  <Label htmlFor="client_id">Client</Label>
+                  <select
+                    id="client_id"
+                    name="client_id"
+                    value={formData.client_id}
+                    onChange={(e) => setFormData((prev) => ({...prev, client_id: e.target.value}))}
+                    disabled={isSubmitting}
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50">
+                    <option value="">No client (internal)</option>
+                    {clients.map((client) => (
+                      <option key={client.id} value={client.id}>
+                        {client.name}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="text-xs text-muted-foreground">
+                    Assign this project to a client, or leave as internal
                   </p>
                 </div>
 

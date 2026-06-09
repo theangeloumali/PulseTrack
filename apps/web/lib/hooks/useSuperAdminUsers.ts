@@ -40,10 +40,12 @@ export function useSuperAdminUsers() {
       if (!response.ok) {
         throw new Error('Failed to fetch users');
       }
-      return response.json();
+      const body = await response.json();
+      // API returns { data, pagination }; tolerate a bare array for safety.
+      return Array.isArray(body) ? body : (body?.data ?? []);
     },
     enabled: !!user && user.role === 'super_admin',
-    staleTime: 1000 * 60 * 2, // 2 minutes
+    staleTime: 1000 * 60 * 5, // 5 minutes
   });
 }
 

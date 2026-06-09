@@ -49,6 +49,6 @@ export function useSuperAdminCompanies() {
       return response.json();
     },
     enabled: !!user && user.role === 'super_admin',
-    staleTime: 1000 * 60 * 2, // 2 minutes
+    staleTime: 1000 * 60 * 5, // 5 minutes
   });
 }

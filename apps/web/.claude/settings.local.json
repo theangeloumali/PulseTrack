@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(task-master list:*)",
+      "Bash(find:*)",
+      "Bash(ls:*)",
+      "Bash(TASKMASTER_PROJECT_PATH=/Users/angelo/Desktop/Work/TicketingTrackingSystem/ProjectManagementSystem task-master next)",
+      "Bash(pnpm typecheck:*)",
+      "Bash(pnpm build:*)"
+    ],
+    "deny": []
+  }
+}

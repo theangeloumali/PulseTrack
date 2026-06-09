@@ -1,5 +1,6 @@
 import {NextRequest, NextResponse} from 'next/server';
 import {createServerClient, type CookieOptions} from '@supabase/ssr';
+import {createClient} from '@supabase/supabase-js';
 
 /**
  * Derives the Supabase project ref from the public URL.
@@ -140,7 +141,13 @@ export const withAuth = (handler: AuthenticatedHandler, allowedRoles: Role[]) =>
       return NextResponse.json({message: 'Authentication required'}, {status: 401});
     }
 
-    const {data: user, error: userError} = await supabase
+    // Use service role client for role lookup to bypass RLS
+    const serviceClient = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    );
+
+    const {data: user, error: userError} = await serviceClient
       .from('users')
       .select('role')
       .eq('id', sessionUser.id)

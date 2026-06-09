@@ -1,5 +1,37 @@
 import {NextRequest, NextResponse} from 'next/server';
 import {createClient} from '@supabase/supabase-js';
+import {z} from 'zod/v4';
+import type {UserRole} from '@/lib/db/schema';
+
+// Self-signup provisions a brand-new company, so the creator becomes that
+// company's first admin — never a platform-level role. This value is FORCED
+// on insert and the request body's role is never trusted, because the
+// service-role client below bypasses RLS.
+const SELF_SIGNUP_ROLE: UserRole = 'company_admin';
+
+// Roles a self-signup may never request. Privileged platform roles are
+// rejected outright (400) so the failure is explicit, and the forced role
+// above is the second line of defense if validation is ever bypassed.
+const signupCompleteSchema = z.object({
+  company: z.object({
+    name: z.string().trim().min(1, 'Company name is required').max(200),
+    slug: z
+      .string()
+      .trim()
+      .min(1, 'Company slug is required')
+      .max(100)
+      .regex(/^[a-z0-9_-]+$/, 'Slug may only contain lowercase letters, numbers, _ and -'),
+  }),
+  user: z.object({
+    id: z.uuid(),
+    email: z.email(),
+    first_name: z.string().trim().max(100).nullish(),
+    last_name: z.string().trim().max(100).nullish(),
+    // Only non-privileged roles are accepted from the client. Supplying
+    // 'super_admin' or 'system_admin' fails parsing and returns 400.
+    role: z.enum(['company_admin', 'manager', 'user']).optional(),
+  }),
+});
 
 // Service-role client bypasses RLS — required because new users
 // don't exist in public.users yet, so RLS policies block inserts.
@@ -110,24 +142,33 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({error: 'Unauthorized', correlationId}, {status: 401});
     }
 
-    const body = await request.json();
-    const {company, user} = body;
+    let rawBody: unknown;
+    try {
+      rawBody = await request.json();
+    } catch {
+      console.warn(`[signup-complete:${correlationId}] Invalid JSON body`);
+      return NextResponse.json({error: 'Invalid JSON body', correlationId}, {status: 400});
+    }
 
-    // Validate required fields
-    if (!company?.name || !company?.slug) {
-      console.warn(`[signup-complete:${correlationId}] Missing company payload`);
+    const parseResult = signupCompleteSchema.safeParse(rawBody);
+    if (!parseResult.success) {
+      console.warn(`[signup-complete:${correlationId}] Validation failed`, {
+        fields: parseResult.error.issues.map((i) => i.path.join('.')),
+      });
       return NextResponse.json(
-        {error: 'Missing company data (name, slug)', correlationId},
+        {
+          error: 'Invalid request body',
+          issues: parseResult.error.issues.map((i) => ({
+            path: i.path.join('.'),
+            message: i.message,
+          })),
+          correlationId,
+        },
         {status: 400},
       );
     }
-    if (!user?.id || !user?.email || !user?.role) {
-      console.warn(`[signup-complete:${correlationId}] Missing user payload`);
-      return NextResponse.json(
-        {error: 'Missing user data (id, email, role)', correlationId},
-        {status: 400},
-      );
-    }
+
+    const {company, user} = parseResult.data;
 
     // Prevent creating a user record for someone else
     if (user.id !== authUser.id) {
@@ -209,7 +250,9 @@ export async function POST(request: NextRequest) {
         email: user.email,
         first_name: user.first_name || null,
         last_name: user.last_name || null,
-        role: user.role,
+        // Role is FORCED server-side — the request body's role is never used,
+        // so a signup can never self-assign super_admin / system_admin.
+        role: SELF_SIGNUP_ROLE,
         company_id: newCompany.id,
         status: 'active',
       })

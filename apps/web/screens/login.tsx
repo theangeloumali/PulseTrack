@@ -12,8 +12,6 @@ import {Eye, EyeOff, Loader2, CheckCircle2, ArrowRight} from 'lucide-react';
 import {supabase} from '@/lib/db';
 import {motion, AnimatePresence, Variants} from 'framer-motion';
 
-const isDev = false;
-
 const IN_APP_FEATURES = [
   'Kinetic drag-and-drop project boards',
   'Atomic time tracking with zero cognitive overhead',
@@ -35,8 +33,8 @@ const itemVariants: Variants = {
 };
 
 function LoginContent() {
-  const [email, setEmail] = useState(isDev ? 'christianangeloumaliofficial@gmail.com' : '');
-  const [password, setPassword] = useState(isDev ? '@Testing123' : '');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');

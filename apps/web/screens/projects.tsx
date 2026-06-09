@@ -16,17 +16,29 @@ import {
 } from '@workspace/ui/components/card';
 import {Badge} from '@workspace/ui/components/badge';
 import {useProjectsWithTicketCountsQuery} from '@/lib/hooks/useProjects';
+import {useClients} from '@/lib/hooks/useClients';
 import {useAuthStore} from '@/lib/stores/auth';
 import {CreateProjectModal} from '@/components/modals/create-project-modal';
 import {ProjectMembersModal} from '@/components/modals/project-members-modal';
-import {AutoRefresh} from '@/components/auto-refresh';
-import {Plus, Search, Loader2, FolderOpen, Calendar, AlertCircle, User, Users} from 'lucide-react';
+
+import {
+  Plus,
+  Search,
+  Loader2,
+  FolderOpen,
+  Calendar,
+  AlertCircle,
+  User,
+  Users,
+  Building2,
+} from 'lucide-react';
 
 function ProjectsContent() {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'archived' | 'completed'>(
     'all',
   );
+  const [clientFilter, setClientFilter] = useState<string>('all');
   const [showCreateProjectModal, setShowCreateProjectModal] = useState(false);
   const [membersModalProject, setMembersModalProject] = useState<{
     id: string;
@@ -39,6 +51,7 @@ function ProjectsContent() {
 
   // Use React Query for projects with ticket counts
   const {data: projects = [], isLoading, error, isError} = useProjectsWithTicketCountsQuery();
+  const {data: clients = []} = useClients();
 
   // Handle URL parameter for opening project creation modal
   useEffect(() => {
@@ -59,7 +72,11 @@ function ProjectsContent() {
 
     const matchesStatus = statusFilter === 'all' || project.status === statusFilter;
 
-    return matchesSearch && matchesStatus;
+    const matchesClient =
+      clientFilter === 'all' ||
+      (clientFilter === 'none' ? !project.client : project.client?.id === clientFilter);
+
+    return matchesSearch && matchesStatus && matchesClient;
   });
 
   // Sort projects by recent activity (updated_at desc)
@@ -111,15 +128,6 @@ function ProjectsContent() {
 
   return (
     <div className="h-full bg-background">
-      {/* Auto-refresh component for projects data */}
-      <AutoRefresh
-        queryKeys={
-          user?.company_id && user?.id && user?.role
-            ? [['projects', 'withTicketCounts', user.company_id, user.id, user.role]]
-            : []
-        }
-      />
-
       {/* Header */}
       <header className="bg-card shadow-sm border-b border-border">
         <div className="px-4">
@@ -162,6 +170,20 @@ function ProjectsContent() {
             <option value="active">Active</option>
             <option value="archived">Archived</option>
             <option value="completed">Completed</option>
+          </select>
+
+          {/* Client Filter */}
+          <select
+            value={clientFilter}
+            onChange={(e) => setClientFilter(e.target.value)}
+            className="flex h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+            <option value="all">All Clients</option>
+            <option value="none">No client (internal)</option>
+            {clients.map((client) => (
+              <option key={client.id} value={client.id}>
+                {client.name}
+              </option>
+            ))}
           </select>
         </div>
 
@@ -214,6 +236,18 @@ function ProjectsContent() {
                   )}
                 </CardHeader>
                 <CardContent>
+                  {/* Client */}
+                  <div className="flex items-center text-sm mb-3">
+                    <Building2 className="h-4 w-4 mr-1.5 shrink-0 text-muted-foreground" />
+                    {project.client ? (
+                      <span className="truncate text-foreground">
+                        Client: {project.client.name}
+                      </span>
+                    ) : (
+                      <span className="italic text-muted-foreground/70">No client (internal)</span>
+                    )}
+                  </div>
+
                   <div className="flex items-center justify-between text-sm text-muted-foreground mb-4">
                     <div className="flex items-center">
                       <Calendar className="h-4 w-4 mr-1" />

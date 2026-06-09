@@ -40,7 +40,7 @@ import {
   endOfYear,
   format,
 } from 'date-fns';
-import {Clock, DollarSign, Calendar, Users, Settings} from 'lucide-react';
+import {Clock, DollarSign, Calendar, Users, Settings, Download} from 'lucide-react';
 import {DateRangePicker} from '@/components/ui/date-range-picker';
 import {PaymentDashboard} from '@/components/payments/payment-dashboard';
 import {BillingPeriodsList} from '@/components/billing/billing-periods-list';
@@ -50,6 +50,36 @@ import {
   saveBillingFiltersToStorage,
   loadBillingFiltersFromStorage,
 } from '@/lib/utils';
+import {toCsv, downloadCsv} from '@/lib/utils/csv-export';
+
+// Narrow the loosely-typed billing report into the shape the timesheet renders,
+// so the CSV flattener stays free of `any`.
+interface BillingReportTicket {
+  ticketTitle?: string | null;
+  description?: string | null;
+  hours?: number | null;
+  amount?: number | null;
+}
+interface BillingReportProject {
+  projectName?: string | null;
+  tickets?: BillingReportTicket[];
+}
+interface BillingReportUser {
+  userFirstName?: string | null;
+  userLastName?: string | null;
+  projects?: Record<string, BillingReportProject>;
+}
+type BillingReportByDate = Record<string, Record<string, BillingReportUser>>;
+
+interface BillingCsvRow {
+  date: string;
+  user: string;
+  project: string;
+  ticket: string;
+  hours: string;
+  amount: string;
+  description: string;
+}
 
 const currencies = ['USD', 'EUR', 'GBP', 'JPY', 'AUD', 'CAD', 'CHF', 'CNY', 'SEK', 'NZD'];
 
@@ -278,6 +308,44 @@ const BillingPage = () => {
       setShowReport(true);
     }
   };
+
+  const handleExportReportCsv = () => {
+    if (!filteredBillingReport) return;
+    const report = filteredBillingReport as BillingReportByDate;
+    const rows: BillingCsvRow[] = [];
+
+    for (const [date, usersData] of Object.entries(report)) {
+      for (const userData of Object.values(usersData)) {
+        const userName = `${userData.userFirstName ?? ''} ${userData.userLastName ?? ''}`.trim();
+        for (const projectData of Object.values(userData.projects ?? {})) {
+          for (const ticket of projectData.tickets ?? []) {
+            rows.push({
+              date: format(new Date(date), 'MMM dd, yyyy'),
+              user: userName,
+              project: projectData.projectName ?? '',
+              ticket: ticket.ticketTitle ?? '',
+              hours: Number(ticket.hours ?? 0).toFixed(2),
+              amount: Number(ticket.amount ?? 0).toFixed(2),
+              description: ticket.description ?? '',
+            });
+          }
+        }
+      }
+    }
+
+    const csv = toCsv<BillingCsvRow>(rows, [
+      {key: 'date', header: 'Date'},
+      {key: 'user', header: 'User'},
+      {key: 'project', header: 'Project'},
+      {key: 'ticket', header: 'Ticket'},
+      {key: 'hours', header: 'Hours'},
+      {key: 'amount', header: `Amount (${settings?.currency || 'USD'})`},
+      {key: 'description', header: 'Description'},
+    ]);
+    downloadCsv(`billing-report-${format(new Date(), 'yyyy-MM-dd')}.csv`, csv);
+  };
+
+  const hasReportRows = !!filteredBillingReport && Object.keys(filteredBillingReport).length > 0;
 
   // Load filters from localStorage on mount
   useEffect(() => {
@@ -544,9 +612,18 @@ const BillingPage = () => {
                           </Select>
                         </div>
                       )}
-                      <Button onClick={handleGenerateReport} disabled={isReportLoading}>
-                        {isReportLoading ? 'Loading...' : 'Refresh'}
-                      </Button>
+                      <div className="flex gap-2">
+                        <Button onClick={handleGenerateReport} disabled={isReportLoading}>
+                          {isReportLoading ? 'Loading...' : 'Refresh'}
+                        </Button>
+                        <Button
+                          variant="outline"
+                          onClick={handleExportReportCsv}
+                          disabled={!hasReportRows}>
+                          <Download className="h-4 w-4 mr-1" />
+                          Export CSV
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 </div>

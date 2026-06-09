@@ -9,6 +9,7 @@ import {Input} from '@workspace/ui/components/input';
 import {Label} from '@workspace/ui/components/label';
 import {useAuthStore} from '@/lib/stores/auth';
 import {generateSlug} from '@/lib/utils';
+import {validatePassword} from '@/lib/validation';
 import {Eye, EyeOff, Loader2, CheckCircle2, ArrowRight} from 'lucide-react';
 import {motion, AnimatePresence, Variants} from 'framer-motion';
 
@@ -33,17 +34,13 @@ const itemVariants: Variants = {
 };
 
 export default function SignUpPage() {
-  const isDev =
-    typeof window !== 'undefined' &&
-    (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
-
   const [formData, setFormData] = useState({
-    email: isDev ? 'christianangeloumaliofficial@gmail.com' : '',
-    password: isDev ? '@Testing123' : '',
-    confirmPassword: isDev ? '@Testing123' : '',
-    firstName: isDev ? 'Christian' : '',
-    lastName: isDev ? 'Maliofficial' : '',
-    companyName: isDev ? 'Christian Inc.' : '',
+    email: '',
+    password: '',
+    confirmPassword: '',
+    firstName: '',
+    lastName: '',
+    companyName: '',
   });
 
   const [showPassword, setShowPassword] = useState(false);
@@ -72,8 +69,9 @@ export default function SignUpPage() {
       return;
     }
 
-    if (formData.password.length < 8) {
-      setError('Password must be at least 8 characters long');
+    const passwordValidation = validatePassword(formData.password);
+    if (!passwordValidation.valid) {
+      setError(passwordValidation.error!);
       setIsLoading(false);
       return;
     }
@@ -91,15 +89,18 @@ export default function SignUpPage() {
       if (error) {
         setError(error.message);
       } else {
-        const params = new URLSearchParams({
-          email: formData.email,
-          firstName: formData.firstName,
-          lastName: formData.lastName,
-          companyName: formData.companyName,
-          companySlug: generateSlug(formData.companyName),
-          role: 'company_admin',
-        });
-        router.push(`/verify-email?${params.toString()}`);
+        // Store signup metadata in sessionStorage to avoid PII in URL params
+        sessionStorage.setItem(
+          'pendingSignupData',
+          JSON.stringify({
+            firstName: formData.firstName,
+            lastName: formData.lastName,
+            companyName: formData.companyName,
+            companySlug: generateSlug(formData.companyName),
+            role: 'company_admin',
+          }),
+        );
+        router.push(`/verify-email?email=${encodeURIComponent(formData.email)}`);
       }
     } catch (err) {
       setError('An unexpected error occurred');

@@ -28,6 +28,21 @@ export interface PriorityInsightsData {
   upcomingDeadlines: PriorityItem[];
 }
 
+// Shape of a ticket row returned by the priority-insights select (with embeds)
+interface RawPriorityTicket {
+  id: string;
+  title: string;
+  description: string | null;
+  priority: PriorityItem['priority'];
+  status: string;
+  due_date: string | null;
+  created_at: string;
+  project_id: string;
+  assignee_id: string | null;
+  projects: {name: string | null; company_id: string} | null;
+  assignee: {id: string; first_name: string | null; last_name: string | null} | null;
+}
+
 export async function getPriorityInsights(
   userId: string,
   companyId: string,
@@ -65,7 +80,9 @@ export async function getPriorityInsights(
   const threeDaysFromNow = new Date();
   threeDaysFromNow.setDate(currentDate.getDate() + 3);
 
-  // Base query for tickets with project and assignee info
+  // Base query for tickets with project and assignee info.
+  // tickets has no company_id — company is reached through the project join.
+  // assignee uses an explicit FK hint and the real first_name/last_name columns.
   const baseSelect = `
     id,
     title,
@@ -76,16 +93,16 @@ export async function getPriorityInsights(
     created_at,
     project_id,
     assignee_id,
-    projects!inner(name),
-    assignee:users(id, full_name)
+    projects!inner(name, company_id),
+    assignee:users!tickets_assignee_id_users_id_fk(id, first_name, last_name)
   `;
 
-  const [overdueResult, urgentResult, blockedResult, upcomingResult] = await Promise.all([
+  const [overdueResult, urgentResult, upcomingResult] = await Promise.all([
     // Get overdue tickets (past due date and not completed)
     supabase
       .from('tickets')
       .select(baseSelect)
-      .eq('company_id', companyId)
+      .eq('projects.company_id', companyId)
       .in('project_id', accessibleProjectIds)
       .not('due_date', 'is', null)
       .lt('due_date', currentDate.toISOString())
@@ -96,7 +113,7 @@ export async function getPriorityInsights(
     supabase
       .from('tickets')
       .select(baseSelect)
-      .eq('company_id', companyId)
+      .eq('projects.company_id', companyId)
       .in('project_id', accessibleProjectIds)
       .eq('priority', 'high')
       .neq('status', 'done')
@@ -104,20 +121,11 @@ export async function getPriorityInsights(
       .order('created_at', {ascending: false})
       .limit(10),
 
-    // Get blocked tickets
-    supabase
-      .from('tickets')
-      .select(baseSelect)
-      .eq('company_id', companyId)
-      .in('project_id', accessibleProjectIds)
-      .eq('status', 'blocked')
-      .order('created_at', {ascending: false}),
-
     // Get upcoming deadline tickets (due within 3 days, not done)
     supabase
       .from('tickets')
       .select(baseSelect)
-      .eq('company_id', companyId)
+      .eq('projects.company_id', companyId)
       .in('project_id', accessibleProjectIds)
       .not('due_date', 'is', null)
       .gte('due_date', currentDate.toISOString())
@@ -135,36 +143,47 @@ export async function getPriorityInsights(
   };
 
   // Transform to PriorityItem format
-  const transformTicket = (ticket: any, type: PriorityItem['type']): PriorityItem => ({
-    id: ticket.id,
-    title: ticket.title,
-    description: ticket.description || '',
-    type,
-    priority: ticket.priority,
-    daysOverdue:
-      ticket.due_date && type === 'overdue' ? calculateDaysOverdue(ticket.due_date) : undefined,
-    assignee: ticket.assignee
-      ? {
-          id: ticket.assignee.id,
-          name: ticket.assignee.full_name || 'Unknown User',
-        }
-      : undefined,
-    project: ticket.projects
-      ? {
-          id: ticket.project_id,
-          name: ticket.projects.name || 'Unknown Project',
-        }
-      : undefined,
-    href: `/tickets/${ticket.id}`,
-    dueDate: ticket.due_date,
-    createdAt: ticket.created_at,
-  });
+  const transformTicket = (ticket: RawPriorityTicket, type: PriorityItem['type']): PriorityItem => {
+    const assigneeName = ticket.assignee
+      ? [ticket.assignee.first_name, ticket.assignee.last_name].filter(Boolean).join(' ').trim()
+      : '';
+
+    return {
+      id: ticket.id,
+      title: ticket.title,
+      description: ticket.description || '',
+      type,
+      priority: ticket.priority,
+      daysOverdue:
+        ticket.due_date && type === 'overdue' ? calculateDaysOverdue(ticket.due_date) : undefined,
+      assignee: ticket.assignee
+        ? {
+            id: ticket.assignee.id,
+            name: assigneeName || 'Unknown User',
+          }
+        : undefined,
+      project: ticket.projects
+        ? {
+            id: ticket.project_id,
+            name: ticket.projects.name || 'Unknown Project',
+          }
+        : undefined,
+      href: `/tickets/${ticket.id}`,
+      dueDate: ticket.due_date || undefined,
+      createdAt: ticket.created_at,
+    };
+  };
+
+  // Supabase infers to-one embeds as arrays; at runtime PostgREST returns single
+  // objects for these many-to-one joins, so normalize the result type here.
+  const toRows = (data: unknown): RawPriorityTicket[] => (data as RawPriorityTicket[] | null) ?? [];
 
   return {
-    overdue: (overdueResult.data || []).map((ticket) => transformTicket(ticket, 'overdue')),
-    urgent: (urgentResult.data || []).map((ticket) => transformTicket(ticket, 'urgent')),
-    blocked: (blockedResult.data || []).map((ticket) => transformTicket(ticket, 'blocked')),
-    upcomingDeadlines: (upcomingResult.data || []).map((ticket) =>
+    overdue: toRows(overdueResult.data).map((ticket) => transformTicket(ticket, 'overdue')),
+    urgent: toRows(urgentResult.data).map((ticket) => transformTicket(ticket, 'urgent')),
+    // 'blocked' is not a valid ticket status in the live schema; no blocked signal exists yet.
+    blocked: [],
+    upcomingDeadlines: toRows(upcomingResult.data).map((ticket) =>
       transformTicket(ticket, 'deadline'),
     ),
   };

@@ -29,6 +29,7 @@ import {
   Loader2,
   FolderOpen,
   User,
+  Building2,
 } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
@@ -318,6 +319,21 @@ function ProjectDetailContent({params}: Props) {
                       <Badge className={`${getStatusColor(project.status)} border-0`}>
                         {project.status}
                       </Badge>
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="text-sm font-medium text-muted-foreground">Client</dt>
+                    <dd className="mt-1 text-sm text-foreground flex items-center">
+                      <Building2 className="h-4 w-4 mr-2 shrink-0" />
+                      {project.client ? (
+                        <Link
+                          href={`/clients/${project.client.id}`}
+                          className="text-blue-600 hover:underline dark:text-blue-400">
+                          {project.client.name}
+                        </Link>
+                      ) : (
+                        <span className="text-muted-foreground">Internal</span>
+                      )}
                     </dd>
                   </div>
                   <div>

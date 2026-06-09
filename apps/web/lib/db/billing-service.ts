@@ -21,6 +21,60 @@ import {
   addMonths,
 } from 'date-fns';
 
+// Where an entry's resolved rate came from (kept for billing-report diagnostics)
+export type RateSource = 'project' | 'user' | 'company_default' | 'user_fallback' | 'none';
+
+// Minimal shape of a billing_rates row needed for rate precedence resolution
+interface ApplicableRateRow {
+  hourly_rate: string | number;
+  project_id?: string | null;
+  user_id?: string | null;
+  effective_from: string;
+  effective_to?: string | null;
+}
+
+export interface CalculateApplicableRateInput {
+  entryDate: string | Date;
+  projectId?: string | null;
+  userId: string;
+  rates: ApplicableRateRow[];
+  companyDefaultRate?: string | number | null;
+  userHourlyRate?: string | number | null;
+}
+
+/**
+ * Single source of truth for the rate-precedence rule used across billing:
+ * project rate > user rate > company default > user.hourly_rate.
+ * Only date-effective rates (effective_from/effective_to) are considered.
+ * Reused by calculateTimeEntryBilling, generateBillingReport, and client invoicing.
+ */
+export function calculateApplicableRate(input: CalculateApplicableRateInput): {
+  rate: number;
+  source: RateSource;
+} {
+  const entryDateTime = new Date(input.entryDate);
+  const relevantRates = input.rates.filter((rate) => {
+    const effectiveFrom = new Date(rate.effective_from);
+    const effectiveTo = rate.effective_to ? new Date(rate.effective_to) : null;
+    return entryDateTime >= effectiveFrom && (!effectiveTo || entryDateTime <= effectiveTo);
+  });
+
+  const projectRate = relevantRates.find(
+    (rate) => rate.project_id === input.projectId && !rate.user_id,
+  );
+  const userRate = relevantRates.find((rate) => rate.user_id === input.userId && !rate.project_id);
+
+  if (projectRate) return {rate: parseFloat(String(projectRate.hourly_rate)), source: 'project'};
+  if (userRate) return {rate: parseFloat(String(userRate.hourly_rate)), source: 'user'};
+  if (input.companyDefaultRate) {
+    return {rate: parseFloat(String(input.companyDefaultRate)), source: 'company_default'};
+  }
+  if (input.userHourlyRate) {
+    return {rate: parseFloat(String(input.userHourlyRate)), source: 'user_fallback'};
+  }
+  return {rate: 0, source: 'none'};
+}
+
 // Helper function to calculate billing for a single time entry
 export async function calculateTimeEntryBilling(timeEntryId: string, companyId: string) {
   // Get the time entry with ticket and user information
@@ -61,32 +115,20 @@ export async function calculateTimeEntryBilling(timeEntryId: string, companyId: 
   const billingRates = await getBillingRatesByCompany(companyId);
   const companySettings = await getCompanyBillingSettings(companyId);
 
-  // Determine applicable rate using same logic as billing report
-  let applicableRate = 0;
+  // Determine applicable rate using the shared precedence helper
   const ticket = Array.isArray(timeEntry.tickets) ? timeEntry.tickets[0] : timeEntry.tickets;
   const projectId = ticket?.project_id;
   const userId = timeEntry.user_id;
   const user = Array.isArray(timeEntry.users) ? timeEntry.users[0] : timeEntry.users;
 
-  // Filter rates by effective_from and effective_to dates
-  const relevantRates = billingRates.filter(
-    (rate) =>
-      new Date(timeEntry.start_time) >= new Date(rate.effective_from) &&
-      (!rate.effective_to || new Date(timeEntry.start_time) <= new Date(rate.effective_to)),
-  );
-
-  const projectRate = relevantRates.find((rate) => rate.project_id === projectId && !rate.user_id);
-  const userRate = relevantRates.find((rate) => rate.user_id === userId && !rate.project_id);
-
-  if (projectRate) {
-    applicableRate = parseFloat(projectRate.hourly_rate);
-  } else if (userRate) {
-    applicableRate = parseFloat(userRate.hourly_rate);
-  } else if (companySettings?.default_hourly_rate) {
-    applicableRate = parseFloat(companySettings.default_hourly_rate);
-  } else if (user?.hourly_rate) {
-    applicableRate = parseFloat(user.hourly_rate);
-  }
+  const {rate: applicableRate} = calculateApplicableRate({
+    entryDate: timeEntry.start_time,
+    projectId,
+    userId,
+    rates: billingRates,
+    companyDefaultRate: companySettings?.default_hourly_rate ?? null,
+    userHourlyRate: user?.hourly_rate ?? null,
+  });
 
   const durationHours = timeEntry.duration || 0; // Duration is already in hours
   const billableAmount = durationHours * applicableRate;
@@ -930,35 +972,15 @@ export async function generateBillingReport(
           return;
         }
 
-        let applicableRate = 0;
-        let rateSource = 'none';
-
-        // Determine applicable rate: Project > User > Company Default
-        const entryDateTime = new Date(entry.start_time);
-        const relevantRates = billingRates.filter((rate) => {
-          const effectiveFrom = new Date(rate.effective_from);
-          const effectiveTo = rate.effective_to ? new Date(rate.effective_to) : null;
-          return entryDateTime >= effectiveFrom && (!effectiveTo || entryDateTime <= effectiveTo);
+        // Determine applicable rate: Project > User > Company Default (shared helper)
+        const {rate: applicableRate, source: rateSource} = calculateApplicableRate({
+          entryDate: entry.start_time,
+          projectId,
+          userId,
+          rates: billingRates,
+          companyDefaultRate: companySettings?.default_hourly_rate ?? null,
+          userHourlyRate: user.hourly_rate ?? null,
         });
-
-        const projectRate = relevantRates.find(
-          (rate) => rate.project_id === projectId && !rate.user_id,
-        );
-        const userRate = relevantRates.find((rate) => rate.user_id === userId && !rate.project_id);
-
-        if (projectRate) {
-          applicableRate = parseFloat(projectRate.hourly_rate);
-          rateSource = 'project';
-        } else if (userRate) {
-          applicableRate = parseFloat(userRate.hourly_rate);
-          rateSource = 'user';
-        } else if (companySettings?.default_hourly_rate) {
-          applicableRate = parseFloat(companySettings.default_hourly_rate);
-          rateSource = 'company_default';
-        } else if (user.hourly_rate) {
-          applicableRate = parseFloat(user.hourly_rate);
-          rateSource = 'user_fallback';
-        }
 
         if (applicableRate <= 0) {
           console.warn(`⚠️ No valid rate found for entry ${index}:`, {
@@ -966,7 +988,6 @@ export async function generateBillingReport(
             userId,
             projectId,
             rateSource,
-            relevantRatesCount: relevantRates.length,
           });
         }
 

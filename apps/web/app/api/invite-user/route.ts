@@ -1,7 +1,18 @@
 import {NextRequest, NextResponse} from 'next/server';
+import {z} from 'zod/v4';
 import {createClient} from '@supabase/supabase-js';
 import {createServerClient} from '@supabase/ssr';
 import {cookies} from 'next/headers';
+
+const inviteUserSchema = z.object({
+  email: z.email(),
+  role: z.enum(['company_admin', 'manager', 'user']),
+  companyId: z.uuid(),
+  invitedBy: z.uuid(),
+  firstName: z.string().max(100).optional(),
+  lastName: z.string().max(100).optional(),
+  hourlyRate: z.number().min(0).max(10000).optional(),
+});
 
 // Server-side admin client
 const supabaseAdmin = createClient(
@@ -64,12 +75,21 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const {email, role, companyId, invitedBy, firstName, lastName, hourlyRate} = body;
-
-    // Validate required fields
-    if (!email || !role || !companyId || !invitedBy) {
-      return NextResponse.json({error: 'Missing required fields'}, {status: 400});
+    const parseResult = inviteUserSchema.safeParse(body);
+    if (!parseResult.success) {
+      return NextResponse.json(
+        {
+          error: 'Invalid request body',
+          issues: parseResult.error.issues.map((i) => ({
+            path: i.path.join('.'),
+            message: i.message,
+          })),
+        },
+        {status: 400},
+      );
     }
+
+    const {email, role, companyId, invitedBy, firstName, lastName, hourlyRate} = parseResult.data;
 
     // Verify the companyId matches the requesting user's company
     if (companyId !== requestingUser.company_id) {
